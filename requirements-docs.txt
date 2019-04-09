@@ -1,1 +1,1 @@
-<PYPI_NAME>[doc]
+ethpm-cli[doc]
