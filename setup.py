@@ -12,6 +12,7 @@ extras_require = {
         "tox>=2.9.1,<3",
     ],
     'lint': [
+        "black>=18.6b4,<19",
         "flake8==3.4.1",
         "isort>=4.2.15,<5",
         "pydocstyle>=3.0.0,<4",
@@ -37,22 +38,23 @@ extras_require['dev'] = (
 )
 
 setup(
-    name='<PYPI_NAME>',
+    name='ethpm-cli',
     # *IMPORTANT*: Don't manually change the version here. Use `make bump`, as described in readme
     version='0.1.0-alpha.0',
-    description="""<PYPI_NAME>: <SHORT_DESCRIPTION>""",
+    description="""ethpm-cli: CLI for EthPM""",
     long_description_markdown_filename='README.md',
     author='The Ethereum Foundation',
     author_email='snakecharmers@ethereum.org',
-    url='https://github.com/ethereum/<REPO_NAME>',
+    url='https://github.com/ethereum/ethpm-cli',
     include_package_data=True,
     install_requires=[
         "eth-utils>=1,<2",
+        "ethpm>=0.1.4-a13,<2",
     ],
     setup_requires=['setuptools-markdown'],
     python_requires='>=3.6, <4',
     extras_require=extras_require,
-    py_modules=['<MODULE_NAME>'],
+    py_modules=['ethpm_cli'],
     license="MIT",
     zip_safe=False,
     keywords='ethereum',

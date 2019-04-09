@@ -1,7 +1,7 @@
-<PROJECT_NAME>
+ethpm-cli
 ==============================
 
-<SHORT_DESCRIPTION>
+CLI for EthPM
 
 Contents
 --------
@@ -9,7 +9,7 @@ Contents
 .. toctree::
     :maxdepth: 3
 
-    <MODULE_NAME>
+    ethpm_cli
     releases
 
 
