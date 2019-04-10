@@ -12,3 +12,11 @@ class InstallError(EthpmCliError):
     """
 
     pass
+
+
+class UriNotSupportedError(EthpmCliError):
+    """
+    Raised when a given uri does not fit a supported format.
+    """
+
+    pass

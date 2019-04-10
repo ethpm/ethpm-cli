@@ -1,10 +1,10 @@
-from ethpm_cli.manager import Package
+from ethpm_cli.package import Package
 
 
 def test_package(owned_pkg_data):
     package = Package(owned_pkg_data["ipfs_uri"])
 
-    assert package.alias is None
+    assert package.alias == "owned"
     assert package.target_uri == owned_pkg_data["ipfs_uri"]
     assert package.manifest_uri == owned_pkg_data["ipfs_uri"]
     assert package.registry_address is None
@@ -28,7 +28,7 @@ def test_package_with_alias(owned_pkg_data):
 def test_package_with_registry_uri(owned_pkg_data):
     package = Package(owned_pkg_data["registry_uri"])
 
-    assert package.alias is None
+    assert package.alias == "owned"
     assert package.target_uri == owned_pkg_data["registry_uri"]
     assert package.manifest_uri == owned_pkg_data["ipfs_uri"]
     assert package.registry_address == owned_pkg_data["registry_address"]

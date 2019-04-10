@@ -1,4 +1,13 @@
 {
+	"safe-math-lib": {
+		"alias": "safe-math-lib",
+		"registry_address": null,
+		"resolved_content_hash": "QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm",
+		"resolved_package_name": "safe-math-lib",
+		"resolved_uri": "ipfs://QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm",
+		"resolved_version": "1.0.0",
+		"target_uri": "ipfs://QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm"
+	},
     "owned": {
         "alias": "owned",
         "registry_address": null,

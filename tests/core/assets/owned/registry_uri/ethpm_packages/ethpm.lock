@@ -1,9 +1,11 @@
 {
-    "alias": null,
-    "registry_address": "0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729",
-    "resolved_content_hash": "QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
-    "resolved_package_name": "owned",
-    "resolved_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
-    "resolved_version": "1.0.0",
-    "target_uri": "ercXXX://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729/owned?version=1.0.0"
+    "owned": {
+        "alias": "owned",
+        "registry_address": "0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729",
+        "resolved_content_hash": "QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "resolved_package_name": "owned",
+        "resolved_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "resolved_version": "1.0.0",
+        "target_uri": "ercXXX://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729/owned?version=1.0.0"
+    }
 }

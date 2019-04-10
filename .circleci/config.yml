@@ -7,6 +7,17 @@ common: &common
   steps:
     - checkout
     - run:
+        name: install ipfs
+        command:
+          wget https://dist.ipfs.io/go-ipfs/v0.4.19/go-ipfs_v0.4.19_linux-amd64.tar.gz &&
+          tar xvfz go-ipfs_v0.4.19_linux-amd64.tar.gz &&
+          sudo cp go-ipfs/ipfs /usr/local/bin && 
+          ipfs init
+    - run:
+        name: start ipfs node in background
+        command: ipfs daemon
+        background: true
+    - run:
         name: merge pull request base
         command: ./.circleci/merge_pr.sh
     - run:
@@ -60,12 +71,7 @@ jobs:
       - image: circleci/python:3.7
         environment:
           TOXENV: py37-core
-  pypy3-core:
-    <<: *common
-    docker:
-      - image: pypy
-        environment:
-          TOXENV: pypy3-core
+
 workflows:
   version: 2
   test:
@@ -74,4 +80,3 @@ workflows:
       - lint
       - py36-core
       - py37-core
-      - pypy3-core
