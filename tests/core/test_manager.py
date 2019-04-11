@@ -118,7 +118,7 @@ def test_manager_cannot_install_the_same_pkg_twice(tmpdir):
     manager = Manager(target_dir=Path(tmpdir))
     manager.install("ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1")
 
-    with pytest.raises(InstallError, match="wallet already installed"):
+    with pytest.raises(InstallError, match="wallet is already installed"):
         manager.install("ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1")
 
 

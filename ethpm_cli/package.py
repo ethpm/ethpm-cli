@@ -7,7 +7,7 @@ from eth_utils import to_dict, to_text
 from ethpm.backends.http import GithubOverHTTPSBackend
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.backends.registry import RegistryURIBackend
-from ethpm.typing import Address, Manifest, URI  # noqa: F401
+from ethpm.typing import URI, Address, Manifest  # noqa: F401
 from ethpm.utils.ipfs import extract_ipfs_path_from_uri, generate_file_hash, is_ipfs_uri
 from ethpm.utils.manifest_validation import (
     validate_manifest_against_schema,
@@ -21,18 +21,21 @@ from ethpm.utils.uri import (
 )
 from ethpm.validation import is_valid_registry_uri, validate_package_name
 
-from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli.exceptions import UriNotSupportedError
 
 
 class Package:
-    def __init__(self, target_uri: URI, alias: str = None, ipfs: bool = None) -> None:
-        self.ipfs = get_ipfs_backend(ipfs)
+    def __init__(
+        self, target_uri: URI, ipfs_backend: BaseIPFSBackend, alias: str = None
+    ) -> None:
+        self.ipfs_backend = ipfs_backend
         resolved_target_uri = resolve_target_uri(target_uri)
         self.manifest_uri: URI = resolved_target_uri.manifest_uri
         self.registry_address: Address = resolved_target_uri.registry_address
 
-        resolved_manifest_uri = resolve_manifest_uri(self.manifest_uri, self.ipfs)
+        resolved_manifest_uri = resolve_manifest_uri(
+            self.manifest_uri, self.ipfs_backend
+        )
         self.raw_manifest: bytes = resolved_manifest_uri.raw_manifest
         self.resolved_content_hash: str = resolved_manifest_uri.resolved_content_hash
 

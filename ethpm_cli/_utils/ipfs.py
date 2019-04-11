@@ -1,4 +1,4 @@
-from ethpm.backends.ipfs import BaseIPFSBackend, LocalIPFSBackend, InfuraIPFSBackend
+from ethpm.backends.ipfs import BaseIPFSBackend, InfuraIPFSBackend, LocalIPFSBackend
 
 
 def get_ipfs_backend(ipfs: bool = None) -> BaseIPFSBackend:

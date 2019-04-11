@@ -1,8 +1,16 @@
+import pytest
+
+from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli.package import Package
 
 
-def test_package(owned_pkg_data):
-    package = Package(owned_pkg_data["ipfs_uri"])
+@pytest.fixture
+def ipfs_backend():
+    return get_ipfs_backend()
+
+
+def test_package(owned_pkg_data, ipfs_backend):
+    package = Package(owned_pkg_data["ipfs_uri"], ipfs_backend)
 
     assert package.alias == "owned"
     assert package.target_uri == owned_pkg_data["ipfs_uri"]
@@ -13,8 +21,8 @@ def test_package(owned_pkg_data):
     assert package.manifest == owned_pkg_data["manifest"]
 
 
-def test_package_with_alias(owned_pkg_data):
-    package = Package(owned_pkg_data["ipfs_uri"], "owned-alias")
+def test_package_with_alias(owned_pkg_data, ipfs_backend):
+    package = Package(owned_pkg_data["ipfs_uri"], ipfs_backend, "owned-alias")
 
     assert package.alias == "owned-alias"
     assert package.target_uri == owned_pkg_data["ipfs_uri"]
@@ -25,8 +33,8 @@ def test_package_with_alias(owned_pkg_data):
     assert package.manifest == owned_pkg_data["manifest"]
 
 
-def test_package_with_registry_uri(owned_pkg_data):
-    package = Package(owned_pkg_data["registry_uri"])
+def test_package_with_registry_uri(owned_pkg_data, ipfs_backend):
+    package = Package(owned_pkg_data["registry_uri"], ipfs_backend)
 
     assert package.alias == "owned"
     assert package.target_uri == owned_pkg_data["registry_uri"]
@@ -37,8 +45,8 @@ def test_package_with_registry_uri(owned_pkg_data):
     assert package.manifest == owned_pkg_data["manifest"]
 
 
-def test_package_with_registry_uri_with_alias(owned_pkg_data):
-    package = Package(owned_pkg_data["registry_uri"], "owned-alias")
+def test_package_with_registry_uri_with_alias(owned_pkg_data, ipfs_backend):
+    package = Package(owned_pkg_data["registry_uri"], ipfs_backend, "owned-alias")
 
     assert package.alias == "owned-alias"
     assert package.target_uri == owned_pkg_data["registry_uri"]
