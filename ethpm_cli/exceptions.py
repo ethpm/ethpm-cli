@@ -20,3 +20,11 @@ class UriNotSupportedError(EthpmCliError):
     """
 
     pass
+
+
+class ValidationError(EthpmCliError):
+    """
+    Raised when a command line args is not valid.
+    """
+
+    pass

@@ -19,7 +19,7 @@ from ethpm.utils.uri import (
     parse_registry_uri,
     validate_blob_uri_contents,
 )
-from ethpm.validation import is_valid_registry_uri, validate_package_name
+from ethpm.validation import is_valid_registry_uri
 
 from ethpm_cli.exceptions import UriNotSupportedError
 
@@ -40,7 +40,7 @@ class Package:
         self.resolved_content_hash: str = resolved_manifest_uri.resolved_content_hash
 
         self.manifest: Manifest = process_and_validate_raw_manifest(self.raw_manifest)
-        self.alias = determine_alias(self.manifest["package_name"], alias)
+        self.alias = alias if alias else self.manifest["package_name"]
         self.target_uri = target_uri
 
     @to_dict
@@ -52,13 +52,6 @@ class Package:
         yield "alias", self.alias
         yield "resolved_version", self.manifest["version"]
         yield "resolved_package_name", self.manifest["package_name"]
-
-
-def determine_alias(pkg_name: str, alias: str = None) -> str:
-    if alias:
-        validate_package_name(alias)
-        return alias
-    return pkg_name
 
 
 ResolvedTargetURI = namedtuple(
@@ -92,7 +85,6 @@ def resolve_manifest_uri(uri: URI, ipfs: BaseIPFSBackend) -> ResolvedManifestURI
 
 
 def resolve_target_uri(uri: URI) -> ResolvedTargetURI:
-    validate_supported_target_uri(uri)
     if is_valid_registry_uri(uri):
         manifest_uri = RegistryURIBackend().fetch_uri_contents(uri)
         registry_address = parse_registry_uri(uri).auth
@@ -109,15 +101,3 @@ def process_and_validate_raw_manifest(raw_manifest: bytes) -> Manifest:
     validate_manifest_against_schema(manifest)
     validate_manifest_deployments(manifest)
     return manifest
-
-
-def validate_supported_target_uri(uri: URI) -> None:
-    if (
-        not is_ipfs_uri(uri)
-        and not is_valid_registry_uri(uri)  # noqa: W503
-        and not is_valid_content_addressed_github_uri(uri)  # noqa: W503
-    ):
-        raise UriNotSupportedError(
-            f"Target uri: {uri} not a currently supported uri. "
-            "Target uris must be one of: ipfs, github blob, or registry."
-        )
