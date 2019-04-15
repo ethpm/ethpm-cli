@@ -7,7 +7,7 @@ import sys
 
 from pathlib import Path
 from ethpm_cli.manager import Manager
-from ethpm_cli.validation import validate_cli_args
+from ethpm_cli.validation import validate_cli_args, parse_cli_args
 
 
 logger = logging.getLogger()
@@ -31,11 +31,11 @@ install_parser.add_argument(
     help="IPFS / Github / Registry URI of package you want to install.",
 )
 install_parser.add_argument(
-    "--packages-dir",
-    dest="packages_dir",
+    "--ethpm-dir",
+    dest="ethpm_dir",
     action="store",
     type=Path,
-    help="Absolute path to specific ethpm_packages dir.",
+    help="Path to specific ethpm_packages dir.",
 )
 install_parser.add_argument(
     "--alias", action="store", type=str, help="Alias for installing package."
@@ -52,7 +52,8 @@ args = parser.parse_args()
 command = args.command
 if command == "install":
     validate_cli_args(args)
-    manager = Manager(args.packages_dir, args.local_ipfs)
-    manager.install(args.uri, args.alias)
+    config = Config(args)
+    package = Package(args.target_uri, args.alias, config.ipfs_backend)
+    install_package(package, config)
 
 logger.info(f"Package: {args.uri} installed.")

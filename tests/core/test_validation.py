@@ -42,6 +42,7 @@ def test_validate_cli_args_validates_supported_uris(uri, args):
 @pytest.mark.parametrize(
     "uri",
     (
+        "123",
         "www.google.com",
         "bzz://da6adeeb4589d8652bbe5679aae6b6409ec85a20e92a8823c7c99e25dba9493d",
     ),

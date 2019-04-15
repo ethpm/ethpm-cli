@@ -26,7 +26,7 @@ from ethpm_cli.exceptions import UriNotSupportedError
 
 class Package:
     def __init__(
-        self, target_uri: URI, ipfs_backend: BaseIPFSBackend, alias: str = None
+        self, target_uri: URI, alias: str, ipfs_backend: BaseIPFSBackend
     ) -> None:
         self.ipfs_backend = ipfs_backend
         resolved_target_uri = resolve_target_uri(target_uri)

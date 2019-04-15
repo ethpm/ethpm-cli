@@ -1,11 +1,11 @@
 {
-	"wallet": {
-		"alias": "wallet",
-		"registry_address": null,
-		"resolved_content_hash": "QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
-		"resolved_package_name": "wallet",
-		"resolved_uri": "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
-		"resolved_version": "1.0.0",
-		"target_uri": "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1"
-	}
+    "wallet": {
+        "alias": "wallet",
+        "registry_address": null,
+        "resolved_content_hash": "QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        "resolved_package_name": "wallet",
+        "resolved_uri": "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        "resolved_version": "1.0.0",
+        "target_uri": "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1"
+    }
 }

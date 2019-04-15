@@ -10,7 +10,7 @@ def ipfs_backend():
 
 
 def test_package(owned_pkg_data, ipfs_backend):
-    package = Package(owned_pkg_data["ipfs_uri"], ipfs_backend)
+    package = Package(owned_pkg_data["ipfs_uri"], None, ipfs_backend)
 
     assert package.alias == "owned"
     assert package.target_uri == owned_pkg_data["ipfs_uri"]
@@ -22,7 +22,7 @@ def test_package(owned_pkg_data, ipfs_backend):
 
 
 def test_package_with_alias(owned_pkg_data, ipfs_backend):
-    package = Package(owned_pkg_data["ipfs_uri"], ipfs_backend, "owned-alias")
+    package = Package(owned_pkg_data["ipfs_uri"], "owned-alias", ipfs_backend)
 
     assert package.alias == "owned-alias"
     assert package.target_uri == owned_pkg_data["ipfs_uri"]
@@ -34,7 +34,7 @@ def test_package_with_alias(owned_pkg_data, ipfs_backend):
 
 
 def test_package_with_registry_uri(owned_pkg_data, ipfs_backend):
-    package = Package(owned_pkg_data["registry_uri"], ipfs_backend)
+    package = Package(owned_pkg_data["registry_uri"], None, ipfs_backend)
 
     assert package.alias == "owned"
     assert package.target_uri == owned_pkg_data["registry_uri"]
@@ -46,7 +46,7 @@ def test_package_with_registry_uri(owned_pkg_data, ipfs_backend):
 
 
 def test_package_with_registry_uri_with_alias(owned_pkg_data, ipfs_backend):
-    package = Package(owned_pkg_data["registry_uri"], ipfs_backend, "owned-alias")
+    package = Package(owned_pkg_data["registry_uri"], "owned-alias", ipfs_backend)
 
     assert package.alias == "owned-alias"
     assert package.target_uri == owned_pkg_data["registry_uri"]
