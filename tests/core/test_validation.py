@@ -11,7 +11,7 @@ from ethpm_cli.validation import validate_cli_args
 def args():
     namespace = Namespace()
     setattr(namespace, "uri", "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW")
-    setattr(namespace, "packages_dir", None)
+    setattr(namespace, "ethpm_dir", None)
     setattr(namespace, "local_ipfs", None)
     setattr(namespace, "alias", None)
     return namespace
@@ -57,7 +57,7 @@ def test_validate_cli_args_rejects_unsupported_uris(uri, args):
 def test_validate_cli_args_validates_absolute_ethpm_dir_paths(args, tmpdir):
     ethpm_dir = Path(tmpdir) / "ethpm_packages"
     ethpm_dir.mkdir()
-    setattr(args, "packages_dir", ethpm_dir)
+    setattr(args, "ethpm_dir", ethpm_dir)
 
     assert validate_cli_args(args) is None
 
@@ -67,14 +67,14 @@ def test_validate_cli_args_validates_relative_paths_to_cwd(args, tmpdir, monkeyp
     ethpm_dir = p / "ethpm_packages"
     ethpm_dir.mkdir()
     monkeypatch.chdir(p)
-    setattr(args, "packages_dir", Path("./ethpm_packages"))
+    setattr(args, "ethpm_dir", Path("./ethpm_packages"))
 
     assert validate_cli_args(args) is None
 
 
 def test_validate_cli_args_rejects_invalid_absolute_paths(args, tmpdir):
     invalid_path = Path(tmpdir) / "ethpm_packages"
-    setattr(args, "packages_dir", invalid_path)
+    setattr(args, "ethpm_dir", invalid_path)
 
     with pytest.raises(InstallError):
         validate_cli_args(args)
@@ -85,7 +85,7 @@ def test_validate_cli_args_rejects_invalid_relative_paths(args, tmpdir, monkeypa
     ethpm_dir = p / "ethpm_packages"
     ethpm_dir.mkdir()
     monkeypatch.chdir(p)
-    setattr(args, "packages_dir", Path("./invalid"))
+    setattr(args, "ethpm_dir", Path("./invalid"))
 
     with pytest.raises(InstallError):
         validate_cli_args(args)

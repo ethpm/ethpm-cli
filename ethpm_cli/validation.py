@@ -17,7 +17,7 @@ def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
 def validate_cli_args(args: Namespace) -> None:
     validate_target_uri(args.uri)
     validate_alias(args.alias)
-    validate_ethpm_dir(args.packages_dir)
+    validate_ethpm_dir(args.ethpm_dir)
 
 
 def validate_target_uri(uri: URI) -> None:
