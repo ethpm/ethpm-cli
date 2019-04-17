@@ -7,14 +7,15 @@ from setuptools import (
 
 extras_require = {
     'test': [
-        "pytest==3.3.2",
-        "pytest-xdist",
+        "pytest>=4.4.0,<5",
+        "pytest-xdist==1.*",
         "tox>=2.9.1,<3",
     ],
     'lint': [
         "black>=18.6b4,<19",
         "flake8==3.4.1",
         "isort>=4.2.15,<5",
+        "mypy<0.600",
         "pydocstyle>=3.0.0,<4",
     ],
     'doc': [
@@ -49,7 +50,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "eth-utils>=1,<2",
-        "ethpm>=0.1.4-a13,<2",
+        "ethpm>=0.1.4-a14,<2",
     ],
     setup_requires=['setuptools-markdown'],
     python_requires='>=3.6, <4',
@@ -67,6 +68,5 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: Implementation :: PyPy',
     ],
 )

@@ -1,0 +1,20 @@
+{
+    "owned": {
+        "alias": "owned",
+        "registry_address": null,
+        "resolved_content_hash": "QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "resolved_package_name": "owned",
+        "resolved_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "resolved_version": "1.0.0",
+        "target_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW"
+    },
+    "wallet": {
+        "alias": "wallet",
+        "registry_address": null,
+        "resolved_content_hash": "QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        "resolved_package_name": "wallet",
+        "resolved_uri": "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        "resolved_version": "1.0.0",
+        "target_uri": "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1"
+    }
+}
