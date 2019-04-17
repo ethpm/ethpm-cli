@@ -53,6 +53,7 @@ def parse_arguments():
 
 def main(args, logger):
     logger.info(f"EthPM CLI v{__version__}\n")
+    normalize_cli_args(args)
     validate_cli_args(args)
 
     if args.command == "install":

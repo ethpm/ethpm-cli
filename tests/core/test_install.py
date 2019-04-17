@@ -14,10 +14,10 @@ def config(tmpdir):
     namespace = Namespace()
     ethpm_dir = Path(tmpdir) / "ethpm_packages"
     ethpm_dir.mkdir()
-    setattr(namespace, "local_ipfs", False)
-    setattr(namespace, "target_uri", None)
-    setattr(namespace, "alias", None)
-    setattr(namespace, "ethpm_dir", ethpm_dir)
+    namespace.local_ipfs = False
+    namespace.target_uri = None
+    namespace.alias = None
+    namespace.ethpm_dir = ethpm_dir
     return Config(namespace)
 
 

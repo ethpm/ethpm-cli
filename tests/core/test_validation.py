@@ -10,16 +10,16 @@ from ethpm_cli.validation import validate_cli_args
 @pytest.fixture
 def args():
     namespace = Namespace()
-    setattr(namespace, "uri", "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW")
-    setattr(namespace, "ethpm_dir", None)
-    setattr(namespace, "local_ipfs", None)
-    setattr(namespace, "alias", None)
+    namespace.uri = "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW"
+    namespace.ethpm_dir = None
+    namespace.local_ipfs = None
+    namespace.alias = None
     return namespace
 
 
 @pytest.mark.parametrize("alias", ("_invalid", "1nvalid"))
 def test_validate_cli_args_rejects_invalid_aliases(alias, args):
-    setattr(args, "alias", alias)
+    args.alias = alias
 
     with pytest.raises(ValidationError):
         validate_cli_args(args)
@@ -34,7 +34,7 @@ def test_validate_cli_args_rejects_invalid_aliases(alias, args):
     ),
 )
 def test_validate_cli_args_validates_supported_uris(uri, args):
-    setattr(args, "uri", uri)
+    args.uri = uri
 
     assert validate_cli_args(args) is None
 
@@ -48,7 +48,7 @@ def test_validate_cli_args_validates_supported_uris(uri, args):
     ),
 )
 def test_validate_cli_args_rejects_unsupported_uris(uri, args):
-    setattr(args, "uri", uri)
+    args.uri = uri
 
     with pytest.raises(UriNotSupportedError):
         validate_cli_args(args)
@@ -57,7 +57,7 @@ def test_validate_cli_args_rejects_unsupported_uris(uri, args):
 def test_validate_cli_args_validates_absolute_ethpm_dir_paths(args, tmpdir):
     ethpm_dir = Path(tmpdir) / "ethpm_packages"
     ethpm_dir.mkdir()
-    setattr(args, "ethpm_dir", ethpm_dir)
+    args.ethpm_dir = ethpm_dir
 
     assert validate_cli_args(args) is None
 
@@ -67,14 +67,14 @@ def test_validate_cli_args_validates_relative_paths_to_cwd(args, tmpdir, monkeyp
     ethpm_dir = p / "ethpm_packages"
     ethpm_dir.mkdir()
     monkeypatch.chdir(p)
-    setattr(args, "ethpm_dir", Path("./ethpm_packages"))
+    args.ethpm_dir = Path("./ethpm_packages")
 
     assert validate_cli_args(args) is None
 
 
 def test_validate_cli_args_rejects_invalid_absolute_paths(args, tmpdir):
-    invalid_path = Path(tmpdir) / "ethpm_packages"
-    setattr(args, "ethpm_dir", invalid_path)
+    invalid_path = Path(tmpdir) / "does_not_exist"
+    args.ethpm_dir = invalid_path
 
     with pytest.raises(InstallError):
         validate_cli_args(args)
@@ -85,7 +85,7 @@ def test_validate_cli_args_rejects_invalid_relative_paths(args, tmpdir, monkeypa
     ethpm_dir = p / "ethpm_packages"
     ethpm_dir.mkdir()
     monkeypatch.chdir(p)
-    setattr(args, "ethpm_dir", Path("./invalid"))
+    args.ethpm_dir = Path("./invalid")
 
     with pytest.raises(InstallError):
         validate_cli_args(args)
