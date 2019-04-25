@@ -3,7 +3,12 @@ import logging
 import pkg_resources
 import sys
 
+from web3 import Web3
+from web3.providers.auto import load_provider_from_uri
+from ethpm_cli.scraper import Scraper
+from web3.providers.websocket import WebsocketProvider
 from pathlib import Path
+from ethpm.constants import INFURA_API_KEY
 from ethpm_cli.install import Config, install_package
 from ethpm_cli.package import Package
 from ethpm_cli.validation import validate_cli_args
@@ -69,6 +74,21 @@ def main(args, logger):
             f"{args.command} is an invalid command. Use `ethpmcli --help` "
             "to see the list of available commands."
         )
+
+
+def setup_scraper(content_dir=None):
+    http_uri = f'https://mainnet.infura.io/v3/{INFURA_API_KEY}'
+    ws_uri = f'wss://mainnet.infura.io/ws/v3/{INFURA_API_KEY}'
+    w3 = Web3(load_provider_from_uri(http_uri))
+    ws_w3 = Web3(WebsocketProvider(ws_uri, websocket_kwargs={'timeout': 60}))
+    return Scraper(w3, ws_w3) 
+
+def main_ipfs():
+    scraper = setup_scraper()
+    while True:
+        print("resolving")
+        scraper.process_available_blocks()
+        scraper.resolve_all_manifest_uris()
 
 
 if __name__ == '__main__':

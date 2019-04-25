@@ -50,7 +50,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "eth-utils>=1,<2",
-        "ethpm>=0.1.4-a14,<2",
+        "ethpm>=0.1.4-a15,<2",
     ],
     setup_requires=['setuptools-markdown'],
     python_requires='>=3.6, <4',
