@@ -1,5 +1,6 @@
 {
     "chain_id": "0x3d",
+    "last_processed_block": "10",
     "event_data": {
         "2": {
             "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b": {
@@ -8,7 +9,14 @@
                 "version": "1.0.0"
             }
         },
-        "3": {
+        "6": {
+            "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b": {
+                "manifestURI": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+                "packageName": "owned-dupe",
+                "version": "1.0.0"
+            }
+        },
+        "10": {
             "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b": {
                 "manifestURI": "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
                 "packageName": "wallet",

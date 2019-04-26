@@ -22,6 +22,14 @@ class UriNotSupportedError(EthpmCliError):
     pass
 
 
+class BlockNotFoundError(EthpmCliError):
+    """
+    Raised when a block is not available on the provided web3 instance.
+    """
+
+    pass
+
+
 class ValidationError(EthpmCliError):
     """
     Raised when a command line args is not valid.

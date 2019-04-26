@@ -7,13 +7,13 @@ ASSETS_DIR = Path(__file__).parent / "assets"
 
 
 @pytest.fixture
-def assets_dir():
+def test_assets_dir():
     return ASSETS_DIR
 
 
 @pytest.fixture
-def owned_pkg_data(assets_dir):
-    owned_dir = assets_dir / "owned" / "ipfs_uri" / "ethpm_packages" / "owned"
+def owned_pkg_data(test_assets_dir):
+    owned_dir = test_assets_dir / "owned" / "ipfs_uri" / "ethpm_packages" / "owned"
     owned_raw_manifest = (owned_dir / "manifest.json").read_bytes()
     return {
         "raw_manifest": owned_raw_manifest,

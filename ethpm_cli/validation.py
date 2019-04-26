@@ -15,7 +15,7 @@ def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
         raise InstallError(f"{parent_dir} was not found in {child_dir} directory tree.")
 
 
-def validate_cli_args(args: Namespace) -> None:
+def validate_install_cli_args(args: Namespace) -> None:
     validate_target_uri(args.uri)
     if args.alias is not None:
         validate_alias(args.alias)

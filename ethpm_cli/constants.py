@@ -1,6 +1,7 @@
 import json
 
-from eth_utils import to_hex, keccak
+from eth_utils import keccak, to_hex
+from ethpm.constants import INFURA_API_KEY
 
 CONTENT_DIR = "ipfs_assets"
 ETHPM_DIR_NAME = "ethpm_packages"
@@ -12,3 +13,6 @@ EVENT_ABI = json.loads(
     """
 )
 TOPIC = to_hex(keccak(text="VersionRelease(string,string,string)"))
+
+INFURA_HTTP_URI = f"https://mainnet.infura.io/v3/{INFURA_API_KEY}"
+INFURA_WS_URI = f"wss://mainnet.infura.io/ws/v3/{INFURA_API_KEY}"

@@ -1,17 +1,18 @@
 import argparse
 import logging
+from pathlib import Path
 import pkg_resources
 import sys
 
 from web3 import Web3
 from web3.providers.auto import load_provider_from_uri
-from ethpm_cli.scraper import Scraper
 from web3.providers.websocket import WebsocketProvider
-from pathlib import Path
-from ethpm.constants import INFURA_API_KEY
+
 from ethpm_cli.install import Config, install_package
+from ethpm_cli.constants import INFURA_HTTP_URI, INFURA_WS_URI
 from ethpm_cli.package import Package
-from ethpm_cli.validation import validate_cli_args
+from ethpm_cli.scraper import Scraper
+from ethpm_cli.validation import validate_install_cli_args
 
 
 __version__ = pkg_resources.require("ethpm-cli")[0].version
@@ -26,10 +27,30 @@ def get_logger():
     return logger
 
 
+def setup_scraper(logger, args):
+    w3 = Web3(load_provider_from_uri(INFURA_HTTP_URI))
+    ws_w3 = Web3(WebsocketProvider(INFURA_WS_URI, websocket_kwargs={'timeout': 60}))
+    return Scraper(w3, ws_w3, content_dir = args.ipfs_dir, logger=logger) 
+
+
+def scraper(logger, args):
+    scraper = setup_scraper(logger, args)
+    scraper.process_available_blocks()
+    logger.info(f"All blocks scraped up to # {scraper.last_processed_block}.")
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="ethpm-cli")
     subparsers = parser.add_subparsers(help="commands", dest="command")
 
+    scrape_parser = subparsers.add_parser("scrape", help="Scrape for new VersionRelease events.")
+    scrape_parser.add_argument(
+        "--ipfs-dir",
+        dest="ipfs_dir",
+        action="store",
+        type=Path,
+        help = "path to specific IPFS assets dir.",
+    )
     install_parser = subparsers.add_parser("install", help="Install uri")
     install_parser.add_argument(
         "uri",
@@ -58,10 +79,9 @@ def parse_arguments():
 
 def main(args, logger):
     logger.info(f"EthPM CLI v{__version__}\n")
-    normalize_cli_args(args)
-    validate_cli_args(args)
 
     if args.command == "install":
+        validate_install_cli_args(args)
         config = Config(args)
         package = Package(args.uri, args.alias, config.ipfs_backend)
         install_package(package, config)
@@ -69,26 +89,13 @@ def main(args, logger):
             f"{package.alias} package sourced from {args.uri} "
             f"installed to {config.ethpm_dir}."
         )
+    if args.command == "scrape":
+        scraper(logger, args)
     else:
         logger.info(
             f"{args.command} is an invalid command. Use `ethpmcli --help` "
             "to see the list of available commands."
         )
-
-
-def setup_scraper(content_dir=None):
-    http_uri = f'https://mainnet.infura.io/v3/{INFURA_API_KEY}'
-    ws_uri = f'wss://mainnet.infura.io/ws/v3/{INFURA_API_KEY}'
-    w3 = Web3(load_provider_from_uri(http_uri))
-    ws_w3 = Web3(WebsocketProvider(ws_uri, websocket_kwargs={'timeout': 60}))
-    return Scraper(w3, ws_w3) 
-
-def main_ipfs():
-    scraper = setup_scraper()
-    while True:
-        print("resolving")
-        scraper.process_available_blocks()
-        scraper.resolve_all_manifest_uris()
 
 
 if __name__ == '__main__':
