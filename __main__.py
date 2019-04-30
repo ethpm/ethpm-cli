@@ -5,14 +5,15 @@ import pkg_resources
 import sys
 
 from web3 import Web3
+from web3.middleware import local_filter_middleware
 from web3.providers.auto import load_provider_from_uri
-from web3.providers.websocket import WebsocketProvider
 
 from ethpm_cli.install import Config, install_package
-from ethpm_cli.constants import INFURA_HTTP_URI, INFURA_WS_URI
+from ethpm_cli.constants import INFURA_HTTP_URI
 from ethpm_cli.package import Package
-from ethpm_cli.scraper import Scraper
+from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import validate_install_cli_args
+from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 
 
 __version__ = pkg_resources.require("ethpm-cli")[0].version
@@ -27,29 +28,32 @@ def get_logger():
     return logger
 
 
-def setup_scraper(logger, args):
+def setup_scraper(args):
     w3 = Web3(load_provider_from_uri(INFURA_HTTP_URI))
-    ws_w3 = Web3(WebsocketProvider(INFURA_WS_URI, websocket_kwargs={'timeout': 60}))
-    return Scraper(w3, ws_w3, content_dir = args.ipfs_dir, logger=logger) 
+    w3.middleware_onion.add(local_filter_middleware)
+    return w3
 
 
-def scraper(logger, args):
-    scraper = setup_scraper(logger, args)
-    scraper.process_available_blocks()
-    logger.info(f"All blocks scraped up to # {scraper.last_processed_block}.")
+def scraper(args):
+    w3 = setup_scraper(args)
+    ethpmcli_dir = get_xdg_ethpmcli_root()
+    scrape(w3, ethpmcli_dir)
+    logger.info("All blocks scraped up to # %d.", w3.eth.getBlock)
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="ethpm-cli")
     subparsers = parser.add_subparsers(help="commands", dest="command")
 
-    scrape_parser = subparsers.add_parser("scrape", help="Scrape for new VersionRelease events.")
+    scrape_parser = subparsers.add_parser(
+        "scrape", help="Scrape for new VersionRelease events."
+    )
     scrape_parser.add_argument(
         "--ipfs-dir",
         dest="ipfs_dir",
         action="store",
         type=Path,
-        help = "path to specific IPFS assets dir.",
+        help="path to specific IPFS assets dir.",
     )
     install_parser = subparsers.add_parser("install", help="Install uri")
     install_parser.add_argument(
@@ -86,19 +90,21 @@ def main(args, logger):
         package = Package(args.uri, args.alias, config.ipfs_backend)
         install_package(package, config)
         logger.info(
-            f"{package.alias} package sourced from {args.uri} "
-            f"installed to {config.ethpm_dir}."
+            "%s package sourced from %s installed to %s.",
+            package.alias,
+            args.uri,
+            config.ethpm_dir,
         )
     if args.command == "scrape":
-        scraper(logger, args)
+        scraper(args)
     else:
         logger.info(
-            f"{args.command} is an invalid command. Use `ethpmcli --help` "
-            "to see the list of available commands."
+            "%s is an invalid command. Use `ethpmcli --help` to see the list of available commands.",
+            args.command,
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger = get_logger()
     args = parse_arguments()
     main(args, logger)
