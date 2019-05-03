@@ -15,76 +15,120 @@ from web3 import Web3
 
 from ethpm_cli._utils.various import flatten
 from ethpm_cli.constants import VERSION_RELEASE_ABI
-from ethpm_cli.exceptions import BlockNotFoundError, InstallError
+from ethpm_cli.exceptions import BlockNotFoundError, InstallError, BlockAlreadyScrapedError
 
 logger = logging.getLogger("ethpm_cli.scraper.Scraper")
 
 
-def scrape(w3: Web3, ethpmcli_dir: Path) -> None:
-    latest_block_number = import_ethpmcli_dir(ethpmcli_dir, w3)
+def scrape(w3: Web3, ethpm_dir: Path, start_block: int=0) -> None:
+    """
+    if no start_block provided:
+        start from the most recently processed block
+    """
+    # change start_block name and import_ethpm_dir
+    chain_data_path = ethpm_dir / 'chain_data.json'
     try:
-        last_block, manifests = scrape_manifests_from_chain(w3, latest_block_number + 1)
-        update_ethpmcli_dir(ethpmcli_dir, last_block, manifests)
+        active_block = import_ethpm_dir(ethpm_dir, w3, start_block)
+        validate_block(chain_data_path, active_block, w3)
+        manifests = scrape_manifests_from_chain(w3, active_block)
+        update_chain_data(chain_data_path, active_block)
+        write_ipfs_uris_to_disk(chain_data_path, manifests)
     except BlockNotFoundError:
-        write_ipfs_uris_to_disk(ethpmcli_dir)
-    else:
-        scrape(w3, ethpmcli_dir)
+        logger.info("No more blocks available.")
+        return None
+    except BlockAlreadyScrapedError:
+        active_block = start_block + 1
+    
+    scrape(w3, ethpm_dir, active_block)
 
 
-def import_ethpmcli_dir(ethpmcli_dir: Path, w3: Web3) -> int:
+def import_ethpm_dir(ethpm_dir: Path, w3: Web3, start_block) -> int:
     """
-    Returns the last processed block number found in ethpmcli_dir.
-    If no ethpmcli_dir found, creates an ethpmcli_dir and returns a 0.
+    Returns the last processed block number found in ethpm_dir.
+    If no ethpm_dir found, creates an ethpm_dir and returns a 0.
+
+    if no start_block given - starts from maximum scraped
+    if start_block given - starts from start_block 
     """
-    event_data_path = ethpmcli_dir / "event_data.json"
-    if ethpmcli_dir.is_dir():
-        if not event_data_path.is_file():
+    if ethpm_dir.is_dir():
+        chain_data_path = ethpm_dir / 'chain_data.json'
+        if not chain_data_path.is_file():
             raise InstallError(
-                f"{ethpmcli_dir} does not appear to be a valid EthPM CLI datastore."
+                f"{ethpm_dir} does not appear to be a valid EthPM CLI datastore."
             )
 
-        ethpmcli_data = json.loads(event_data_path.read_text())
-        if ethpmcli_data["chain_id"] != w3.eth.chainId:
+        chain_data = json.loads(chain_data_path.read_text())
+        if chain_data["chain_id"] != w3.eth.chainId:
             raise InstallError(
-                f"Chain ID found in EthPM CLI datastore: {ethpmcli_data['chain_id']} "
+                f"Chain ID found in EthPM CLI datastore: {chain_data['chain_id']} "
                 f"does not match chain ID of provided web3 instance: {w3.eth.chainId}"
             )
-        return to_int(text=ethpmcli_data["last_processed_block"])
+
+        if start_block >= w3.eth.blockNumber:
+            raise BlockNotFoundError
+
+        all_scraped_blocks = get_scraped_blocks(chain_data_path)
+        if start_block in all_scraped_blocks:
+            raise BlockAlreadyScrapedError("xxx")
+
+        return start_block
+
     else:
-        ethpmcli_dir.mkdir()
-        event_data_path.touch()
+        ethpm_dir.mkdir()
+        chain_data_path = ethpm_dir / 'chain_data.json'
+        chain_data_path.touch()
         init_json = {
             "chain_id": w3.eth.chainId,
-            "last_processed_block": "0",
-            "event_data": {},
+            "scraped_blocks": [{
+                "min": "0",
+                "max": "0",
+            }]
         }
-        event_data_path.write_text(json.dumps(init_json, indent=4))
-        return 0
+        chain_data_path.write_text(json.dumps(init_json, indent=4))
+        return 1
 
 
-def update_ethpmcli_dir(
-    ethpmcli_dir: Path, block_number: int, manifests: Dict[str, Any]
+def update_chain_data(
+    chain_data_path: Path, block_number: int
 ) -> None:
-    event_data_path = ethpmcli_dir / "event_data.json"
-    base_event_data = json.loads(
-        event_data_path.read_text(), object_pairs_hook=OrderedDict
-    )
-    updated_block = assoc(base_event_data, "last_processed_block", str(block_number))
-    if manifests:
-        updated_event_data = assoc_in(
-            updated_block, ["event_data", str(block_number)], manifests
+    chain_data = json.loads(chain_data_path.read_text())
+    scraped_blocks = get_scraped_blocks(chain_data_path)
+    if block_number in scraped_blocks:
+        raise BlockNotFoundError("skipping: block already scraped")
+
+    updated_blocks = set(scraped_blocks + [block_number])
+    updated_blocks_final = blocks_to_ranges(updated_blocks)
+    updated_chain_data = assoc(chain_data, 'scraped_blocks', updated_blocks_final)
+    chain_data_path.write_text(json.dumps(updated_chain_data, indent=4))
+
+    
+@to_list
+def blocks_to_ranges(blocks_list):
+    for a, b in itertools.groupby(enumerate(blocks_list), lambda x: x[0] - x[1]):
+        b = list(b)
+        yield {'min': str(b[0][1]), 'max': str(b[-1][1])}
+
+
+def get_scraped_blocks(chain_data_path):
+    scraped_blocks = json.loads(chain_data_path.read_text())['scraped_blocks']
+    scraped_ranges = [list(range(int(rnge['min']), int(rnge['max']) + 1)) for rnge in scraped_blocks]
+    return flatten(scraped_ranges)
+
+
+def validate_block(chain_data_path, block_number, w3):
+    if block_number > w3.eth.blockNumber:
+        raise BlockNotFoundError(
+            f"Block number: {block_number} not available on provided web3 instance "
+            f"with latest block number of {w3.eth.blockNumber}."
         )
-        event_data_path.write_text(f"{json.dumps(updated_event_data, indent=4)}\n")
-    else:
-        event_data_path.write_text(f"{json.dumps(updated_block, indent=4)}\n")
+    scraped_blocks = get_scraped_blocks(chain_data_path)
+    if block_number in scraped_blocks:
+        raise BlockNotFoundError("skipping: block {block_number} already scraped")
 
 
-def write_ipfs_uris_to_disk(ethpmcli_dir: Path) -> None:
-    version_release_data = json.loads((ethpmcli_dir / "event_data.json").read_text())[
-        "event_data"
-    ]
+def write_ipfs_uris_to_disk(ethpm_dir: Path, manifests) -> None:
     all_version_release_data = itertools.chain.from_iterable(
-        [log.values() for log in version_release_data.values()]
+        [log.values() for log in manifests.values()]
     )
     all_manifest_uris = [
         data["manifestURI"]
@@ -97,10 +141,11 @@ def write_ipfs_uris_to_disk(ethpmcli_dir: Path) -> None:
     ]
     ipfs_uris = set(flatten(all_nested_ipfs_uris) + all_base_ipfs_uris)
     for uri in ipfs_uris:
-        f = ethpmcli_dir / extract_ipfs_path_from_uri(uri)
+        f = ethpm_dir / extract_ipfs_path_from_uri(uri)
         if not f.is_file():
             f.touch()
             f.write_bytes(resolve_uri_contents(uri))
+            logger.info('%s written to disk.', uri)
 
 
 def scrape_manifests_from_chain(w3: Web3, block_number: int) -> Tuple[int, Any]:
@@ -113,9 +158,9 @@ def scrape_manifests_from_chain(w3: Web3, block_number: int) -> Tuple[int, Any]:
 
     if version_release_logs:
         formatted_logs = format_version_release_logs(version_release_logs)
-        return block_number, formatted_logs
+        return formatted_logs
     else:
-        return block_number, {}
+        return {}
 
 
 @to_list
@@ -169,12 +214,6 @@ def process_entries(
 
 
 def get_block_version_release_logs(w3: Web3, block_number: int) -> Dict[str, Any]:
-    if block_number > w3.eth.blockNumber:
-        raise BlockNotFoundError(
-            f"Block number: {block_number} not available on provided web3 instance "
-            f"with latest block number of {w3.eth.blockNumber}."
-        )
-
     log_contract = w3.eth.contract(abi=VERSION_RELEASE_ABI)
     log_filter = log_contract.events.VersionRelease.createFilter(
         fromBlock=block_number, toBlock=block_number

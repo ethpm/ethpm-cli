@@ -29,6 +29,13 @@ class BlockNotFoundError(BaseEthpmCliError):
 
     pass
 
+class BlockAlreadyScrapedError(BaseEthpmCliError):
+    """
+    C:LSDKJF:LSA
+    """
+
+    pass
+
 
 class ValidationError(BaseEthpmCliError):
     """

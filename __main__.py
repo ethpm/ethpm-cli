@@ -28,16 +28,16 @@ def get_logger():
     return logger
 
 
-def setup_scraper(args):
+def setup_scraper():
     w3 = Web3(load_provider_from_uri(INFURA_HTTP_URI))
     w3.middleware_onion.add(local_filter_middleware)
     return w3
 
 
 def scraper(args):
-    w3 = setup_scraper(args)
+    w3 = setup_scraper()
     ethpmcli_dir = get_xdg_ethpmcli_root()
-    scrape(w3, ethpmcli_dir)
+    scrape(w3, ethpmcli_dir, args.start_block)
     logger.info("All blocks scraped up to # %d.", w3.eth.getBlock)
 
 
@@ -54,6 +54,13 @@ def parse_arguments():
         action="store",
         type=Path,
         help="path to specific IPFS assets dir.",
+    )
+    scrape_parser.add_argument(
+        "--start-block",
+        dest="start_block",
+        action="store",
+        type=int,
+        help="Block number to begin scraping from.",
     )
     install_parser = subparsers.add_parser("install", help="Install uri")
     install_parser.add_argument(
