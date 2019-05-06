@@ -1,0 +1,13 @@
+{
+    "chain_id": "0x3d",
+    "registry_addresses": [
+        "0x2946259E0334f33A064106302415aD3391BeD384",
+        "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b"
+    ],
+    "scraped_blocks": [
+        {
+            "min": "0",
+            "max": "13"
+        }
+    ]
+}

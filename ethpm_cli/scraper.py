@@ -1,12 +1,11 @@
-from collections import OrderedDict
 import itertools
 import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Set, Tuple  # noqa: F401
 
-from eth_utils import to_dict, to_int, to_list
-from eth_utils.toolz import assoc, assoc_in
+from eth_utils import to_dict, to_list
+from eth_utils.toolz import assoc
 from ethpm.typing import URI, Address
 from ethpm.utils.backend import resolve_uri_contents
 from ethpm.utils.ipfs import extract_ipfs_path_from_uri, is_ipfs_uri
@@ -15,150 +14,145 @@ from web3 import Web3
 
 from ethpm_cli._utils.various import flatten
 from ethpm_cli.constants import VERSION_RELEASE_ABI
-from ethpm_cli.exceptions import BlockNotFoundError, InstallError, BlockAlreadyScrapedError
+from ethpm_cli.exceptions import BlockAlreadyScrapedError, BlockNotFoundError
+from ethpm_cli.validation import validate_chain_data_store
 
 logger = logging.getLogger("ethpm_cli.scraper.Scraper")
 
 
-def scrape(w3: Web3, ethpm_dir: Path, start_block: int=0) -> None:
+def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> None:
     """
-    if no start_block provided:
-        start from the most recently processed block
+    Scrapes VersionRelease event data starting from start_block.
     """
-    # change start_block name and import_ethpm_dir
-    chain_data_path = ethpm_dir / 'chain_data.json'
+    chain_data_path = ethpm_dir / "chain_data.json"
     try:
         active_block = import_ethpm_dir(ethpm_dir, w3, start_block)
-        validate_block(chain_data_path, active_block, w3)
-        manifests = scrape_manifests_from_chain(w3, active_block)
-        update_chain_data(chain_data_path, active_block)
-        write_ipfs_uris_to_disk(chain_data_path, manifests)
+        scraped_manifests = scrape_block_for_manifests(w3, active_block)
+
+        update_chain_data(chain_data_path, active_block, scraped_manifests)
+        write_ipfs_uris_to_disk(ethpm_dir, scraped_manifests)
+
     except BlockNotFoundError:
         logger.info("No more blocks available.")
         return None
+
     except BlockAlreadyScrapedError:
         active_block = start_block + 1
-    
+
     scrape(w3, ethpm_dir, active_block)
 
 
-def import_ethpm_dir(ethpm_dir: Path, w3: Web3, start_block) -> int:
+def import_ethpm_dir(ethpm_dir: Path, w3: Web3, start_block: int) -> int:
     """
-    Returns the last processed block number found in ethpm_dir.
+    Returns the latest processed block number found in ethpm_dir.
     If no ethpm_dir found, creates an ethpm_dir and returns a 0.
-
-    if no start_block given - starts from maximum scraped
-    if start_block given - starts from start_block 
     """
     if ethpm_dir.is_dir():
-        chain_data_path = ethpm_dir / 'chain_data.json'
-        if not chain_data_path.is_file():
-            raise InstallError(
-                f"{ethpm_dir} does not appear to be a valid EthPM CLI datastore."
-            )
-
-        chain_data = json.loads(chain_data_path.read_text())
-        if chain_data["chain_id"] != w3.eth.chainId:
-            raise InstallError(
-                f"Chain ID found in EthPM CLI datastore: {chain_data['chain_id']} "
-                f"does not match chain ID of provided web3 instance: {w3.eth.chainId}"
-            )
+        chain_data_path = ethpm_dir / "chain_data.json"
+        validate_chain_data_store(chain_data_path, w3)
 
         if start_block >= w3.eth.blockNumber:
-            raise BlockNotFoundError
+            raise BlockNotFoundError(
+                f"Block number: {start_block} not available on provided web3 "
+                f"instance with latest block number of {w3.eth.blockNumber}."
+            )
 
         all_scraped_blocks = get_scraped_blocks(chain_data_path)
         if start_block in all_scraped_blocks:
-            raise BlockAlreadyScrapedError("xxx")
-
+            raise BlockAlreadyScrapedError(
+                f"Skipping block #{start_block}. Already processed."
+            )
         return start_block
-
     else:
         ethpm_dir.mkdir()
-        chain_data_path = ethpm_dir / 'chain_data.json'
+        # make base dir for all ipfs assets
+        (ethpm_dir / "Qm").mkdir()
+        chain_data_path = ethpm_dir / "chain_data.json"
         chain_data_path.touch()
         init_json = {
             "chain_id": w3.eth.chainId,
-            "scraped_blocks": [{
-                "min": "0",
-                "max": "0",
-            }]
+            "registry_addresses": [],
+            "scraped_blocks": [{"min": "0", "max": "0"}],
         }
-        chain_data_path.write_text(json.dumps(init_json, indent=4))
+        chain_data_path.write_text(f"{json.dumps(init_json, indent=4)}\n")
         return 1
 
 
 def update_chain_data(
-    chain_data_path: Path, block_number: int
+    chain_data_path: Path, block_number: int, manifests: Dict[Address, Dict[str, str]]
 ) -> None:
     chain_data = json.loads(chain_data_path.read_text())
-    scraped_blocks = get_scraped_blocks(chain_data_path)
-    if block_number in scraped_blocks:
-        raise BlockNotFoundError("skipping: block already scraped")
 
-    updated_blocks = set(scraped_blocks + [block_number])
-    updated_blocks_final = blocks_to_ranges(updated_blocks)
-    updated_chain_data = assoc(chain_data, 'scraped_blocks', updated_blocks_final)
-    chain_data_path.write_text(json.dumps(updated_chain_data, indent=4))
+    new_addrs = list(manifests.keys())
+    updated_addrs = list(sorted(set(chain_data["registry_addresses"] + new_addrs)))
 
-    
+    all_scraped_blocks = get_scraped_blocks(chain_data_path)
+    updated_blocks = blocks_to_ranges(set(all_scraped_blocks + [block_number]))
+
+    chain_data_updated_blocks = assoc(chain_data, "scraped_blocks", updated_blocks)
+    chain_data_updated_addrs = assoc(
+        chain_data_updated_blocks, "registry_addresses", updated_addrs
+    )
+    chain_data_path.write_text(f"{json.dumps(chain_data_updated_addrs, indent=4)}\n")
+
+
 @to_list
-def blocks_to_ranges(blocks_list):
+def blocks_to_ranges(blocks_list: List[int]) -> Iterable[Dict[str, str]]:
+    """
+    Takes a list of block numbers, and returns them grouped into min/max ranges.
+    """
     for a, b in itertools.groupby(enumerate(blocks_list), lambda x: x[0] - x[1]):
-        b = list(b)
-        yield {'min': str(b[0][1]), 'max': str(b[-1][1])}
+        b = list(b)  # type: ignore
+        yield {"min": str(b[0][1]), "max": str(b[-1][1])}  # type: ignore
 
 
-def get_scraped_blocks(chain_data_path):
-    scraped_blocks = json.loads(chain_data_path.read_text())['scraped_blocks']
-    scraped_ranges = [list(range(int(rnge['min']), int(rnge['max']) + 1)) for rnge in scraped_blocks]
+def get_scraped_blocks(chain_data_path: Path) -> List[int]:
+    scraped_blocks = json.loads(chain_data_path.read_text())["scraped_blocks"]
+    scraped_ranges = [
+        list(range(int(rnge["min"]), int(rnge["max"]) + 1)) for rnge in scraped_blocks
+    ]
     return flatten(scraped_ranges)
 
 
-def validate_block(chain_data_path, block_number, w3):
-    if block_number > w3.eth.blockNumber:
-        raise BlockNotFoundError(
-            f"Block number: {block_number} not available on provided web3 instance "
-            f"with latest block number of {w3.eth.blockNumber}."
-        )
-    scraped_blocks = get_scraped_blocks(chain_data_path)
-    if block_number in scraped_blocks:
-        raise BlockNotFoundError("skipping: block {block_number} already scraped")
-
-
-def write_ipfs_uris_to_disk(ethpm_dir: Path, manifests) -> None:
-    all_version_release_data = itertools.chain.from_iterable(
-        [log.values() for log in manifests.values()]
-    )
+def write_ipfs_uris_to_disk(
+    ethpm_dir: Path, manifests: Dict[Address, Dict[str, str]]
+) -> None:
+    ipfs_dir = ethpm_dir / "Qm"
     all_manifest_uris = [
-        data["manifestURI"]
-        for data in all_version_release_data
-        if is_supported_content_addressed_uri(data["manifestURI"])
+        version_release_data["manifestURI"]
+        for version_release_data in manifests.values()
+        if is_supported_content_addressed_uri(version_release_data["manifestURI"])
     ]
-    all_base_ipfs_uris = [uri for uri in all_manifest_uris if is_ipfs_uri(uri)]
-    all_nested_ipfs_uris = [
-        pluck_ipfs_uris_from_manifest(uri) for uri in all_manifest_uris
-    ]
-    ipfs_uris = set(flatten(all_nested_ipfs_uris) + all_base_ipfs_uris)
-    for uri in ipfs_uris:
-        f = ethpm_dir / extract_ipfs_path_from_uri(uri)
-        if not f.is_file():
-            f.touch()
-            f.write_bytes(resolve_uri_contents(uri))
-            logger.info('%s written to disk.', uri)
+    base_ipfs_uris = [uri for uri in all_manifest_uris if is_ipfs_uri(uri)]
+    nested_ipfs_uris = [pluck_ipfs_uris_from_manifest(uri) for uri in all_manifest_uris]
+    all_ipfs_uris = set(flatten(nested_ipfs_uris) + base_ipfs_uris)
+    for uri in all_ipfs_uris:
+        ipfs_hash = extract_ipfs_path_from_uri(uri)
+        unique_hash_prefix_dir = ipfs_dir / ipfs_hash[2:4]
+        remainder_hash_dir = unique_hash_prefix_dir / ipfs_hash[4:]
+
+        if not unique_hash_prefix_dir.is_dir():
+            unique_hash_prefix_dir.mkdir()
+
+        if not remainder_hash_dir.is_dir():
+            remainder_hash_dir.mkdir()
+            asset_dest_path = remainder_hash_dir / ipfs_hash
+            asset_dest_path.touch()
+            asset_dest_path.write_bytes(resolve_uri_contents(uri))
+            logger.info("%s written to disk.", uri)
 
 
-def scrape_manifests_from_chain(w3: Web3, block_number: int) -> Tuple[int, Any]:
+def scrape_block_for_manifests(
+    w3: Web3, block_number: int
+) -> Dict[Address, Dict[str, str]]:
     version_release_logs = get_block_version_release_logs(w3, block_number)
     logger.info(
         "Block # %d scraped. %d VersionRelease events found in block.",
         block_number,
         len(version_release_logs),
     )
-
     if version_release_logs:
-        formatted_logs = format_version_release_logs(version_release_logs)
-        return formatted_logs
+        return format_version_release_logs(version_release_logs)
     else:
         return {}
 

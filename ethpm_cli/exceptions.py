@@ -29,9 +29,10 @@ class BlockNotFoundError(BaseEthpmCliError):
 
     pass
 
+
 class BlockAlreadyScrapedError(BaseEthpmCliError):
     """
-    C:LSDKJF:LSA
+    Raised when a block has already been scraped for VersionRelease events.
     """
 
     pass
@@ -47,7 +48,7 @@ class ValidationError(BaseEthpmCliError):
 
 class AmbigiousFileSystem(BaseEthpmCliError):
     """
-    Raised when the file system paths are unclear
+    Raised when the file system paths are unclear.
     """
 
     pass
