@@ -6,7 +6,7 @@ from ethpm_cli.exceptions import AmbigiousFileSystem
 
 def get_home() -> Path:
     try:
-        return Path(os.environ["HOME"])
+        return Path.home()
     except KeyError:
         raise AmbigiousFileSystem("$HOME environment variable not set")
 

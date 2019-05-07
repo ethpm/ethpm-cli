@@ -12,10 +12,10 @@ extras_require = {
         "tox>=2.9.1,<3",
     ],
     'lint': [
-        "black>=18.6b4,<19",
-        "flake8==3.4.1",
-        "isort>=4.2.15,<5",
-        "mypy<0.600",
+        'black>=19.3b0,<20',
+        'flake8>=3.7.0,<4',
+        'isort>=4.3.17,<5',   
+        'mypy<0.800',
         "pydocstyle>=3.0.0,<4",
     ],
     'doc': [

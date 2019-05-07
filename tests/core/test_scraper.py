@@ -46,11 +46,7 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
     # Initial scrape
     w3.testing.mine(6)
     scrape(w3, ethpmcli_dir)
-    expected_1 = {
-        "chain_id": "0x3d",
-        "registry_addresses": [],
-        "scraped_blocks": [{"min": "0", "max": "6"}],
-    }
+    expected_1 = {"chain_id": "0x3d", "scraped_blocks": [{"min": "0", "max": "6"}]}
     actual_1 = json.loads((ethpmcli_dir / "chain_data.json").read_text())
     assert actual_1 == expected_1
 
@@ -59,7 +55,6 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
     scrape(w3, ethpmcli_dir, 9)
     expected_2 = {
         "chain_id": "0x3d",
-        "registry_addresses": [],
         "scraped_blocks": [{"min": "0", "max": "6"}, {"min": "9", "max": "10"}],
     }
     actual_2 = json.loads((ethpmcli_dir / "chain_data.json").read_text())
@@ -69,7 +64,6 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
     w3.testing.mine(4)
     expected_3 = {
         "chain_id": "0x3d",
-        "registry_addresses": [],
         "scraped_blocks": [
             {"min": "0", "max": "6"},
             {"min": "9", "max": "10"},
@@ -84,19 +78,14 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
     scrape(w3, ethpmcli_dir, 10)
     expected_4 = {
         "chain_id": "0x3d",
-        "registry_addresses": [],
         "scraped_blocks": [{"min": "0", "max": "6"}, {"min": "9", "max": "14"}],
     }
     actual_4 = json.loads((ethpmcli_dir / "chain_data.json").read_text())
     assert actual_4 == expected_4
 
     # Test ranges fully collapse
-    scrape(w3, ethpmcli_dir)
-    expected_5 = {
-        "chain_id": "0x3d",
-        "registry_addresses": [],
-        "scraped_blocks": [{"min": "0", "max": "14"}],
-    }
+    scrape(w3, ethpmcli_dir, 1)
+    expected_5 = {"chain_id": "0x3d", "scraped_blocks": [{"min": "0", "max": "14"}]}
     actual_5 = json.loads((ethpmcli_dir / "chain_data.json").read_text())
     assert actual_5 == expected_5
 

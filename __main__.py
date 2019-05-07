@@ -37,8 +37,14 @@ def setup_scraper():
 def scraper(args):
     w3 = setup_scraper()
     ethpmcli_dir = get_xdg_ethpmcli_root()
-    scrape(w3, ethpmcli_dir, args.start_block)
-    logger.info("All blocks scraped up to # %d.", w3.eth.getBlock)
+    start_block = args.start_block if args.start_block else 0
+    last_scraped_block = scrape(w3, ethpmcli_dir, start_block)
+    last_scraped_block_hash = w3.eth.getBlock(last_scraped_block)["hash"]
+    logger.info(
+        "All blocks scraped up to # %d: %s.",
+        last_scraped_block,
+        last_scraped_block_hash,
+    )
 
 
 def parse_arguments():
@@ -85,12 +91,13 @@ def parse_arguments():
         action="store_true",
         help="Flag to use locally running IPFS node.",
     )
-    return parser.parse_args()
+    return parser
 
 
-def main(args, logger):
+def main(parser, logger):
     logger.info(f"EthPM CLI v{__version__}\n")
 
+    args = parser.parse_args()
     if args.command == "install":
         validate_install_cli_args(args)
         config = Config(args)
@@ -105,7 +112,7 @@ def main(args, logger):
     if args.command == "scrape":
         scraper(args)
     else:
-        logger.info(
+        parser.error(
             "%s is an invalid command. Use `ethpmcli --help` to see the list of available commands.",
             args.command,
         )
@@ -113,5 +120,5 @@ def main(args, logger):
 
 if __name__ == "__main__":
     logger = get_logger()
-    args = parse_arguments()
-    main(args, logger)
+    parser = parse_arguments()
+    main(parser, logger)

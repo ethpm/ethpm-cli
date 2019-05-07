@@ -21,11 +21,15 @@ def check_dir_trees_equal(dir1: str, dir2: str) -> bool:
         or len(dirs_cmp.right_only) > 0  # noqa: W503
         or len(dirs_cmp.funny_files) > 0  # noqa: W503
     ):
+        print("right_only: ", dirs_cmp.right_only)
+        print("left_only: ", dirs_cmp.left_only)
         return False
     (_, mismatch, errors) = filecmp.cmpfiles(
         dir1, dir2, dirs_cmp.common_files, shallow=False
     )
     if len(mismatch) > 0 or len(errors) > 0:
+        print("mismatch: ", mismatch)
+        print("errors: ", errors)
         return False
     for common_dir in dirs_cmp.common_dirs:
         new_dir1 = os.path.join(dir1, common_dir)

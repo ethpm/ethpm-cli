@@ -23,59 +23,53 @@ logger = logging.getLogger("ethpm_cli.scraper.Scraper")
 def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> None:
     """
     Scrapes VersionRelease event data starting from start_block.
+
+    If start_block is 0 (default), scraping begins from the
+    max block found in ethpm_dir/chain_data.json.
     """
+    initialize_ethpm_dir(ethpm_dir, w3)
     chain_data_path = ethpm_dir / "chain_data.json"
-    try:
-        active_block = import_ethpm_dir(ethpm_dir, w3, start_block)
-        scraped_manifests = scrape_block_for_manifests(w3, active_block)
+    latest_block = w3.eth.blockNumber
 
-        update_chain_data(chain_data_path, active_block, scraped_manifests)
-        write_ipfs_uris_to_disk(ethpm_dir, scraped_manifests)
+    if start_block >= latest_block:
+        raise BlockNotFoundError(
+            f"Block number: {start_block} not available on provided web3 "
+            f"instance with latest block number of {latest_block}."
+        )
 
-    except BlockNotFoundError:
-        logger.info("No more blocks available.")
-        return None
+    ethpmdir_block = max(get_scraped_blocks(chain_data_path))
+    active_block = start_block if start_block else ethpmdir_block
+    for block in range(active_block, latest_block):
+        try:
+            validate_unscraped_block(block, chain_data_path)
+        except BlockAlreadyScrapedError:
+            pass
+        else:
+            scraped_manifests = scrape_block_for_manifests(w3, block)
+            update_chain_data(chain_data_path, block, scraped_manifests)
+            write_ipfs_uris_to_disk(ethpm_dir, scraped_manifests)
+    return latest_block
 
-    except BlockAlreadyScrapedError:
-        active_block = start_block + 1
 
-    scrape(w3, ethpm_dir, active_block)
+def validate_unscraped_block(block: int, chain_data_path: Path) -> None:
+    all_scraped_blocks = get_scraped_blocks(chain_data_path)
+    if block in all_scraped_blocks:
+        raise BlockAlreadyScrapedError(f"Skipping block #{block}. Already processed.")
 
 
-def import_ethpm_dir(ethpm_dir: Path, w3: Web3, start_block: int) -> int:
-    """
-    Returns the latest processed block number found in ethpm_dir.
-    If no ethpm_dir found, creates an ethpm_dir and returns a 0.
-    """
+def initialize_ethpm_dir(ethpm_dir: Path, w3: Web3) -> None:
     if ethpm_dir.is_dir():
         chain_data_path = ethpm_dir / "chain_data.json"
         validate_chain_data_store(chain_data_path, w3)
-
-        if start_block >= w3.eth.blockNumber:
-            raise BlockNotFoundError(
-                f"Block number: {start_block} not available on provided web3 "
-                f"instance with latest block number of {w3.eth.blockNumber}."
-            )
-
-        all_scraped_blocks = get_scraped_blocks(chain_data_path)
-        if start_block in all_scraped_blocks:
-            raise BlockAlreadyScrapedError(
-                f"Skipping block #{start_block}. Already processed."
-            )
-        return start_block
     else:
         ethpm_dir.mkdir()
-        # make base dir for all ipfs assets
-        (ethpm_dir / "Qm").mkdir()
         chain_data_path = ethpm_dir / "chain_data.json"
         chain_data_path.touch()
         init_json = {
             "chain_id": w3.eth.chainId,
-            "registry_addresses": [],
             "scraped_blocks": [{"min": "0", "max": "0"}],
         }
         chain_data_path.write_text(f"{json.dumps(init_json, indent=4)}\n")
-        return 1
 
 
 def update_chain_data(
@@ -83,23 +77,19 @@ def update_chain_data(
 ) -> None:
     chain_data = json.loads(chain_data_path.read_text())
 
-    new_addrs = list(manifests.keys())
-    updated_addrs = list(sorted(set(chain_data["registry_addresses"] + new_addrs)))
-
     all_scraped_blocks = get_scraped_blocks(chain_data_path)
     updated_blocks = blocks_to_ranges(set(all_scraped_blocks + [block_number]))
 
     chain_data_updated_blocks = assoc(chain_data, "scraped_blocks", updated_blocks)
-    chain_data_updated_addrs = assoc(
-        chain_data_updated_blocks, "registry_addresses", updated_addrs
-    )
-    chain_data_path.write_text(f"{json.dumps(chain_data_updated_addrs, indent=4)}\n")
+    chain_data_path.write_text(f"{json.dumps(chain_data_updated_blocks, indent=4)}\n")
 
 
 @to_list
 def blocks_to_ranges(blocks_list: List[int]) -> Iterable[Dict[str, str]]:
     """
     Takes a list of block numbers, and returns them grouped into min/max ranges.
+    :blocks_list: [0, 1, 2, 4, 6, 9]
+    -> [{"min": "0", "max": "2"}, {"min": "4", "max": "4"}, {"min": "6", "max": "9"}]
     """
     for a, b in itertools.groupby(enumerate(blocks_list), lambda x: x[0] - x[1]):
         b = list(b)  # type: ignore
@@ -117,7 +107,6 @@ def get_scraped_blocks(chain_data_path: Path) -> List[int]:
 def write_ipfs_uris_to_disk(
     ethpm_dir: Path, manifests: Dict[Address, Dict[str, str]]
 ) -> None:
-    ipfs_dir = ethpm_dir / "Qm"
     all_manifest_uris = [
         version_release_data["manifestURI"]
         for version_release_data in manifests.values()
@@ -126,20 +115,27 @@ def write_ipfs_uris_to_disk(
     base_ipfs_uris = [uri for uri in all_manifest_uris if is_ipfs_uri(uri)]
     nested_ipfs_uris = [pluck_ipfs_uris_from_manifest(uri) for uri in all_manifest_uris]
     all_ipfs_uris = set(flatten(nested_ipfs_uris) + base_ipfs_uris)
+    # ex.
+    # ipfs uri: QmdvZEW3AaUntDfFkcbdnYzeLAAeD4YFeixQsdmHF88T6Q
+    # dir store: ethpmcli/Qm/dv/ZE/QmdvZEW3AaUntDfFkcbdnYzeLAAeD4YFeixQsdmHF88T6Q
     for uri in all_ipfs_uris:
         ipfs_hash = extract_ipfs_path_from_uri(uri)
-        unique_hash_prefix_dir = ipfs_dir / ipfs_hash[2:4]
-        remainder_hash_dir = unique_hash_prefix_dir / ipfs_hash[4:]
+        first_two_bytes_dir = ethpm_dir / ipfs_hash[0:2]
+        second_two_bytes_dir = first_two_bytes_dir / ipfs_hash[2:4]
+        third_two_bytes_dir = second_two_bytes_dir / ipfs_hash[4:6]
+        asset_dest_path = third_two_bytes_dir / ipfs_hash
 
-        if not unique_hash_prefix_dir.is_dir():
-            unique_hash_prefix_dir.mkdir()
+        if not asset_dest_path.is_file():
+            if not first_two_bytes_dir.is_dir():
+                first_two_bytes_dir.mkdir()
+            if not second_two_bytes_dir.is_dir():
+                second_two_bytes_dir.mkdir()
+            if not third_two_bytes_dir.is_dir():
+                third_two_bytes_dir.mkdir()
 
-        if not remainder_hash_dir.is_dir():
-            remainder_hash_dir.mkdir()
-            asset_dest_path = remainder_hash_dir / ipfs_hash
             asset_dest_path.touch()
             asset_dest_path.write_bytes(resolve_uri_contents(uri))
-            logger.info("%s written to disk.", uri)
+            logger.info("%s written to\n %s.\n", uri, asset_dest_path)
 
 
 def scrape_block_for_manifests(
