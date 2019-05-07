@@ -59,11 +59,11 @@ def owned_pkg(config):
         ),
     ),
 )
-def test_install_package(uri, pkg_name, alias, install_type, config, assets_dir):
+def test_install_package(uri, pkg_name, alias, install_type, config, test_assets_dir):
     pkg = Package(uri, alias, config.ipfs_backend)
     install_package(pkg, config)
 
-    expected_package = assets_dir / pkg_name / install_type / "ethpm_packages"
+    expected_package = test_assets_dir / pkg_name / install_type / "ethpm_packages"
     assert check_dir_trees_equal(config.ethpm_dir, expected_package)
 
 
@@ -74,7 +74,7 @@ def test_cannot_install_same_package_twice(config, owned_pkg):
         install_package(owned_pkg, config)
 
 
-def test_can_install_same_package_twice_if_aliased(config, owned_pkg, assets_dir):
+def test_can_install_same_package_twice_if_aliased(config, owned_pkg, test_assets_dir):
     aliased_pkg = Package(
         "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
         "owned-alias",
@@ -86,16 +86,16 @@ def test_can_install_same_package_twice_if_aliased(config, owned_pkg, assets_dir
     assert (config.ethpm_dir / "owned").is_dir()
     assert check_dir_trees_equal(
         config.ethpm_dir / "owned",
-        assets_dir / "owned" / "ipfs_uri" / "ethpm_packages" / "owned",
+        test_assets_dir / "owned" / "ipfs_uri" / "ethpm_packages" / "owned",
     )
     assert (config.ethpm_dir / "owned-alias").is_dir()
     assert check_dir_trees_equal(
         config.ethpm_dir / "owned-alias",
-        assets_dir / "owned" / "ipfs_uri_alias" / "ethpm_packages" / "owned-alias",
+        test_assets_dir / "owned" / "ipfs_uri_alias" / "ethpm_packages" / "owned-alias",
     )
 
 
-def test_install_multiple_packges(config, assets_dir, owned_pkg):
+def test_install_multiple_packges(config, test_assets_dir, owned_pkg):
     wallet_pkg = Package(
         "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
         None,
@@ -107,5 +107,5 @@ def test_install_multiple_packges(config, assets_dir, owned_pkg):
     assert (config.ethpm_dir / "wallet").is_dir()
     assert (config.ethpm_dir / "owned").is_dir()
     assert check_dir_trees_equal(
-        config.ethpm_dir, (assets_dir / "multiple" / "ethpm_packages")
+        config.ethpm_dir, (test_assets_dir / "multiple" / "ethpm_packages")
     )

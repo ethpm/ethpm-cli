@@ -1,0 +1,9 @@
+{
+    "chain_id": "0x3d",
+    "scraped_blocks": [
+        {
+            "min": "0",
+            "max": "13"
+        }
+    ]
+}
