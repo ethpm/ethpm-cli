@@ -1,25 +1,24 @@
 import argparse
 import logging
 from pathlib import Path
-import pkg_resources
 import sys
 
+import pkg_resources
 from web3 import Web3
 from web3.middleware import local_filter_middleware
 from web3.providers.auto import load_provider_from_uri
 
-from ethpm_cli.install import Config, install_package
+from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.constants import INFURA_HTTP_URI
+from ethpm_cli.install import Config, install_package
 from ethpm_cli.package import Package
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import validate_install_cli_args
-from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
-
 
 __version__ = pkg_resources.require("ethpm-cli")[0].version
 
 
-def get_logger():
+def setup_cli_logger() -> logging.Logger:
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler(sys.stdout)
@@ -28,18 +27,19 @@ def get_logger():
     return logger
 
 
-def setup_scraper():
+def setup_scraper() -> Web3:
     w3 = Web3(load_provider_from_uri(INFURA_HTTP_URI))
     w3.middleware_onion.add(local_filter_middleware)
     return w3
 
 
-def scraper(args):
+def scraper(args: argparse.Namespace) -> None:
     w3 = setup_scraper()
     ethpmcli_dir = get_xdg_ethpmcli_root()
     start_block = args.start_block if args.start_block else 0
     last_scraped_block = scrape(w3, ethpmcli_dir, start_block)
     last_scraped_block_hash = w3.eth.getBlock(last_scraped_block)["hash"]
+    logger = setup_cli_logger()
     logger.info(
         "All blocks scraped up to # %d: %s.",
         last_scraped_block,
@@ -47,7 +47,7 @@ def scraper(args):
     )
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="ethpm-cli")
     subparsers = parser.add_subparsers(help="commands", dest="command")
 
@@ -94,8 +94,8 @@ def parse_arguments():
     return parser
 
 
-def main():
-    logger = get_logger()
+def main() -> None:
+    logger = setup_cli_logger()
     parser = parse_arguments()
     logger.info(f"EthPM CLI v{__version__}\n")
 
@@ -115,6 +115,6 @@ def main():
         scraper(args)
     else:
         parser.error(
-            "%s is an invalid command. Use `ethpmcli --help` to see the list of available commands.",
-            args.command,
+            "%s is an invalid command. Use `ethpmcli --help` to "
+            "see the list of available commands." % args.command
         )

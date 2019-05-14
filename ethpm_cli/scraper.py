@@ -20,7 +20,7 @@ from ethpm_cli.validation import validate_chain_data_store
 logger = logging.getLogger("ethpm_cli.scraper.Scraper")
 
 
-def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> None:
+def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
     """
     Scrapes VersionRelease event data starting from start_block.
 
