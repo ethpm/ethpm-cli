@@ -94,7 +94,9 @@ def parse_arguments():
     return parser
 
 
-def main(parser, logger):
+def main():
+    logger = get_logger()
+    parser = parse_arguments()
     logger.info(f"EthPM CLI v{__version__}\n")
 
     args = parser.parse_args()
@@ -116,9 +118,3 @@ def main(parser, logger):
             "%s is an invalid command. Use `ethpmcli --help` to see the list of available commands.",
             args.command,
         )
-
-
-if __name__ == "__main__":
-    logger = get_logger()
-    parser = parse_arguments()
-    main(parser, logger)

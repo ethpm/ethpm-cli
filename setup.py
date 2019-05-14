@@ -70,4 +70,9 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
+    entry_points={
+        'console_scripts': [
+            'ethpm=ethpm_cli:main',
+        ],
+    },
 )
