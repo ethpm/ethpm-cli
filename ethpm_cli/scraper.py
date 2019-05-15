@@ -20,6 +20,8 @@ from ethpm_cli.validation import validate_chain_data_store
 logger = logging.getLogger("ethpm_cli.scraper.Scraper")
 
 
+BLOCK_INTERVAL = 50
+
 def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
     """
     Scrapes VersionRelease event data starting from start_block.
@@ -39,22 +41,27 @@ def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
 
     ethpmdir_block = max(get_scraped_blocks(chain_data_path))
     active_block = start_block if start_block else ethpmdir_block
-    for block in range(active_block, latest_block):
-        try:
-            validate_unscraped_block(block, chain_data_path)
-        except BlockAlreadyScrapedError:
-            pass
+
+    for from_block in range(active_block, latest_block, BLOCK_INTERVAL):
+        if (from_block + BLOCK_INTERVAL) > latest_block:
+            to_block = latest_block
         else:
-            scraped_manifests = scrape_block_for_manifests(w3, block)
-            update_chain_data(chain_data_path, block, scraped_manifests)
+            to_block = from_block + BLOCK_INTERVAL
+
+        if block_range_needs_scraping(from_block, to_block, chain_data_path):
+            scraped_manifests = scrape_block_range_for_manifests(w3, from_block, to_block)
+            update_chain_data(chain_data_path, from_block, to_block, scraped_manifests)
             write_ipfs_uris_to_disk(ethpm_dir, scraped_manifests)
+
     return latest_block
 
 
-def validate_unscraped_block(block: int, chain_data_path: Path) -> None:
+def block_range_needs_scraping(from_block: int, to_block: int, chain_data_path: Path) -> bool:
     all_scraped_blocks = get_scraped_blocks(chain_data_path)
-    if block in all_scraped_blocks:
-        raise BlockAlreadyScrapedError(f"Skipping block #{block}. Already processed.")
+    for block in range(from_block, to_block):
+        if block not in all_scraped_blocks:
+            return True
+    return False
 
 
 def initialize_ethpm_dir(ethpm_dir: Path, w3: Web3) -> None:
@@ -73,12 +80,13 @@ def initialize_ethpm_dir(ethpm_dir: Path, w3: Web3) -> None:
 
 
 def update_chain_data(
-    chain_data_path: Path, block_number: int, manifests: Dict[Address, Dict[str, str]]
+    chain_data_path: Path, from_block: int, to_block: int, manifests: Dict[Address, Dict[str, str]]
 ) -> None:
     chain_data = json.loads(chain_data_path.read_text())
 
-    all_scraped_blocks = get_scraped_blocks(chain_data_path)
-    updated_blocks = blocks_to_ranges(set(all_scraped_blocks + [block_number]))
+    old_scraped_blocks = get_scraped_blocks(chain_data_path)
+    new_scraped_blocks = list(range(from_block, to_block))
+    updated_blocks = blocks_to_ranges(set(old_scraped_blocks + new_scraped_blocks))
 
     chain_data_updated_blocks = assoc(chain_data, "scraped_blocks", updated_blocks)
     chain_data_path.write_text(f"{json.dumps(chain_data_updated_blocks, indent=4)}\n")
@@ -138,13 +146,13 @@ def write_ipfs_uris_to_disk(
             logger.info("%s written to\n %s.\n", uri, asset_dest_path)
 
 
-def scrape_block_for_manifests(
-    w3: Web3, block_number: int
+def scrape_block_range_for_manifests(
+    w3: Web3, from_block: int, to_block: int
 ) -> Dict[Address, Dict[str, str]]:
-    version_release_logs = get_block_version_release_logs(w3, block_number)
+    version_release_logs = get_block_version_release_logs(w3, from_block, to_block)
     logger.info(
-        "Block # %d scraped. %d VersionRelease events found in block.",
-        block_number,
+        "Blocks %d-%d scraped. %d VersionRelease events found.",
+        from_block, to_block,
         len(version_release_logs),
     )
     if version_release_logs:
@@ -203,9 +211,9 @@ def process_entries(
             yield "version", entry["args"]["version"]
 
 
-def get_block_version_release_logs(w3: Web3, block_number: int) -> Dict[str, Any]:
+def get_block_version_release_logs(w3: Web3, from_block: int, to_block: int) -> Dict[str, Any]:
     log_contract = w3.eth.contract(abi=VERSION_RELEASE_ABI)
     log_filter = log_contract.events.VersionRelease.createFilter(
-        fromBlock=block_number, toBlock=block_number
+        fromBlock=from_block, toBlock=to_block
     )
     return log_filter.get_all_entries()
