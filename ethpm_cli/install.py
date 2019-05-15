@@ -7,7 +7,7 @@ import tempfile
 from typing import Iterable, Tuple
 
 from eth_utils import to_dict, to_text
-from eth_utils.toolz import assoc
+from eth_utils.toolz import assoc, dissoc
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.utils.ipfs import is_ipfs_uri
 
@@ -36,7 +36,7 @@ class Config:
 
 
 def install_package(pkg: Package, config: Config) -> None:
-    if os.path.exists(config.ethpm_dir / pkg.alias):
+    if package_is_installed(pkg.alias, config):
         raise InstallError(
             "Installation conflict: A directory or file already exists at the install location "
             f"for the package '{pkg.manifest['package_name']}' aliased to '{pkg.alias}' on the "
@@ -52,6 +52,20 @@ def install_package(pkg: Package, config: Config) -> None:
     validate_parent_directory(config.ethpm_dir, dest_pkg_dir)
     shutil.copytree(tmp_pkg_dir, dest_pkg_dir)
     update_ethpm_lock(pkg, (config.ethpm_dir / "ethpm.lock"))
+
+
+def package_is_installed(package_name, config) -> bool:
+    return os.path.exists(config.ethpm_dir / package_name)
+
+
+def uninstall_package(package_name: str, config: Config) -> None:
+    if not package_is_installed(package_name, config):
+        raise InstallError(
+            f"Unable to uninstall {package_name} from {config.ethpm_dir}"
+        )
+
+    shutil.rmtree(config.ethpm_dir / package_name)
+    uninstall_from_ethpm_lock(package_name, (config.ethpm_dir / "ethpm.lock"))
 
 
 def write_pkg_installation_files(
@@ -115,4 +129,10 @@ def update_ethpm_lock(pkg: Package, ethpm_lock: Path) -> None:
         ethpm_lock.touch()
     new_pkg_data = pkg.generate_ethpm_lock()
     new_lock = assoc(old_lock, pkg.alias, new_pkg_data)
+    ethpm_lock.write_text(f"{json.dumps(new_lock, sort_keys=True, indent=4)}\n")
+
+
+def uninstall_from_ethpm_lock(package_name: str, ethpm_lock: Path):
+    old_lock = json.loads(ethpm_lock.read_text())
+    new_lock = dissoc(old_lock, package_name)
     ethpm_lock.write_text(f"{json.dumps(new_lock, sort_keys=True, indent=4)}\n")

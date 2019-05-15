@@ -5,7 +5,7 @@ import pytest
 
 from ethpm_cli._utils.testing import check_dir_trees_equal
 from ethpm_cli.exceptions import InstallError
-from ethpm_cli.install import Config, install_package
+from ethpm_cli.install import Config, install_package, uninstall_package
 from ethpm_cli.package import Package
 
 
@@ -29,6 +29,13 @@ def owned_pkg(config):
         config.ipfs_backend,
     )
 
+@pytest.fixture
+def wallet_pkg(config):
+    return Package(
+        "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        None,
+        config.ipfs_backend,
+    )
 
 @pytest.mark.parametrize(
     "uri,pkg_name,alias,install_type",
@@ -95,12 +102,7 @@ def test_can_install_same_package_twice_if_aliased(config, owned_pkg, test_asset
     )
 
 
-def test_install_multiple_packges(config, test_assets_dir, owned_pkg):
-    wallet_pkg = Package(
-        "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
-        None,
-        config.ipfs_backend,
-    )
+def test_install_multiple_packages(config, test_assets_dir, owned_pkg, wallet_pkg):
     install_package(owned_pkg, config)
     install_package(wallet_pkg, config)
 
@@ -109,3 +111,25 @@ def test_install_multiple_packges(config, test_assets_dir, owned_pkg):
     assert check_dir_trees_equal(
         config.ethpm_dir, (test_assets_dir / "multiple" / "ethpm_packages")
     )
+
+
+@pytest.mark.parametrize(
+    "uninstall,keep",
+    (
+        ("wallet", "owned"),
+        ("owned", "wallet"),
+    )
+)
+def test_uninstall_packages(uninstall, keep, config, test_assets_dir, owned_pkg, wallet_pkg):
+    install_package(owned_pkg, config)
+    install_package(wallet_pkg, config)
+    uninstall_package(uninstall, config)
+
+    assert (config.ethpm_dir / keep).is_dir()
+    assert not (config.ethpm_dir / uninstall).is_dir()
+    assert check_dir_trees_equal(config.ethpm_dir, (test_assets_dir / keep / "ipfs_uri" / "ethpm_packages"))
+
+
+def test_uninstall_package_warns_if_package_doesnt_exist(config):
+    with pytest.raises(InstallError, match="Unable to uninstall"):
+        uninstall_package("invalid", config)
