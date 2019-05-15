@@ -1,3 +1,4 @@
+from datetime import datetime
 import itertools
 import json
 import logging
@@ -14,20 +15,23 @@ from web3 import Web3
 
 from ethpm_cli._utils.various import flatten
 from ethpm_cli.constants import VERSION_RELEASE_ABI
-from ethpm_cli.exceptions import BlockAlreadyScrapedError, BlockNotFoundError
+from ethpm_cli.exceptions import BlockNotFoundError
 from ethpm_cli.validation import validate_chain_data_store
 
 logger = logging.getLogger("ethpm_cli.scraper.Scraper")
 
+# https://github.com/ethereum/EIPs/commit/123b7267b6270914a822001c119d11607e695517
+VERSION_RELEASE_TIMESTAMP = 1_552_564_800  # March 14, 2019
 
-BLOCK_INTERVAL = 50
+BLOCK_INTERVAL = 5000
+
 
 def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
     """
     Scrapes VersionRelease event data starting from start_block.
 
-    If start_block is 0 (default), scraping begins from the
-    max block found in ethpm_dir/chain_data.json.
+    If start_block is not 0, scraping begins from start_block.
+    Otherwise the scraping begins from the ethpm birth block.
     """
     initialize_ethpm_dir(ethpm_dir, w3)
     chain_data_path = ethpm_dir / "chain_data.json"
@@ -39,9 +43,12 @@ def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
             f"instance with latest block number of {latest_block}."
         )
 
-    ethpmdir_block = max(get_scraped_blocks(chain_data_path))
-    active_block = start_block if start_block else ethpmdir_block
+    if start_block == 0:
+        active_block = get_ethpm_birth_block(w3, 0, latest_block)
+    else:
+        active_block = start_block
 
+    logger.info("Scraping from block %d.", active_block)
     for from_block in range(active_block, latest_block, BLOCK_INTERVAL):
         if (from_block + BLOCK_INTERVAL) > latest_block:
             to_block = latest_block
@@ -49,18 +56,43 @@ def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
             to_block = from_block + BLOCK_INTERVAL
 
         if block_range_needs_scraping(from_block, to_block, chain_data_path):
-            scraped_manifests = scrape_block_range_for_manifests(w3, from_block, to_block)
+            scraped_manifests = scrape_block_range_for_manifests(
+                w3, from_block, to_block
+            )
             update_chain_data(chain_data_path, from_block, to_block, scraped_manifests)
             write_ipfs_uris_to_disk(ethpm_dir, scraped_manifests)
+        else:
+            logger.info("Block range: %d - %d already scraped.", from_block, to_block)
 
     return latest_block
 
 
-def block_range_needs_scraping(from_block: int, to_block: int, chain_data_path: Path) -> bool:
+def get_ethpm_birth_block(w3: Web3, from_block: int, to_block: int) -> int:
+    """
+    Returns the closest block found before the EthPM VersionRelease event birthday.
+    """
+    version_release_date = datetime.fromtimestamp(VERSION_RELEASE_TIMESTAMP)
+    from_date = datetime.fromtimestamp(w3.eth.getBlock(from_block)["timestamp"])
+    delta = version_release_date - from_date
+
+    if delta.days == 0 and from_date < version_release_date:
+        return from_block
+
+    elif from_date < version_release_date:
+        updated_block = int((from_block + to_block) / 2)
+        return get_ethpm_birth_block(w3, updated_block, to_block)
+
+    else:
+        updated_block = from_block - int(to_block - from_block)
+        return get_ethpm_birth_block(w3, updated_block, from_block)
+
+
+def block_range_needs_scraping(
+    from_block: int, to_block: int, chain_data_path: Path
+) -> bool:
     all_scraped_blocks = get_scraped_blocks(chain_data_path)
-    for block in range(from_block, to_block):
-        if block not in all_scraped_blocks:
-            return True
+    if any(block not in all_scraped_blocks for block in range(from_block, to_block)):
+        return True
     return False
 
 
@@ -80,7 +112,10 @@ def initialize_ethpm_dir(ethpm_dir: Path, w3: Web3) -> None:
 
 
 def update_chain_data(
-    chain_data_path: Path, from_block: int, to_block: int, manifests: Dict[Address, Dict[str, str]]
+    chain_data_path: Path,
+    from_block: int,
+    to_block: int,
+    manifests: Dict[Address, Dict[str, str]],
 ) -> None:
     chain_data = json.loads(chain_data_path.read_text())
 
@@ -152,7 +187,8 @@ def scrape_block_range_for_manifests(
     version_release_logs = get_block_version_release_logs(w3, from_block, to_block)
     logger.info(
         "Blocks %d-%d scraped. %d VersionRelease events found.",
-        from_block, to_block,
+        from_block,
+        to_block,
         len(version_release_logs),
     )
     if version_release_logs:
@@ -207,15 +243,20 @@ def process_entries(
     for entry in all_entries:
         if entry["address"] == address:
             logger.info(
-                f"<Package {entry['args']['packageName']}=={entry['args']['version']}> released on registry @ {address}.\n"
-                f"Manifest URI: {entry['args']['manifestURI']}"
+                "<Package %s==%s> released on registry @ %s.\n" "Manifest URI: %s\n",
+                entry["args"]["packageName"],
+                entry["args"]["version"],
+                address,
+                entry["args"]["manifestURI"],
             )
             yield "manifestURI", entry["args"]["manifestURI"]
             yield "packageName", entry["args"]["packageName"]
             yield "version", entry["args"]["version"]
 
 
-def get_block_version_release_logs(w3: Web3, from_block: int, to_block: int) -> Dict[str, Any]:
+def get_block_version_release_logs(
+    w3: Web3, from_block: int, to_block: int
+) -> Dict[str, Any]:
     log_contract = w3.eth.contract(abi=VERSION_RELEASE_ABI)
     log_filter = log_contract.events.VersionRelease.createFilter(
         fromBlock=from_block, toBlock=to_block

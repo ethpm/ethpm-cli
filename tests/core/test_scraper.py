@@ -45,7 +45,7 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
 
     # Initial scrape
     w3.testing.mine(6)
-    scrape(w3, ethpmcli_dir)
+    scrape(w3, ethpmcli_dir, 1)
     expected_1 = {"chain_id": "0x3d", "scraped_blocks": [{"min": "0", "max": "6"}]}
     actual_1 = json.loads((ethpmcli_dir / "chain_data.json").read_text())
     assert actual_1 == expected_1
@@ -119,7 +119,7 @@ def test_scraper_writes_to_disk(log, log_2, test_assets_dir, w3):
 
     w3.testing.mine(3)
     ethpmcli_dir = Path(os.environ["XDG_ETHPMCLI_ROOT"])
-    scrape(w3, ethpmcli_dir)
+    scrape(w3, ethpmcli_dir, 1)
     assert check_dir_trees_equal(ethpmcli_dir, (test_assets_dir.parent / "ipfs"))
 
 
@@ -143,7 +143,7 @@ def test_scraper_imports_existing_ethpmcli_dir(log, log_2, test_assets_dir, w3):
 
     ethpmcli_dir = Path(os.environ["XDG_ETHPMCLI_ROOT"])
     # First scrape
-    scrape(w3, ethpmcli_dir)
+    scrape(w3, ethpmcli_dir, 1)
     w3.testing.mine(3)
     release(
         log,
@@ -154,5 +154,5 @@ def test_scraper_imports_existing_ethpmcli_dir(log, log_2, test_assets_dir, w3):
     )
     w3.testing.mine(3)
     # Second scrape
-    scrape(w3, ethpmcli_dir)
+    scrape(w3, ethpmcli_dir, 1)
     assert check_dir_trees_equal(ethpmcli_dir, (test_assets_dir.parent / "ipfs"))

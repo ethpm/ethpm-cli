@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 import sys
 
+from eth_utils import to_hex
 import pkg_resources
 from web3 import Web3
 from web3.middleware import local_filter_middleware
@@ -43,7 +44,7 @@ def scraper(args: argparse.Namespace) -> None:
     logger.info(
         "All blocks scraped up to # %d: %s.",
         last_scraped_block,
-        last_scraped_block_hash,
+        to_hex(last_scraped_block_hash),
     )
 
 
