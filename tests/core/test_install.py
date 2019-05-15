@@ -1,11 +1,17 @@
 from argparse import Namespace
+import logging
 from pathlib import Path
 
 import pytest
 
 from ethpm_cli._utils.testing import check_dir_trees_equal
 from ethpm_cli.exceptions import InstallError
-from ethpm_cli.install import Config, install_package, uninstall_package
+from ethpm_cli.install import (
+    Config,
+    install_package,
+    list_installed_packages,
+    uninstall_package,
+)
 from ethpm_cli.package import Package
 
 
@@ -29,6 +35,7 @@ def owned_pkg(config):
         config.ipfs_backend,
     )
 
+
 @pytest.fixture
 def wallet_pkg(config):
     return Package(
@@ -36,6 +43,7 @@ def wallet_pkg(config):
         None,
         config.ipfs_backend,
     )
+
 
 @pytest.mark.parametrize(
     "uri,pkg_name,alias,install_type",
@@ -113,23 +121,33 @@ def test_install_multiple_packages(config, test_assets_dir, owned_pkg, wallet_pk
     )
 
 
-@pytest.mark.parametrize(
-    "uninstall,keep",
-    (
-        ("wallet", "owned"),
-        ("owned", "wallet"),
-    )
-)
-def test_uninstall_packages(uninstall, keep, config, test_assets_dir, owned_pkg, wallet_pkg):
+@pytest.mark.parametrize("uninstall,keep", (("wallet", "owned"), ("owned", "wallet")))
+def test_uninstall_packages(
+    uninstall, keep, config, test_assets_dir, owned_pkg, wallet_pkg
+):
     install_package(owned_pkg, config)
     install_package(wallet_pkg, config)
     uninstall_package(uninstall, config)
 
     assert (config.ethpm_dir / keep).is_dir()
     assert not (config.ethpm_dir / uninstall).is_dir()
-    assert check_dir_trees_equal(config.ethpm_dir, (test_assets_dir / keep / "ipfs_uri" / "ethpm_packages"))
+    assert check_dir_trees_equal(
+        config.ethpm_dir, (test_assets_dir / keep / "ipfs_uri" / "ethpm_packages")
+    )
 
 
 def test_uninstall_package_warns_if_package_doesnt_exist(config):
     with pytest.raises(InstallError, match="Unable to uninstall"):
         uninstall_package("invalid", config)
+
+
+def test_list(config, owned_pkg, wallet_pkg, caplog):
+    install_package(owned_pkg, config)
+    install_package(wallet_pkg, config)
+
+    with caplog.at_level(logging.INFO):
+        list_installed_packages(config)
+        assert "-- <Package wallet==1.0.0>" in caplog.text
+        assert "------ <Package safe-math-lib==1.0.0>" in caplog.text
+        assert "------ <Package owned==1.0.0>" in caplog.text
+        assert "-- <Package owned==1.0.0>" in caplog.text

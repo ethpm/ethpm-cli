@@ -10,7 +10,7 @@ from web3.providers.auto import load_provider_from_uri
 
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.constants import INFURA_HTTP_URI
-from ethpm_cli.install import Config, install_package
+from ethpm_cli.install import Config, install_package, list_installed_packages
 from ethpm_cli.package import Package
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import validate_install_cli_args
@@ -68,6 +68,7 @@ def parse_arguments() -> argparse.ArgumentParser:
         type=int,
         help="Block number to begin scraping from.",
     )
+
     install_parser = subparsers.add_parser("install", help="Install uri")
     install_parser.add_argument(
         "uri",
@@ -91,6 +92,15 @@ def parse_arguments() -> argparse.ArgumentParser:
         action="store_true",
         help="Flag to use locally running IPFS node.",
     )
+
+    list_parser = subparsers.add_parser("list", help="List installed packages")
+    list_parser.add_argument(
+        "--ethpm-dir",
+        dest="ethpm_dir",
+        action="store",
+        type=Path,
+        help="Path to specific ethpm_packages dir.",
+    )
     return parser
 
 
@@ -111,8 +121,11 @@ def main() -> None:
             args.uri,
             config.ethpm_dir,
         )
-    if args.command == "scrape":
+    elif args.command == "scrape":
         scraper(args)
+    elif args.command == "list":
+        config = Config(args)
+        list_installed_packages(config)
     else:
         parser.error(
             "%s is an invalid command. Use `ethpmcli --help` to "
