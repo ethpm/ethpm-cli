@@ -206,6 +206,10 @@ def process_entries(
 ) -> Iterable[Tuple[str, str]]:
     for entry in all_entries:
         if entry["address"] == address:
+            logger.info(
+                f"<Package {entry['args']['packageName']}=={entry['args']['version']}> released on registry @ {address}.\n"
+                f"Manifest URI: {entry['args']['manifestURI']}"
+            )
             yield "manifestURI", entry["args"]["manifestURI"]
             yield "packageName", entry["args"]["packageName"]
             yield "version", entry["args"]["version"]
