@@ -30,14 +30,6 @@ class BlockNotFoundError(BaseEthpmCliError):
     pass
 
 
-class BlockAlreadyScrapedError(BaseEthpmCliError):
-    """
-    Raised when a block has already been scraped for VersionRelease events.
-    """
-
-    pass
-
-
 class ValidationError(BaseEthpmCliError):
     """
     Raised when a command line args is not valid.
