@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import json
 import os
 from pathlib import Path
@@ -9,7 +10,7 @@ from web3 import Web3
 
 from ethpm_cli import CLI_ASSETS_DIR
 from ethpm_cli._utils.testing import check_dir_trees_equal
-from ethpm_cli.scraper import scrape
+from ethpm_cli.scraper import get_ethpm_birth_block, scrape
 
 
 @pytest.fixture
@@ -156,3 +157,22 @@ def test_scraper_imports_existing_ethpmcli_dir(log, log_2, test_assets_dir, w3):
     # Second scrape
     scrape(w3, ethpmcli_dir, 1)
     assert check_dir_trees_equal(ethpmcli_dir, (test_assets_dir.parent / "ipfs"))
+
+
+@pytest.mark.parametrize("interval", (40, 400, 4000))
+def test_get_ethpm_birth_block(w3, interval):
+    time_travel(w3, interval)
+    latest_block = w3.eth.getBlock("latest")
+    time_travel(w3, interval)
+    actual = get_ethpm_birth_block(w3, 0, w3.eth.blockNumber, latest_block.timestamp)
+    assert actual == latest_block.number - 1
+
+
+def time_travel(w3, hours):
+    for hour in range(1, hours):
+        current_time = w3.eth.getBlock("latest").timestamp
+        dest_time = int(
+            (datetime.fromtimestamp(current_time) + timedelta(hours=1)).strftime("%s")
+        )
+        w3.provider.ethereum_tester.time_travel(dest_time)
+        w3.testing.mine(1)

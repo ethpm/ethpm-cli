@@ -3,6 +3,8 @@ import itertools
 import json
 import logging
 from pathlib import Path
+import shutil
+import tempfile
 from typing import Any, Dict, Iterable, List, Set, Tuple  # noqa: F401
 
 from eth_utils import to_dict, to_list
@@ -23,7 +25,7 @@ logger = logging.getLogger("ethpm_cli.scraper.Scraper")
 # https://github.com/ethereum/EIPs/commit/123b7267b6270914a822001c119d11607e695517
 VERSION_RELEASE_TIMESTAMP = 1_552_564_800  # March 14, 2019
 
-BLOCK_INTERVAL = 5000
+BATCH_SIZE = 5000
 
 
 def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
@@ -44,16 +46,18 @@ def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
         )
 
     if start_block == 0:
-        active_block = get_ethpm_birth_block(w3, 0, latest_block)
+        active_block = get_ethpm_birth_block(
+            w3, 0, latest_block, VERSION_RELEASE_TIMESTAMP
+        )
     else:
         active_block = start_block
 
     logger.info("Scraping from block %d.", active_block)
-    for from_block in range(active_block, latest_block, BLOCK_INTERVAL):
-        if (from_block + BLOCK_INTERVAL) > latest_block:
+    for from_block in range(active_block, latest_block, BATCH_SIZE):
+        if (from_block + BATCH_SIZE) > latest_block:
             to_block = latest_block
         else:
-            to_block = from_block + BLOCK_INTERVAL
+            to_block = from_block + BATCH_SIZE
 
         if block_range_needs_scraping(from_block, to_block, chain_data_path):
             scraped_manifests = scrape_block_range_for_manifests(
@@ -67,24 +71,30 @@ def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
     return latest_block
 
 
-def get_ethpm_birth_block(w3: Web3, from_block: int, to_block: int) -> int:
+def get_ethpm_birth_block(
+    w3: Web3, from_block: int, to_block: int, target_timestamp: int
+) -> int:
     """
-    Returns the closest block found before the EthPM VersionRelease event birthday.
+    Returns the closest block found before the target_timestamp
     """
-    version_release_date = datetime.fromtimestamp(VERSION_RELEASE_TIMESTAMP)
+    version_release_date = datetime.fromtimestamp(target_timestamp)
     from_date = datetime.fromtimestamp(w3.eth.getBlock(from_block)["timestamp"])
     delta = version_release_date - from_date
 
-    if delta.days == 0 and from_date < version_release_date:
-        return from_block
+    if delta.days <= 0 and from_date < version_release_date:
+        while (
+            w3.eth.getBlock(from_block)["timestamp"] < version_release_date.timestamp()
+        ):
+            from_block += 1
+        return from_block - 1
 
     elif from_date < version_release_date:
         updated_block = int((from_block + to_block) / 2)
-        return get_ethpm_birth_block(w3, updated_block, to_block)
+        return get_ethpm_birth_block(w3, updated_block, to_block, target_timestamp)
 
     else:
         updated_block = from_block - int(to_block - from_block)
-        return get_ethpm_birth_block(w3, updated_block, from_block)
+        return get_ethpm_birth_block(w3, updated_block, from_block, target_timestamp)
 
 
 def block_range_needs_scraping(
@@ -108,7 +118,7 @@ def initialize_ethpm_dir(ethpm_dir: Path, w3: Web3) -> None:
             "chain_id": w3.eth.chainId,
             "scraped_blocks": [{"min": "0", "max": "0"}],
         }
-        chain_data_path.write_text(f"{json.dumps(init_json, indent=4)}\n")
+        write_updated_chain_data(chain_data_path, init_json)
 
 
 def update_chain_data(
@@ -123,8 +133,17 @@ def update_chain_data(
     new_scraped_blocks = list(range(from_block, to_block))
     updated_blocks = blocks_to_ranges(set(old_scraped_blocks + new_scraped_blocks))
 
-    chain_data_updated_blocks = assoc(chain_data, "scraped_blocks", updated_blocks)
-    chain_data_path.write_text(f"{json.dumps(chain_data_updated_blocks, indent=4)}\n")
+    chain_data_with_updated_blocks = assoc(chain_data, "scraped_blocks", updated_blocks)
+    write_updated_chain_data(chain_data_path, chain_data_with_updated_blocks)
+
+
+def write_updated_chain_data(
+    chain_data_path: Path, updated_data: Dict[str, Any]
+) -> None:
+    tmp_pkg_dir = Path(tempfile.mkdtemp())
+    tmp_data = tmp_pkg_dir / "chain_data.json"
+    tmp_data.write_text(f"{json.dumps(updated_data, indent=4)}\n")
+    shutil.copyfile(tmp_data, chain_data_path)
 
 
 @to_list
@@ -135,8 +154,8 @@ def blocks_to_ranges(blocks_list: List[int]) -> Iterable[Dict[str, str]]:
     -> [{"min": "0", "max": "2"}, {"min": "4", "max": "4"}, {"min": "6", "max": "9"}]
     """
     for a, b in itertools.groupby(enumerate(blocks_list), lambda x: x[0] - x[1]):
-        b = list(b)  # type: ignore
-        yield {"min": str(b[0][1]), "max": str(b[-1][1])}  # type: ignore
+        c = list(b)
+        yield {"min": str(c[0][1]), "max": str(c[-1][1])}
 
 
 def get_scraped_blocks(chain_data_path: Path) -> List[int]:
