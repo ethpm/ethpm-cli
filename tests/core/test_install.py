@@ -147,7 +147,19 @@ def test_list(config, owned_pkg, wallet_pkg, caplog):
 
     with caplog.at_level(logging.INFO):
         list_installed_packages(config)
-        assert "-- <Package wallet==1.0.0>" in caplog.text
-        assert "------ <Package safe-math-lib==1.0.0>" in caplog.text
-        assert "------ <Package owned==1.0.0>" in caplog.text
-        assert "-- <Package owned==1.0.0>" in caplog.text
+        assert "owned==1.0.0..." in caplog.text
+        assert "wallet==1.0.0..." in caplog.text
+        assert "- safe-math-lib==1.0.0..." in caplog.text
+        assert "- owned==1.0.0..." in caplog.text
+        assert (
+            "(ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW)\n" in caplog.text
+        )
+        assert (
+            "(ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1)\n" in caplog.text
+        )
+        assert (
+            "(ipfs://QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm)\n" in caplog.text
+        )
+        assert (
+            "(ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW)\n" in caplog.text
+        )

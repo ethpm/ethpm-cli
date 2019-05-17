@@ -1,45 +1,25 @@
-from argparse import Namespace
+from collections import namedtuple
 import json
 import logging
 import os
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Iterable, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 from eth_utils import to_dict, to_list, to_text
 from eth_utils.toolz import assoc, dissoc
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.utils.ipfs import is_ipfs_uri
 
-from ethpm_cli._utils.ipfs import get_ipfs_backend
+from ethpm_cli._utils.terminal import get_terminal_width
+from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_DIR_NAME
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.package import Package
 from ethpm_cli.validation import validate_parent_directory
 
 logger = logging.getLogger("ethpm_cli.install")
-
-
-class Config:
-    """
-    Class to manage CLI config options
-    - IPFS Backend
-    - Target ethpm_dir
-    """
-
-    def __init__(self, args: Namespace) -> None:
-        if "local_ipfs" in args:
-            self.ipfs_backend = get_ipfs_backend(args.local_ipfs)
-        else:
-            self.ipfs_backend = get_ipfs_backend(True)
-
-        if args.ethpm_dir is None:
-            self.ethpm_dir = Path.cwd() / ETHPM_DIR_NAME
-            if not self.ethpm_dir.is_dir():
-                self.ethpm_dir.mkdir()
-        else:
-            self.ethpm_dir = args.ethpm_dir
 
 
 def install_package(pkg: Package, config: Config) -> None:
@@ -61,18 +41,71 @@ def install_package(pkg: Package, config: Config) -> None:
     install_to_ethpm_lock(pkg, (config.ethpm_dir / "ethpm.lock"))
 
 
+_InstalledPackageTree = namedtuple(
+    "InstalledPackageTree", "depth path manifest children content_hash"
+)
+
+
+class InstalledPackageTree(_InstalledPackageTree):
+    depth: int
+    path: Path
+    manifest: Dict[str, Any]
+    children: Tuple["InstalledPackageTree", ...]
+    content_hash: str
+
+    @property
+    def package_name(self) -> str:
+        return self.manifest["package_name"]
+
+    @property
+    def package_version(self) -> str:
+        return self.manifest["version"]
+
+    @property
+    def format_for_display(self) -> str:
+        prefix = "- " * self.depth
+        columns = get_terminal_width()
+        main_info = f"{prefix}{self.package_name}=={self.package_version}..."
+        hash_info = f"({self.content_hash})"
+        diff = columns - len(main_info) - len(hash_info)
+        if self.children:
+            children = "\n" + "\n".join(
+                (child.format_for_display for child in self.children)
+            )
+        else:
+            children = ""
+        return f"{main_info}{'.' * diff}{hash_info}{children}"
+
+
 def list_installed_packages(config: Config) -> None:
-    for pkg_data in get_installed_packages(config.ethpm_dir):
-        logger.info(pkg_data)
+    installed_packages = [
+        get_installed_package_tree(base_dir)
+        for base_dir in config.ethpm_dir.glob("*/")
+        if base_dir.is_dir()
+    ]
+    for pkg in sorted(installed_packages):
+        logger.info(pkg.format_for_display)
+
+
+def get_installed_package_tree(base_dir: Path, depth: int = 0) -> InstalledPackageTree:
+    manifest = json.loads((base_dir / "manifest.json").read_text())
+    ethpm_lock = json.loads((base_dir.parent / "ethpm.lock").read_text())
+    content_hash = ethpm_lock[base_dir.name]["resolved_uri"]
+    dependency_dirs = get_dependency_dirs(base_dir)
+    children = tuple(
+        get_installed_package_tree(dependency_dir, depth + 1)
+        for dependency_dir in dependency_dirs
+    )
+    return InstalledPackageTree(depth, base_dir, manifest, children, content_hash)
 
 
 @to_list
-def get_installed_packages(ethpm_dir: Path) -> Iterable[str]:
-    installed_pkgs = reversed(sorted(ethpm_dir.glob("**/manifest.json")))
-    for manifest_path in installed_pkgs:
-        manifest = json.loads(manifest_path.read_text())
-        num_deep = str(manifest_path.relative_to(ethpm_dir)).count("/")
-        yield f"{num_deep * '--'} <Package {manifest['package_name']}=={manifest['version']}>"
+def get_dependency_dirs(base_dir: Path) -> Iterable[Path]:
+    dep_dir = base_dir / "ethpm_packages"
+    if dep_dir.is_dir():
+        for ddir in dep_dir.glob("*/"):
+            if ddir.is_dir() and ddir.name != "src":
+                yield ddir
 
 
 def is_package_installed(package_name: str, config: Config) -> bool:
@@ -85,8 +118,13 @@ def uninstall_package(package_name: str, config: Config) -> None:
             f"Unable to uninstall {package_name} from {config.ethpm_dir}"
         )
 
-    shutil.rmtree(config.ethpm_dir / package_name)
-    uninstall_from_ethpm_lock(package_name, (config.ethpm_dir / "ethpm.lock"))
+    tmp_pkg_dir = Path(tempfile.mkdtemp()) / "ethpm_packages"
+    shutil.copytree(config.ethpm_dir, tmp_pkg_dir)
+    shutil.rmtree(tmp_pkg_dir / package_name)
+    uninstall_from_ethpm_lock(package_name, (tmp_pkg_dir / "ethpm.lock"))
+
+    shutil.rmtree(config.ethpm_dir)
+    tmp_pkg_dir.replace(config.ethpm_dir)
 
 
 def write_pkg_installation_files(
