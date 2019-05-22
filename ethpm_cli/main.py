@@ -12,7 +12,7 @@ from ethpm_cli.config import Config
 from ethpm_cli.constants import INFURA_HTTP_URI
 from ethpm_cli.install import install_package, list_installed_packages
 from ethpm_cli.package import Package
-from ethpm_cli.parser import get_ethpm_parser
+from ethpm_cli.parser import ETHPM_PARSER
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import validate_install_cli_args
 
@@ -50,7 +50,7 @@ def scraper(args: argparse.Namespace) -> None:
 
 def main() -> None:
     logger = setup_cli_logger()
-    parser = get_ethpm_parser()
+    parser = ETHPM_PARSER
     logger.info(f"EthPM CLI v{__version__}\n")
 
     args = parser.parse_args()

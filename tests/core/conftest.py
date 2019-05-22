@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pytest
 
+from ethpm_cli.constants import ETHPM_DIR_NAME
+
 ASSETS_DIR = Path(__file__).parent / "assets"
 
 
@@ -13,7 +15,7 @@ def test_assets_dir():
 
 @pytest.fixture
 def owned_pkg_data(test_assets_dir):
-    owned_dir = test_assets_dir / "owned" / "ipfs_uri" / "ethpm_packages" / "owned"
+    owned_dir = test_assets_dir / "owned" / "ipfs_uri" / ETHPM_DIR_NAME / "owned"
     owned_raw_manifest = (owned_dir / "manifest.json").read_bytes()
     return {
         "raw_manifest": owned_raw_manifest,

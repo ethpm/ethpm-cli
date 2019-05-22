@@ -13,7 +13,11 @@ class Config:
     """
 
     def __init__(self, args: Namespace) -> None:
-        self.ipfs_backend = get_ipfs_backend(args.local_ipfs)
+        if "local_ipfs" in args:
+            self.ipfs_backend = get_ipfs_backend(args.local_ipfs)
+        else:
+            self.ipfs_backend = get_ipfs_backend()
+
         if args.ethpm_dir is None:
             self.ethpm_dir = Path.cwd() / ETHPM_DIR_NAME
             if not self.ethpm_dir.is_dir():

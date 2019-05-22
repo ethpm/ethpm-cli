@@ -57,3 +57,6 @@ def get_ethpm_parser() -> argparse.ArgumentParser:
         help="Path to specific ethpm_packages dir.",
     )
     return parser
+
+
+ETHPM_PARSER = get_ethpm_parser()

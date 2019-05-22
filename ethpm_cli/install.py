@@ -1,20 +1,18 @@
-from collections import namedtuple
 import json
 import logging
 import os
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, NamedTuple, Tuple
 
-from eth_utils import to_dict, to_list, to_text
+from eth_utils import to_dict, to_text, to_tuple
 from eth_utils.toolz import assoc, dissoc
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.utils.ipfs import is_ipfs_uri
 
-from ethpm_cli._utils.terminal import get_terminal_width
 from ethpm_cli.config import Config
-from ethpm_cli.constants import ETHPM_DIR_NAME
+from ethpm_cli.constants import ETHPM_DIR_NAME, LOCKFILE_NAME, SRC_DIR_NAME
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.package import Package
 from ethpm_cli.validation import validate_parent_directory
@@ -38,19 +36,14 @@ def install_package(pkg: Package, config: Config) -> None:
     dest_pkg_dir = config.ethpm_dir / pkg.alias
     validate_parent_directory(config.ethpm_dir, dest_pkg_dir)
     shutil.copytree(tmp_pkg_dir, dest_pkg_dir)
-    install_to_ethpm_lock(pkg, (config.ethpm_dir / "ethpm.lock"))
+    install_to_ethpm_lock(pkg, (config.ethpm_dir / LOCKFILE_NAME))
 
 
-_InstalledPackageTree = namedtuple(
-    "InstalledPackageTree", "depth path manifest children content_hash"
-)
-
-
-class InstalledPackageTree(_InstalledPackageTree):
+class InstalledPackageTree(NamedTuple):
     depth: int
     path: Path
     manifest: Dict[str, Any]
-    children: Tuple["InstalledPackageTree", ...]
+    children: Tuple[Any, ...]  # Expects InstalledPackageTree
     content_hash: str
 
     @property
@@ -64,23 +57,21 @@ class InstalledPackageTree(_InstalledPackageTree):
     @property
     def format_for_display(self) -> str:
         prefix = "- " * self.depth
-        columns = get_terminal_width()
-        main_info = f"{prefix}{self.package_name}=={self.package_version}..."
+        main_info = f"{prefix}{self.package_name}=={self.package_version}"
         hash_info = f"({self.content_hash})"
-        diff = columns - len(main_info) - len(hash_info)
         if self.children:
             children = "\n" + "\n".join(
                 (child.format_for_display for child in self.children)
             )
         else:
             children = ""
-        return f"{main_info}{'.' * diff}{hash_info}{children}"
+        return f"{main_info} --- {hash_info}{children}"
 
 
 def list_installed_packages(config: Config) -> None:
     installed_packages = [
         get_installed_package_tree(base_dir)
-        for base_dir in config.ethpm_dir.glob("*/")
+        for base_dir in config.ethpm_dir.iterdir()
         if base_dir.is_dir()
     ]
     for pkg in sorted(installed_packages):
@@ -89,7 +80,7 @@ def list_installed_packages(config: Config) -> None:
 
 def get_installed_package_tree(base_dir: Path, depth: int = 0) -> InstalledPackageTree:
     manifest = json.loads((base_dir / "manifest.json").read_text())
-    ethpm_lock = json.loads((base_dir.parent / "ethpm.lock").read_text())
+    ethpm_lock = json.loads((base_dir.parent / LOCKFILE_NAME).read_text())
     content_hash = ethpm_lock[base_dir.name]["resolved_uri"]
     dependency_dirs = get_dependency_dirs(base_dir)
     children = tuple(
@@ -99,12 +90,12 @@ def get_installed_package_tree(base_dir: Path, depth: int = 0) -> InstalledPacka
     return InstalledPackageTree(depth, base_dir, manifest, children, content_hash)
 
 
-@to_list
+@to_tuple
 def get_dependency_dirs(base_dir: Path) -> Iterable[Path]:
-    dep_dir = base_dir / "ethpm_packages"
+    dep_dir = base_dir / ETHPM_DIR_NAME
     if dep_dir.is_dir():
-        for ddir in dep_dir.glob("*/"):
-            if ddir.is_dir() and ddir.name != "src":
+        for ddir in dep_dir.iterdir():
+            if ddir.is_dir():
                 yield ddir
 
 
@@ -115,13 +106,13 @@ def is_package_installed(package_name: str, config: Config) -> bool:
 def uninstall_package(package_name: str, config: Config) -> None:
     if not is_package_installed(package_name, config):
         raise InstallError(
-            f"Unable to uninstall {package_name} from {config.ethpm_dir}"
+            f"No package with the name {package_name} found installed under {config.ethpm_dir}."
         )
 
-    tmp_pkg_dir = Path(tempfile.mkdtemp()) / "ethpm_packages"
+    tmp_pkg_dir = Path(tempfile.mkdtemp()) / ETHPM_DIR_NAME
     shutil.copytree(config.ethpm_dir, tmp_pkg_dir)
     shutil.rmtree(tmp_pkg_dir / package_name)
-    uninstall_from_ethpm_lock(package_name, (tmp_pkg_dir / "ethpm.lock"))
+    uninstall_from_ethpm_lock(package_name, (tmp_pkg_dir / LOCKFILE_NAME))
 
     shutil.rmtree(config.ethpm_dir)
     tmp_pkg_dir.replace(config.ethpm_dir)
@@ -135,7 +126,7 @@ def write_pkg_installation_files(
 
     write_sources_to_disk(pkg, tmp_pkg_dir, ipfs_backend)
     write_build_deps_to_disk(pkg, tmp_pkg_dir, ipfs_backend)
-    tmp_ethpm_lock = tmp_pkg_dir.parent / "ethpm.lock"
+    tmp_ethpm_lock = tmp_pkg_dir.parent / LOCKFILE_NAME
     install_to_ethpm_lock(pkg, tmp_ethpm_lock)
 
 
@@ -144,12 +135,12 @@ def write_sources_to_disk(
 ) -> None:
     sources = resolve_sources(pkg, ipfs_backend)
     for path, source_contents in sources.items():
-        target_file = pkg_dir / "src" / path
+        target_file = pkg_dir / SRC_DIR_NAME / path
         target_dir = target_file.parent
         if not target_dir.is_dir():
             target_dir.mkdir(parents=True)
         target_file.touch()
-        validate_parent_directory((pkg_dir / "src"), target_file)
+        validate_parent_directory((pkg_dir / SRC_DIR_NAME), target_file)
         target_file.write_text(source_contents)
 
 
@@ -194,4 +185,6 @@ def install_to_ethpm_lock(pkg: Package, ethpm_lock: Path) -> None:
 def uninstall_from_ethpm_lock(package_name: str, ethpm_lock: Path) -> None:
     old_lock = json.loads(ethpm_lock.read_text())
     new_lock = dissoc(old_lock, package_name)
-    ethpm_lock.write_text(f"{json.dumps(new_lock, sort_keys=True, indent=4)}\n")
+    temp_ethpm_lock = Path(tempfile.NamedTemporaryFile().name)
+    temp_ethpm_lock.write_text(f"{json.dumps(new_lock, sort_keys=True, indent=4)}\n")
+    temp_ethpm_lock.replace(ethpm_lock)

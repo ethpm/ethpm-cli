@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from ethpm_cli._utils.testing import check_dir_trees_equal
+from ethpm_cli.constants import ETHPM_DIR_NAME
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.install import (
     Config,
@@ -18,7 +19,7 @@ from ethpm_cli.package import Package
 @pytest.fixture
 def config(tmpdir):
     namespace = Namespace()
-    ethpm_dir = Path(tmpdir) / "ethpm_packages"
+    ethpm_dir = Path(tmpdir) / ETHPM_DIR_NAME
     ethpm_dir.mkdir()
     namespace.local_ipfs = False
     namespace.target_uri = None
@@ -78,7 +79,7 @@ def test_install_package(uri, pkg_name, alias, install_type, config, test_assets
     pkg = Package(uri, alias, config.ipfs_backend)
     install_package(pkg, config)
 
-    expected_package = test_assets_dir / pkg_name / install_type / "ethpm_packages"
+    expected_package = test_assets_dir / pkg_name / install_type / ETHPM_DIR_NAME
     assert check_dir_trees_equal(config.ethpm_dir, expected_package)
 
 
@@ -101,12 +102,12 @@ def test_can_install_same_package_twice_if_aliased(config, owned_pkg, test_asset
     assert (config.ethpm_dir / "owned").is_dir()
     assert check_dir_trees_equal(
         config.ethpm_dir / "owned",
-        test_assets_dir / "owned" / "ipfs_uri" / "ethpm_packages" / "owned",
+        test_assets_dir / "owned" / "ipfs_uri" / ETHPM_DIR_NAME / "owned",
     )
     assert (config.ethpm_dir / "owned-alias").is_dir()
     assert check_dir_trees_equal(
         config.ethpm_dir / "owned-alias",
-        test_assets_dir / "owned" / "ipfs_uri_alias" / "ethpm_packages" / "owned-alias",
+        test_assets_dir / "owned" / "ipfs_uri_alias" / ETHPM_DIR_NAME / "owned-alias",
     )
 
 
@@ -117,7 +118,7 @@ def test_install_multiple_packages(config, test_assets_dir, owned_pkg, wallet_pk
     assert (config.ethpm_dir / "wallet").is_dir()
     assert (config.ethpm_dir / "owned").is_dir()
     assert check_dir_trees_equal(
-        config.ethpm_dir, (test_assets_dir / "multiple" / "ethpm_packages")
+        config.ethpm_dir, (test_assets_dir / "multiple" / ETHPM_DIR_NAME)
     )
 
 
@@ -132,12 +133,12 @@ def test_uninstall_packages(
     assert (config.ethpm_dir / keep).is_dir()
     assert not (config.ethpm_dir / uninstall).is_dir()
     assert check_dir_trees_equal(
-        config.ethpm_dir, (test_assets_dir / keep / "ipfs_uri" / "ethpm_packages")
+        config.ethpm_dir, (test_assets_dir / keep / "ipfs_uri" / ETHPM_DIR_NAME)
     )
 
 
 def test_uninstall_package_warns_if_package_doesnt_exist(config):
-    with pytest.raises(InstallError, match="Unable to uninstall"):
+    with pytest.raises(InstallError, match="No package with the name invalid"):
         uninstall_package("invalid", config)
 
 
@@ -147,19 +148,19 @@ def test_list(config, owned_pkg, wallet_pkg, caplog):
 
     with caplog.at_level(logging.INFO):
         list_installed_packages(config)
-        assert "owned==1.0.0..." in caplog.text
-        assert "wallet==1.0.0..." in caplog.text
-        assert "- safe-math-lib==1.0.0..." in caplog.text
-        assert "- owned==1.0.0..." in caplog.text
         assert (
-            "(ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW)\n" in caplog.text
-        )
+            "owned==1.0.0 --- (ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW)\n"
+            in caplog.text
+        )  # noqa: E501
         assert (
-            "(ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1)\n" in caplog.text
-        )
+            "wallet==1.0.0 --- (ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1)\n"
+            in caplog.text
+        )  # noqa: E501
         assert (
-            "(ipfs://QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm)\n" in caplog.text
-        )
+            "- safe-math-lib==1.0.0 --- (ipfs://QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm)\n"
+            in caplog.text
+        )  # noqa: E501
         assert (
-            "(ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW)\n" in caplog.text
-        )
+            "- owned==1.0.0 --- (ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW)\n"
+            in caplog.text
+        )  # noqa: E501
