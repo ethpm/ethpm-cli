@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from ethpm_cli.constants import ETHPM_DIR_NAME
 from ethpm_cli.exceptions import InstallError, UriNotSupportedError, ValidationError
 from ethpm_cli.validation import validate_install_cli_args
 
@@ -55,7 +56,7 @@ def test_validate_install_cli_args_rejects_unsupported_uris(uri, args):
 
 
 def test_validate_install_cli_args_validates_absolute_ethpm_dir_paths(args, tmpdir):
-    ethpm_dir = Path(tmpdir) / "ethpm_packages"
+    ethpm_dir = Path(tmpdir) / ETHPM_DIR_NAME
     ethpm_dir.mkdir()
     args.ethpm_dir = ethpm_dir
 
@@ -66,10 +67,10 @@ def test_validate_install_cli_args_validates_relative_paths_to_cwd(
     args, tmpdir, monkeypatch
 ):
     p = Path(tmpdir)
-    ethpm_dir = p / "ethpm_packages"
+    ethpm_dir = p / ETHPM_DIR_NAME
     ethpm_dir.mkdir()
     monkeypatch.chdir(p)
-    args.ethpm_dir = Path("./ethpm_packages")
+    args.ethpm_dir = Path("./_ethpm_packages")
 
     assert validate_install_cli_args(args) is None
 
@@ -86,7 +87,7 @@ def test_validate_install_cli_args_rejects_invalid_relative_paths(
     args, tmpdir, monkeypatch
 ):
     p = Path(tmpdir)
-    ethpm_dir = p / "ethpm_packages"
+    ethpm_dir = p / ETHPM_DIR_NAME
     ethpm_dir.mkdir()
     monkeypatch.chdir(p)
     args.ethpm_dir = Path("./invalid")

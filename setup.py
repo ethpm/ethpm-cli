@@ -7,15 +7,16 @@ from setuptools import (
 
 extras_require = {
     'test': [
+        "pexpect>=4.7.0,<5",
         "pytest>=4.4.0,<5",
         "pytest-xdist==1.*",
         "tox>=2.9.1,<3",
     ],
     'lint': [
-        'black>=19.3b0,<20',
-        'flake8>=3.7.0,<4',
-        'isort>=4.3.17,<5',   
-        'mypy<0.800',
+        "black>=19.3b0,<20",
+        "flake8>=3.7.0,<4",
+        "isort>=4.3.17,<5",   
+        "mypy<0.800",
         "pydocstyle>=3.0.0,<4",
     ],
     'doc': [

@@ -11,11 +11,15 @@ from web3.providers.auto import load_provider_from_uri
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.config import Config
 from ethpm_cli.constants import INFURA_HTTP_URI
-from ethpm_cli.install import install_package, list_installed_packages
+from ethpm_cli.install import (
+    install_package,
+    list_installed_packages,
+    uninstall_package,
+)
 from ethpm_cli.package import Package
 from ethpm_cli.parser import ETHPM_PARSER
 from ethpm_cli.scraper import scrape
-from ethpm_cli.validation import validate_install_cli_args
+from ethpm_cli.validation import validate_install_cli_args, validate_uninstall_cli_args
 
 __version__ = pkg_resources.require("ethpm-cli")[0].version
 
@@ -71,6 +75,11 @@ def main() -> None:
             args.uri,
             config.ethpm_dir,
         )
+    elif args.command == "uninstall":
+        validate_uninstall_cli_args(args)
+        config = Config(args)
+        uninstall_package(args.package, config)
+        logger.info("%s uninstalled from %s", args.package, config.ethpm_dir)
     elif args.command == "scrape":
         scraper(args)
     elif args.command == "list":
@@ -78,6 +87,6 @@ def main() -> None:
         list_installed_packages(config)
     else:
         parser.error(
-            "%s is an invalid command. Use `ethpmcli --help` to "
+            "%s is an invalid command. Use `ethpm --help` to "
             "see the list of available commands." % args.command
         )
