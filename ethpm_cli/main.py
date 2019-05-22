@@ -1,6 +1,5 @@
 import argparse
 import logging
-from pathlib import Path
 import sys
 
 from eth_utils import humanize_hash
@@ -10,9 +9,11 @@ from web3.middleware import local_filter_middleware
 from web3.providers.auto import load_provider_from_uri
 
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
+from ethpm_cli.config import Config
 from ethpm_cli.constants import INFURA_HTTP_URI
-from ethpm_cli.install import Config, install_package
+from ethpm_cli.install import install_package, list_installed_packages
 from ethpm_cli.package import Package
+from ethpm_cli.parser import ETHPM_PARSER
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import validate_install_cli_args
 
@@ -53,56 +54,9 @@ def scraper(args: argparse.Namespace) -> None:
     )
 
 
-def parse_arguments() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="ethpm-cli")
-    subparsers = parser.add_subparsers(help="commands", dest="command")
-
-    scrape_parser = subparsers.add_parser(
-        "scrape", help="Scrape for new VersionRelease events."
-    )
-    scrape_parser.add_argument(
-        "--ipfs-dir",
-        dest="ipfs_dir",
-        action="store",
-        type=Path,
-        help="path to specific IPFS assets dir.",
-    )
-    scrape_parser.add_argument(
-        "--start-block",
-        dest="start_block",
-        action="store",
-        type=int,
-        help="Block number to begin scraping from.",
-    )
-    install_parser = subparsers.add_parser("install", help="Install uri")
-    install_parser.add_argument(
-        "uri",
-        action="store",
-        type=str,
-        help="IPFS / Github / Registry URI of package you want to install.",
-    )
-    install_parser.add_argument(
-        "--ethpm-dir",
-        dest="ethpm_dir",
-        action="store",
-        type=Path,
-        help="Path to specific ethpm_packages dir.",
-    )
-    install_parser.add_argument(
-        "--alias", action="store", type=str, help="Alias for installing package."
-    )
-    install_parser.add_argument(
-        "--local-ipfs",
-        dest="local_ipfs",
-        action="store_true",
-        help="Flag to use locally running IPFS node.",
-    )
-    return parser
-
-
 def main() -> None:
     logger = setup_cli_logger()
-    parser = parse_arguments()
+    parser = ETHPM_PARSER
     logger.info(f"EthPM CLI v{__version__}\n")
 
     args = parser.parse_args()
@@ -117,8 +71,11 @@ def main() -> None:
             args.uri,
             config.ethpm_dir,
         )
-    if args.command == "scrape":
+    elif args.command == "scrape":
         scraper(args)
+    elif args.command == "list":
+        config = Config(args)
+        list_installed_packages(config)
     else:
         parser.error(
             "%s is an invalid command. Use `ethpmcli --help` to "

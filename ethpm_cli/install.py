@@ -1,42 +1,27 @@
-from argparse import Namespace
 import json
+import logging
 import os
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Iterable, Tuple
+from typing import Any, Dict, Iterable, NamedTuple, Tuple
 
-from eth_utils import to_dict, to_text
-from eth_utils.toolz import assoc
+from eth_utils import to_dict, to_text, to_tuple
+from eth_utils.toolz import assoc, dissoc
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.utils.ipfs import is_ipfs_uri
 
-from ethpm_cli._utils.ipfs import get_ipfs_backend
-from ethpm_cli.constants import ETHPM_DIR_NAME
+from ethpm_cli.config import Config
+from ethpm_cli.constants import ETHPM_DIR_NAME, LOCKFILE_NAME, SRC_DIR_NAME
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.package import Package
 from ethpm_cli.validation import validate_parent_directory
 
-
-class Config:
-    """
-    Class to manage CLI config options
-    - IPFS Backend
-    - Target ethpm_dir
-    """
-
-    def __init__(self, args: Namespace) -> None:
-        self.ipfs_backend = get_ipfs_backend(args.local_ipfs)
-        if args.ethpm_dir is None:
-            self.ethpm_dir = Path.cwd() / ETHPM_DIR_NAME
-            if not self.ethpm_dir.is_dir():
-                self.ethpm_dir.mkdir()
-        else:
-            self.ethpm_dir = args.ethpm_dir
+logger = logging.getLogger("ethpm_cli.install")
 
 
 def install_package(pkg: Package, config: Config) -> None:
-    if os.path.exists(config.ethpm_dir / pkg.alias):
+    if is_package_installed(pkg.alias, config):
         raise InstallError(
             "Installation conflict: A directory or file already exists at the install location "
             f"for the package '{pkg.manifest['package_name']}' aliased to '{pkg.alias}' on the "
@@ -47,11 +32,90 @@ def install_package(pkg: Package, config: Config) -> None:
     tmp_pkg_dir = Path(tempfile.mkdtemp())
     write_pkg_installation_files(pkg, tmp_pkg_dir, config.ipfs_backend)
 
-    # Copy temp pacakge directory to ethpm dir namespace
+    # Copy temp package directory to ethpm dir namespace
     dest_pkg_dir = config.ethpm_dir / pkg.alias
     validate_parent_directory(config.ethpm_dir, dest_pkg_dir)
     shutil.copytree(tmp_pkg_dir, dest_pkg_dir)
-    update_ethpm_lock(pkg, (config.ethpm_dir / "ethpm.lock"))
+    install_to_ethpm_lock(pkg, (config.ethpm_dir / LOCKFILE_NAME))
+
+
+class InstalledPackageTree(NamedTuple):
+    depth: int
+    path: Path
+    manifest: Dict[str, Any]
+    children: Tuple[Any, ...]  # Expects InstalledPackageTree
+    content_hash: str
+
+    @property
+    def package_name(self) -> str:
+        return self.manifest["package_name"]
+
+    @property
+    def package_version(self) -> str:
+        return self.manifest["version"]
+
+    @property
+    def format_for_display(self) -> str:
+        prefix = "- " * self.depth
+        main_info = f"{prefix}{self.package_name}=={self.package_version}"
+        hash_info = f"({self.content_hash})"
+        if self.children:
+            children = "\n" + "\n".join(
+                (child.format_for_display for child in self.children)
+            )
+        else:
+            children = ""
+        return f"{main_info} --- {hash_info}{children}"
+
+
+def list_installed_packages(config: Config) -> None:
+    installed_packages = [
+        get_installed_package_tree(base_dir)
+        for base_dir in config.ethpm_dir.iterdir()
+        if base_dir.is_dir()
+    ]
+    for pkg in sorted(installed_packages):
+        logger.info(pkg.format_for_display)
+
+
+def get_installed_package_tree(base_dir: Path, depth: int = 0) -> InstalledPackageTree:
+    manifest = json.loads((base_dir / "manifest.json").read_text())
+    ethpm_lock = json.loads((base_dir.parent / LOCKFILE_NAME).read_text())
+    content_hash = ethpm_lock[base_dir.name]["resolved_uri"]
+    dependency_dirs = get_dependency_dirs(base_dir)
+    children = tuple(
+        get_installed_package_tree(dependency_dir, depth + 1)
+        for dependency_dir in dependency_dirs
+    )
+    return InstalledPackageTree(depth, base_dir, manifest, children, content_hash)
+
+
+@to_tuple
+def get_dependency_dirs(base_dir: Path) -> Iterable[Path]:
+    dep_dir = base_dir / ETHPM_DIR_NAME
+    if dep_dir.is_dir():
+        for ddir in dep_dir.iterdir():
+            if ddir.is_dir():
+                yield ddir
+
+
+def is_package_installed(package_name: str, config: Config) -> bool:
+    return os.path.exists(config.ethpm_dir / package_name)
+
+
+def uninstall_package(package_name: str, config: Config) -> None:
+    if not is_package_installed(package_name, config):
+        raise InstallError(
+            f"No package with the name {package_name} found installed under {config.ethpm_dir}."
+        )
+
+    tmp_pkg_dir = Path(tempfile.mkdtemp()) / ETHPM_DIR_NAME
+    shutil.copytree(config.ethpm_dir, tmp_pkg_dir)
+    shutil.rmtree(tmp_pkg_dir / package_name)
+    uninstall_from_ethpm_lock(package_name, (tmp_pkg_dir / LOCKFILE_NAME))
+
+    shutil.rmtree(config.ethpm_dir)
+    tmp_pkg_dir.replace(config.ethpm_dir)
 
 
 def write_pkg_installation_files(
@@ -62,8 +126,8 @@ def write_pkg_installation_files(
 
     write_sources_to_disk(pkg, tmp_pkg_dir, ipfs_backend)
     write_build_deps_to_disk(pkg, tmp_pkg_dir, ipfs_backend)
-    tmp_ethpm_lock = tmp_pkg_dir.parent / "ethpm.lock"
-    update_ethpm_lock(pkg, tmp_ethpm_lock)
+    tmp_ethpm_lock = tmp_pkg_dir.parent / LOCKFILE_NAME
+    install_to_ethpm_lock(pkg, tmp_ethpm_lock)
 
 
 def write_sources_to_disk(
@@ -71,12 +135,12 @@ def write_sources_to_disk(
 ) -> None:
     sources = resolve_sources(pkg, ipfs_backend)
     for path, source_contents in sources.items():
-        target_file = pkg_dir / "src" / path
+        target_file = pkg_dir / SRC_DIR_NAME / path
         target_dir = target_file.parent
         if not target_dir.is_dir():
             target_dir.mkdir(parents=True)
         target_file.touch()
-        validate_parent_directory((pkg_dir / "src"), target_file)
+        validate_parent_directory((pkg_dir / SRC_DIR_NAME), target_file)
         target_file.write_text(source_contents)
 
 
@@ -107,7 +171,7 @@ def write_build_deps_to_disk(
             write_pkg_installation_files(dep_pkg, tmp_dep_dir, ipfs_backend)
 
 
-def update_ethpm_lock(pkg: Package, ethpm_lock: Path) -> None:
+def install_to_ethpm_lock(pkg: Package, ethpm_lock: Path) -> None:
     if ethpm_lock.is_file():
         old_lock = json.loads(ethpm_lock.read_text())
     else:
@@ -116,3 +180,11 @@ def update_ethpm_lock(pkg: Package, ethpm_lock: Path) -> None:
     new_pkg_data = pkg.generate_ethpm_lock()
     new_lock = assoc(old_lock, pkg.alias, new_pkg_data)
     ethpm_lock.write_text(f"{json.dumps(new_lock, sort_keys=True, indent=4)}\n")
+
+
+def uninstall_from_ethpm_lock(package_name: str, ethpm_lock: Path) -> None:
+    old_lock = json.loads(ethpm_lock.read_text())
+    new_lock = dissoc(old_lock, package_name)
+    temp_ethpm_lock = Path(tempfile.NamedTemporaryFile().name)
+    temp_ethpm_lock.write_text(f"{json.dumps(new_lock, sort_keys=True, indent=4)}\n")
+    temp_ethpm_lock.replace(ethpm_lock)
