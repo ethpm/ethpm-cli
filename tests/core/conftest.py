@@ -1,16 +1,8 @@
 import json
-from pathlib import Path
 
 import pytest
 
 from ethpm_cli.constants import ETHPM_DIR_NAME
-
-ASSETS_DIR = Path(__file__).parent / "assets"
-
-
-@pytest.fixture
-def test_assets_dir():
-    return ASSETS_DIR
 
 
 @pytest.fixture

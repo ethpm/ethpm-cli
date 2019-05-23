@@ -19,10 +19,16 @@ def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
 
 def validate_install_cli_args(args: Namespace) -> None:
     validate_target_uri(args.uri)
-    if args.alias is not None:
+    if args.alias:
         validate_alias(args.alias)
 
-    if args.ethpm_dir is not None:
+    if args.ethpm_dir:
+        validate_ethpm_dir(args.ethpm_dir)
+
+
+def validate_uninstall_cli_args(args: Namespace) -> None:
+    validate_package_name(args.package)
+    if args.ethpm_dir:
         validate_ethpm_dir(args.ethpm_dir)
 
 
@@ -49,9 +55,9 @@ def validate_alias(alias: str) -> None:
 
 
 def validate_ethpm_dir(ethpm_dir: Path) -> None:
-    if ethpm_dir.name != "ethpm_packages" or not ethpm_dir.is_dir():
+    if ethpm_dir.name != "_ethpm_packages" or not ethpm_dir.is_dir():
         raise InstallError(
-            f"--packages-dir must point to an existing 'ethpm_packages' directory."
+            f"--ethpm-dir must point to an existing '_ethpm_packages' directory."
         )
 
 
