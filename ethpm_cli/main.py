@@ -17,7 +17,7 @@ from ethpm_cli.install import (
     uninstall_package,
 )
 from ethpm_cli.package import Package
-from ethpm_cli.parser import ETHPM_PARSER
+from ethpm_cli.parser import parser
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import validate_install_cli_args, validate_uninstall_cli_args
 
@@ -60,7 +60,6 @@ def scraper(args: argparse.Namespace) -> None:
 
 def main() -> None:
     logger = setup_cli_logger()
-    parser = ETHPM_PARSER
     logger.info(f"EthPM CLI v{__version__}\n")
 
     args = parser.parse_args()
