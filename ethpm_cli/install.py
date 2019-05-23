@@ -23,9 +23,10 @@ logger = logging.getLogger("ethpm_cli.install")
 def install_package(pkg: Package, config: Config) -> None:
     if is_package_installed(pkg.alias, config):
         raise InstallError(
-            "Installation conflict: A directory or file already exists at the install location "
-            f"for the package '{pkg.manifest['package_name']}' aliased to '{pkg.alias}' on the "
-            f"filesystem at {config.ethpm_dir / pkg.alias}."
+            f"Installation conflict: Package: '{pkg.manifest['package_name']}' "
+            f"aliased to '{pkg.alias}' already installed on the filesystem at "
+            f"{config.ethpm_dir / pkg.alias}. Try installing this package with "
+            "a different alias."
         )
 
     # Create temporary package directory
@@ -57,7 +58,11 @@ class InstalledPackageTree(NamedTuple):
     @property
     def format_for_display(self) -> str:
         prefix = "- " * self.depth
-        main_info = f"{prefix}{self.package_name}=={self.package_version}"
+        if self.path.name != self.package_name:
+            alias = f" @ {self.path.name}"
+        else:
+            alias = ""
+        main_info = f"{prefix}{self.package_name}{alias}=={self.package_version}"
         hash_info = f"({self.content_hash})"
         if self.children:
             children = "\n" + "\n".join(
@@ -103,19 +108,41 @@ def is_package_installed(package_name: str, config: Config) -> bool:
     return os.path.exists(config.ethpm_dir / package_name)
 
 
+@to_tuple
+def get_package_aliases(package_name: str, config: Config) -> Iterable[Tuple[str, ...]]:
+    lockfile_path = config.ethpm_dir / "ethpm.lock"
+    if lockfile_path.is_file():
+        lockfile = json.loads(lockfile_path.read_text())
+        all_aliases = [
+            (pkg_data["alias"], pkg_data["resolved_package_name"])
+            for pkg_data in lockfile.values()
+        ]
+        for alias, resolved_pkg_name in all_aliases:
+            if resolved_pkg_name == package_name:
+                yield alias
+
+
 def uninstall_package(package_name: str, config: Config) -> None:
-    if not is_package_installed(package_name, config):
+    if is_package_installed(package_name, config):
+        tmp_pkg_dir = Path(tempfile.mkdtemp()) / ETHPM_DIR_NAME
+        shutil.copytree(config.ethpm_dir, tmp_pkg_dir)
+        shutil.rmtree(tmp_pkg_dir / package_name)
+        uninstall_from_ethpm_lock(package_name, (tmp_pkg_dir / LOCKFILE_NAME))
+
+        shutil.rmtree(config.ethpm_dir)
+        tmp_pkg_dir.replace(config.ethpm_dir)
+        return
+
+    aliases = get_package_aliases(package_name, config)
+    if aliases:
+        raise InstallError(
+            f"Found {package_name} installed under the alias(es): {aliases}. "
+            "To uninstall an aliased package, use the alias as the uninstall argument."
+        )
+    else:
         raise InstallError(
             f"No package with the name {package_name} found installed under {config.ethpm_dir}."
         )
-
-    tmp_pkg_dir = Path(tempfile.mkdtemp()) / ETHPM_DIR_NAME
-    shutil.copytree(config.ethpm_dir, tmp_pkg_dir)
-    shutil.rmtree(tmp_pkg_dir / package_name)
-    uninstall_from_ethpm_lock(package_name, (tmp_pkg_dir / LOCKFILE_NAME))
-
-    shutil.rmtree(config.ethpm_dir)
-    tmp_pkg_dir.replace(config.ethpm_dir)
 
 
 def write_pkg_installation_files(
