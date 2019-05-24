@@ -150,7 +150,7 @@ def create_action(args: argparse.Namespace) -> None:
     if not config.project_dir:
         raise FileNotFoundError(
             "Please provide a project directory containing the contracts you want to package. "
-            "For more information on project directory structure, refer to the docs."
+            "Refer to the docs for more information on project directory structure."
         )
 
     # ethpm create --solc-input
