@@ -53,3 +53,13 @@ def test_ethpm_uninstall(tmp_path, test_assets_dir):
     assert check_dir_trees_equal(
         ethpm_dir, test_assets_dir / "wallet" / "ipfs_uri" / "_ethpm_packages"
     )
+
+
+def test_unsupported_command():
+    child = pexpect.spawn("ethpm invalid")
+    child.expect("EthPM CLI v0.1.0a0\r\n")
+    child.expect("\r\n")
+    child.expect(
+        "ethpm: error: argument command: invalid choice: 'invalid' "
+        r"\(choose from 'scrape', 'install', 'uninstall', 'list'\)\r\n"
+    )

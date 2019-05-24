@@ -50,10 +50,9 @@ setup(
     url='https://github.com/ethereum/ethpm-cli',
     include_package_data=True,
     install_requires=[
-        "certifi>=2019.3.9,<2020",
         "eth-hash[pysha3]>=0.2.0,<1",
-        "eth-utils>=1,<2",
-        "ethpm>=0.1.4-a16,<2",
+        "eth-utils>=1.6.0,<2",
+        "ethpm>=0.1.4-a18,<2",
     ],
     setup_requires=['setuptools-markdown'],
     python_requires='>=3.6, <4',
