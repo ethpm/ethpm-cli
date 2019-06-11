@@ -16,7 +16,7 @@ from ethpm_cli.install import (
     uninstall_package,
 )
 from ethpm_cli.manifest import generate_basic_manifest, generate_custom_manifest
-from ethpm_cli.package import Package
+from ethpm_cli.package import Package, package_from_etherscan
 from ethpm_cli.registry import activate_registry, add_registry, list_registries
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import (
@@ -24,7 +24,9 @@ from ethpm_cli.validation import (
     validate_install_cli_args,
     validate_solc_output,
     validate_uninstall_cli_args,
+    validate_verify_cli_args,
 )
+from ethpm_cli.verify import verify_contract
 
 parser = argparse.ArgumentParser(description="ethpm-cli")
 ethpm_parser = parser.add_subparsers(help="commands", dest="command")
@@ -288,12 +290,17 @@ scrape_parser.set_defaults(func=scrape_action)
 def install_action(args: argparse.Namespace) -> None:
     validate_install_cli_args(args)
     config = Config(args)
-    package = Package(args.uri, args.alias, config.ipfs_backend)
+    if args.etherscan:
+        package = package_from_etherscan(args, config)
+        source = f"Etherscan @ {args.etherscan}"
+    else:
+        package = Package(args.uri, args.alias, config.ipfs_backend)
+        source = args.uri
     install_package(package, config)
     cli_logger.info(
         "%s package sourced from %s installed to %s.",
         package.alias,
-        args.uri,
+        source,
         config.ethpm_dir,
     )
 
@@ -303,10 +310,32 @@ install_parser = ethpm_parser.add_parser(
     help="Install a target package, by providing its uri, to your ethPM directory.",
 )
 install_parser.add_argument(
-    "uri",
+    "--uri",
     action="store",
     type=str,
     help="IPFS / Github / Etherscan / Registry URI of target package.",
+)
+# break etherscan out into own thing?
+install_parser.add_argument(
+    "--etherscan",
+    dest="etherscan",
+    action="store",
+    type=str,
+    help="Verified mainnet contract address.",
+)
+install_parser.add_argument(
+    "--package-name",
+    dest="package_name",
+    action="store",
+    type=str,
+    help="Package name for target contract.",
+)
+install_parser.add_argument(
+    "--version",
+    dest="version",
+    action="store",
+    type=str,
+    help="Version for target contract.",
 )
 install_parser.add_argument(
     "--alias", action="store", type=str, help="Alias to install target package under."
@@ -361,3 +390,42 @@ list_parser = ethpm_parser.add_parser(
 )
 add_ethpm_dir_arg_to_parser(list_parser)
 list_parser.set_defaults(func=list_action)
+
+
+#
+# ethpm verify
+#
+
+# ethpm verify ens:Deed --address 0x123123
+
+
+def verify_action(args: argparse.Namespace) -> None:
+    config = Config(args)
+    validate_verify_cli_args(args, config)
+    verify_contract(args, config)
+
+
+verify_parser = ethpm_parser.add_parser(
+    "verify", help="Verify a deployed contract instance."
+)
+verify_parser.add_argument(
+    "contract_type",
+    action="store",
+    type=str,
+    help="<package>:<contract type> of deployment to verify.",
+)
+verify_parser.add_argument(
+    "--address",
+    action="store",
+    dest="address",
+    type=str,
+    help="Address of on-chain contract to verify.",
+)
+verify_parser.add_argument(
+    "--ethpm-dir",
+    dest="ethpm_dir",
+    action="store",
+    type=Path,
+    help="Path to specific _ethpm_packages dir.",
+)
+verify_parser.set_defaults(func=verify_action)

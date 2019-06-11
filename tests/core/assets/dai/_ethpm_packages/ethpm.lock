@@ -1,0 +1,11 @@
+{
+    "dai": {
+        "alias": "dai",
+        "registry_address": null,
+        "resolved_content_hash": "QmY4g2gMUZUs9ePdomSfGorxVmJAEsrfdqLvZiEFd1F7dH",
+        "resolved_package_name": "dai",
+        "resolved_uri": "ipfs://QmY4g2gMUZUs9ePdomSfGorxVmJAEsrfdqLvZiEFd1F7dH",
+        "resolved_version": "1.0.0",
+        "target_uri": "ipfs://QmY4g2gMUZUs9ePdomSfGorxVmJAEsrfdqLvZiEFd1F7dH"
+    }
+}

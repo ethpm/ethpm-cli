@@ -1,21 +1,39 @@
+from argparse import Namespace
 from collections import namedtuple
+import os 
 import json
+from pathlib import Path
 from typing import Any, Dict, Iterable, Tuple  # noqa: F401
 from urllib import parse
 
 from eth_typing import URI, Address, Manifest  # noqa: F401
-from eth_utils import to_dict, to_text
+from eth_utils import to_dict, to_text, to_hex
 from ethpm._utils.ipfs import extract_ipfs_path_from_uri
 from ethpm.backends.http import GithubOverHTTPSBackend
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.backends.registry import RegistryURIBackend, parse_registry_uri
+from ethpm.tools import builder
 from ethpm.validation.manifest import (
+from ethpm.utils.chains import create_latest_block_uri
+import requests
+from ethpm.utils.manifest_validation import (
     validate_manifest_against_schema,
     validate_manifest_deployments,
     validate_raw_manifest_format,
 )
+from ethpm.utils.uri import is_valid_content_addressed_github_uri, parse_registry_uri
+from ethpm.validation import is_valid_registry_uri
+from web3.auto.infura import w3
 
-from ethpm_cli.exceptions import UriNotSupportedError
+from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR
+from ethpm_cli.config import Config
+from ethpm_cli.exceptions import (
+    UriNotSupportedError,
+    EtherscanKeyNotFound,
+    ContractNotVerified,
+)
+from ethpm_cli._utils.logger import cli_logger
+from ethpm_cli._utils.ipfs import get_ipfs_backend
 
 
 class Package:
@@ -95,3 +113,85 @@ def process_and_validate_raw_manifest(raw_manifest: bytes) -> Manifest:
     validate_manifest_against_schema(manifest)
     validate_manifest_deployments(manifest)
     return manifest
+
+
+def package_from_etherscan(args: Namespace, config: Config) -> Package:
+    contract_addr = args.etherscan
+    body = make_etherscan_request(contract_addr)
+
+    # how useful is this, if we're always verifying against the same value - (at least for pkgs generated this way
+    contract_type = body["ContractName"]
+    block_uri = create_latest_block_uri(w3)
+    runtime_bytecode = to_hex(w3.eth.getCode(contract_addr))
+    manifest = {
+        "package_name": args.package_name,
+        "manifest_version": "2",
+        "version": args.version,
+        "sources": {f"./{contract_type}.sol": body["SourceCode"]},
+        "contract_types": {
+            contract_type: {
+                "abi": json.loads(body["ABI"]),
+                "runtime_bytecode": {"bytecode": runtime_bytecode},
+                "compiler": generate_compiler_info(body),
+            }
+        },
+        "deployments": {
+            block_uri: {
+                # support aliasing?
+                contract_type: {
+                    "contract_type": contract_type,
+                    "address": contract_addr,
+                }
+            }
+        },
+    }
+
+    ipfs_backend = get_ipfs_backend()
+    ipfs_data = builder.build(
+        manifest, builder.validate(), builder.pin_to_ipfs(backend=ipfs_backend)
+    )
+    ipfs_uri = f"ipfs://{ipfs_data[0]['Hash']}"
+
+    return Package(ipfs_uri, args.alias, ipfs_backend)
+
+
+def make_etherscan_request(contract_addr) -> Dict[str, str]:
+    etherscan_api_key = get_etherscan_key()
+    response = requests.get(
+        "https://api.etherscan.io/api",
+        params=[
+            ("module", "contract"),
+            ("action", "getsourcecode"),
+            ("address", contract_addr),
+            ("apikey", etherscan_api_key),
+        ],
+    ).json()
+
+    if response['message'] == "NOTOK":
+        raise ContractNotVerified(
+            f"Contract at {contract_addr} has not been verified on Etherscan."
+        )
+    return response['result'][0]
+
+
+def get_etherscan_key() -> str:
+    if ETHERSCAN_KEY_ENV_VAR not in os.environ:
+        raise EtherscanKeyNotFound(
+            f"No Etherscan API key found. Please ensure that the {ETHERSCAN_KEY_ENV_VAR} environment variable is set."
+        )
+    return os.getenv(ETHERSCAN_KEY_ENV_VAR)
+
+
+@to_dict
+def generate_compiler_info(body: Dict[str, Any]) -> Iterable[str]:
+    if "vyper" in body["CompilerVersion"]:
+        name, version = body["CompilerVersion"].split(":")
+    else:
+        name = "solc"
+        version = body["CompilerVersion"]
+
+    optimized = True if body["OptimizationUsed"] == 1 else False
+
+    yield "name", name
+    yield "version", version
+    yield "settings", {"optimize": optimized}
