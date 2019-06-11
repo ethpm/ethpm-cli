@@ -1,8 +1,4 @@
-import shutil
-
 import pexpect
-
-from ethpm_cli._utils.testing import check_dir_trees_equal
 
 
 def test_ethpm_list(test_assets_dir):

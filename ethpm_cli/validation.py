@@ -1,9 +1,9 @@
 from argparse import Namespace
 import json
-from pathlib import Path
 import os
+from pathlib import Path
 
-from eth_typing import URI
+from eth_typing import URI, Address
 from eth_utils import is_hex_address
 from ethpm.backends.registry import is_valid_registry_uri
 from ethpm.exceptions import EthPMValidationError
@@ -11,8 +11,10 @@ from ethpm.uri import is_supported_content_addressed_uri
 from ethpm.validation.package import validate_package_name
 from web3 import Web3
 
-from ethpm_cli.constants import SOLC_OUTPUT
-from ethpm_cli.exceptions import InstallError, UriNotSupportedError, ValidationError
+from ethpm_cli._utils.ethpmdir import is_package_installed
+from ethpm_cli.config import Config
+from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR, SOLC_OUTPUT
+from ethpm_cli.exceptions import EtherscanKeyNotFound, InstallError, UriNotSupportedError, ValidationError
 
 
 def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
@@ -52,24 +54,29 @@ def validate_solc_output(project_dir: Path) -> None:
 
 
 def validate_install_cli_args(args: Namespace) -> None:
-    if args.uri:
-        validate_target_uri(args.uri)
-
     if args.alias:
         validate_alias(args.alias)
 
     if args.ethpm_dir:
         validate_ethpm_dir(args.ethpm_dir)
 
-    # test
-    if args.etherscan:
+    if args.uri:
+        validate_target_uri(args.uri)
+    elif args.etherscan:
         validate_address(args.etherscan)
-
         if "package_name" not in args:
-            raise InstallError
+            raise InstallError(
+                "To install an Etherscan verified contract, you must specify a --package-name."
+            )
 
         if "version" not in args:
-            raise InstallError
+            raise InstallError(
+                "To install an Etherscan verified contract, you must specify a --version."
+            )
+    else:
+        raise UriNotSupportedError(
+            "--uri or --etherscan arg must be provided to install a package."
+        )
 
 
 def validate_uninstall_cli_args(args: Namespace) -> None:
@@ -78,23 +85,29 @@ def validate_uninstall_cli_args(args: Namespace) -> None:
         validate_ethpm_dir(args.ethpm_dir)
 
 
-def validate_verify_cli_args(args: Namespace, config) -> None:
+def validate_verify_cli_args(args: Namespace, config: Config) -> None:
     validate_address(args.address)
-    # contract type name / id needs cleaning up
     validate_package_is_installed(args.contract_type, config)
 
 
-def validate_package_is_installed(contract_type_id, config):
+def validate_package_is_installed(contract_type_id: str, config: Config) -> None:
     package, contract_type = contract_type_id.split(":")
     validate_package_name(package)
-    # dupe code from ethpm_cli.install
-    if not os.path.exists(config.ethpm_dir / package):
+    if not is_package_installed(package, config):
         raise InstallError(f"{package} is not installed.")
 
 
-def validate_address(address):
+def validate_address(address: Address) -> None:
     if not is_hex_address(address):
         raise ValidationError(f"{address} is not a valid hex address.")
+
+
+def validate_etherscan_key_available() -> None:
+    if ETHERSCAN_KEY_ENV_VAR not in os.environ:
+        raise EtherscanKeyNotFound(
+            "No Etherscan API key found. Please ensure that the "
+            f"{ETHERSCAN_KEY_ENV_VAR} environment variable is set."
+        )
 
 
 def validate_target_uri(uri: URI) -> None:

@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from pathlib import Path
 import shutil
 import tempfile
@@ -12,6 +11,7 @@ from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.uri import is_ipfs_uri
 
 from ethpm_cli._utils.filesystem import atomic_replace
+from ethpm_cli._utils.ethpmdir import is_package_installed
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR, LOCKFILE_NAME, SRC_DIR_NAME
 from ethpm_cli.exceptions import InstallError
@@ -103,10 +103,6 @@ def get_dependency_dirs(base_dir: Path) -> Iterable[Path]:
         for ddir in dep_dir.iterdir():
             if ddir.is_dir():
                 yield ddir
-
-
-def is_package_installed(package_name: str, config: Config) -> bool:
-    return os.path.exists(config.ethpm_dir / package_name)
 
 
 @to_tuple

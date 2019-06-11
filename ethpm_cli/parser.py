@@ -315,7 +315,6 @@ install_parser.add_argument(
     type=str,
     help="IPFS / Github / Etherscan / Registry URI of target package.",
 )
-# break etherscan out into own thing?
 install_parser.add_argument(
     "--etherscan",
     dest="etherscan",
@@ -395,8 +394,6 @@ list_parser.set_defaults(func=list_action)
 #
 # ethpm verify
 #
-
-# ethpm verify ens:Deed --address 0x123123
 
 
 def verify_action(args: argparse.Namespace) -> None:
