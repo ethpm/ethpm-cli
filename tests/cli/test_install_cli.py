@@ -23,17 +23,17 @@ def test_ethpm_install(tmp_path, test_assets_dir):
 
 
 def test_ethpm_install_from_etherscan(tmp_path, test_assets_dir, monkeypatch):
-    class MockResponse(object):
+    class MockSuccessResponse(object):
         def json(self):
             etherscan_response = (
                 test_assets_dir / "dai" / "etherscan_response.json"
             ).read_text()
             return {"result": etherscan_response}
 
-    def mock_get(url):
-        return MockResponse()
+    def mock_success_get(url):
+        return MockSuccessResponse()
 
-    monkeypatch.setattr(requests, "get", mock_get)
+    monkeypatch.setattr(requests, "get", mock_success_get)
 
     dai_mainnet_addr = "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359"
     ethpm_dir = tmp_path / "_ethpm_packages"
@@ -54,14 +54,14 @@ def test_ethpm_install_from_etherscan(tmp_path, test_assets_dir, monkeypatch):
 def test_ethpm_install_etherscan_raises_exception_for_unverified_contract(
     tmp_path, monkeypatch
 ):
-    class MockResponse(object):
+    class MockBadResponse(object):
         def json(self):
             return {"message": "NOTOK"}
 
-    def mock_get(url):
-        return MockResponse()
+    def mock_bad_get(url):
+        return MockBadResponse()
 
-    monkeypatch.setattr(requests, "get", mock_get)
+    monkeypatch.setattr(requests, "get", mock_bad_get)
 
     unverified_contract_addr = "0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729"
     ethpm_dir = tmp_path / "_ethpm_packages"

@@ -28,11 +28,7 @@ from web3.auto.infura import w3
 from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR
-from ethpm_cli.exceptions import (
-    ContractNotVerified,
-    EtherscanKeyNotFound,
-    UriNotSupportedError,
-)
+from ethpm_cli.exceptions import ContractNotVerified, UriNotSupportedError
 from ethpm_cli.validation import validate_etherscan_key_available
 
 

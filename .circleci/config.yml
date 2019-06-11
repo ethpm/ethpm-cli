@@ -36,6 +36,9 @@ common: &common
         command: pip install --user tox
     - run:
         name: run tox
+        environment:
+            ETHPM_CLI_ETHERSCAN_API_KEY: RYKF6YJS1N2F5PUFA9Q1P9VG92R8N7NE3G 
+            WEB3_INFURA_PROJECT_ID: 4f1a358967c7474aae6f8f4a7698aefc
         command: ~/.local/bin/tox -r
     - save_cache:
         paths:

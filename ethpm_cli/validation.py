@@ -14,7 +14,12 @@ from web3 import Web3
 from ethpm_cli._utils.ethpmdir import is_package_installed
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR, SOLC_OUTPUT
-from ethpm_cli.exceptions import EtherscanKeyNotFound, InstallError, UriNotSupportedError, ValidationError
+from ethpm_cli.exceptions import (
+    EtherscanKeyNotFound,
+    InstallError,
+    UriNotSupportedError,
+    ValidationError,
+)
 
 
 def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
@@ -83,11 +88,6 @@ def validate_uninstall_cli_args(args: Namespace) -> None:
     validate_package_name(args.package)
     if args.ethpm_dir:
         validate_ethpm_dir(args.ethpm_dir)
-
-
-def validate_verify_cli_args(args: Namespace, config: Config) -> None:
-    validate_address(args.address)
-    validate_package_is_installed(args.contract_type, config)
 
 
 def validate_package_is_installed(contract_type_id: str, config: Config) -> None:
