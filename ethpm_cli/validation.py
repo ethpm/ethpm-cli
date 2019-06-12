@@ -11,6 +11,7 @@ from ethpm.uri import is_supported_content_addressed_uri
 from ethpm.validation.package import validate_package_name
 from web3 import Web3
 
+from ethpm_cli._utils.etherscan import is_etherscan_uri
 from ethpm_cli._utils.ethpmdir import is_package_installed
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR, SOLC_OUTPUT
@@ -59,29 +60,30 @@ def validate_solc_output(project_dir: Path) -> None:
 
 
 def validate_install_cli_args(args: Namespace) -> None:
+    validate_supported_uri(args.uri)
     if args.alias:
         validate_alias(args.alias)
 
     if args.ethpm_dir:
         validate_ethpm_dir(args.ethpm_dir)
 
-    if args.uri:
-        validate_target_uri(args.uri)
-    elif args.etherscan:
-        validate_address(args.etherscan)
-        if "package_name" not in args:
+    if is_etherscan_uri(args.uri):
+        if not args.package_name or not args.version:
             raise InstallError(
-                "To install an Etherscan verified contract, you must specify a --package-name."
-            )
-
-        if "version" not in args:
-            raise InstallError(
-                "To install an Etherscan verified contract, you must specify a --version."
+                "To install an Etherscan verified contract, you must specify both the "
+                "--package-name and --version."
             )
     else:
-        raise UriNotSupportedError(
-            "--uri or --etherscan arg must be provided to install a package."
-        )
+        if args.package_name:
+            raise InstallError(
+                "You cannot redefine the package_name of an existing package. "
+                "Consider aliasing the package instead."
+            )
+
+        if args.version:
+            raise InstallError(
+                "You cannot redefine the version of an existing package."
+            )
 
 
 def validate_uninstall_cli_args(args: Namespace) -> None:
@@ -110,11 +112,16 @@ def validate_etherscan_key_available() -> None:
         )
 
 
-def validate_target_uri(uri: URI) -> None:
-    if not is_supported_content_addressed_uri(uri) and not is_valid_registry_uri(uri):
+def validate_supported_uri(uri: URI) -> None:
+    if (
+        not is_ipfs_uri(uri)
+        and not is_etherscan_uri(uri)  # noqa: W503
+        and not is_valid_registry_uri(uri)  # noqa: W503
+        and not is_valid_content_addressed_github_uri(uri)  # noqa: W503
+    ):
         raise UriNotSupportedError(
             f"Target uri: {uri} not a currently supported uri. "
-            "Target uris must be one of: ipfs, github blob, or registry."
+            "Target uris must be one of: ipfs, github, etherscan, or registry."
         )
 
 

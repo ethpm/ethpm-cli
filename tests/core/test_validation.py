@@ -16,6 +16,8 @@ def args():
     namespace.local_ipfs = None
     namespace.alias = None
     namespace.etherscan = None
+    namespace.package_name = None
+    namespace.version = None
     return namespace
 
 

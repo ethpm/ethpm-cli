@@ -22,6 +22,8 @@ def config(tmpdir):
     namespace.target_uri = None
     namespace.alias = None
     namespace.etherscan = None
+    namespace.package_name = None
+    namespace.version = None
     namespace.ethpm_dir = ethpm_dir
     return Config(namespace)
 

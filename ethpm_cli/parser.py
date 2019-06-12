@@ -3,6 +3,7 @@ from pathlib import Path
 
 from eth_utils import humanize_hash
 
+from ethpm_cli._utils.etherscan import is_etherscan_uri
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
@@ -290,17 +291,15 @@ scrape_parser.set_defaults(func=scrape_action)
 def install_action(args: argparse.Namespace) -> None:
     validate_install_cli_args(args)
     config = Config(args)
-    if args.etherscan:
+    if is_etherscan_uri(args.uri):
         package = package_from_etherscan(args, config)
-        source = f"Etherscan @ {args.etherscan}"
     else:
         package = Package(args.uri, args.alias, config.ipfs_backend)
-        source = args.uri
     install_package(package, config)
     cli_logger.info(
         "%s package sourced from %s installed to %s.",
         package.alias,
-        source,
+        args.uri,
         config.ethpm_dir,
     )
 
@@ -310,31 +309,24 @@ install_parser = ethpm_parser.add_parser(
     help="Install a target package, by providing its uri, to your ethPM directory.",
 )
 install_parser.add_argument(
-    "--uri",
+    "uri",
     action="store",
     type=str,
     help="IPFS / Github / Etherscan / Registry URI of target package.",
-)
-install_parser.add_argument(
-    "--etherscan",
-    dest="etherscan",
-    action="store",
-    type=str,
-    help="Verified mainnet contract address.",
 )
 install_parser.add_argument(
     "--package-name",
     dest="package_name",
     action="store",
     type=str,
-    help="Package name for target contract.",
+    help="Package name for Etherscan verified contract.",
 )
 install_parser.add_argument(
     "--version",
     dest="version",
     action="store",
     type=str,
-    help="Version for target contract.",
+    help="Version for Etherscan verified contract.",
 )
 install_parser.add_argument(
     "--alias", action="store", type=str, help="Alias to install target package under."

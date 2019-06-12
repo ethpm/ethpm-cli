@@ -64,7 +64,7 @@ class EtherscanKeyNotFound(BaseEthpmCliError):
 
 class ContractNotVerified(BaseEthpmCliError):
     """
-    Raised when a request to Etherscan is for an unverified contract.
+    Raised when a request to Etherscan points to an unverified contract.
     """
 
     pass

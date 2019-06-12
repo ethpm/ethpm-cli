@@ -25,6 +25,7 @@ from ethpm.validation import is_valid_registry_uri
 import requests
 from web3.auto.infura import w3
 
+from ethpm_cli._utils.etherscan import get_etherscan_network
 from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR
@@ -112,8 +113,9 @@ def process_and_validate_raw_manifest(raw_manifest: bytes) -> Manifest:
 
 
 def package_from_etherscan(args: Namespace, config: Config) -> Package:
-    contract_addr = args.etherscan
-    body = make_etherscan_request(contract_addr)
+    contract_addr = parse.urlparse(args.uri).netloc
+    network = get_etherscan_network(args.uri)
+    body = make_etherscan_request(contract_addr, network)
 
     contract_type = body["ContractName"]
     block_uri = create_latest_block_uri(w3)
@@ -149,11 +151,11 @@ def package_from_etherscan(args: Namespace, config: Config) -> Package:
     return Package(ipfs_uri, args.alias, ipfs_backend)
 
 
-def make_etherscan_request(contract_addr: Address) -> Dict[str, str]:
+def make_etherscan_request(contract_addr: Address, network: str) -> Dict[str, str]:
     validate_etherscan_key_available()
     etherscan_api_key = os.getenv(ETHERSCAN_KEY_ENV_VAR)
     response = requests.get(  # type: ignore
-        "https://api.etherscan.io/api",
+        f"https://api{network}.etherscan.io/api",
         params=[
             ("module", "contract"),
             ("action", "getsourcecode"),

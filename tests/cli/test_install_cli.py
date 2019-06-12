@@ -8,7 +8,7 @@ def test_ethpm_install(tmp_path, test_assets_dir):
     ethpm_dir = tmp_path / "_ethpm_packages"
     ethpm_dir.mkdir()
     child = pexpect.spawn(
-        "ethpm install --uri ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "
+        "ethpm install ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "
         f"--ethpm-dir {ethpm_dir}"
     )
     child.expect("EthPM CLI v0.1.0a0\r\n")
@@ -39,8 +39,8 @@ def test_ethpm_install_from_etherscan(tmp_path, test_assets_dir, monkeypatch):
     ethpm_dir = tmp_path / "_ethpm_packages"
     ethpm_dir.mkdir()
     child = pexpect.spawn(
-        f"ethpm install --etherscan {dai_mainnet_addr} --package-name dai --version 1.0.0 "
-        f"--ethpm-dir {ethpm_dir}"
+        f"ethpm install etherscan://{dai_mainnet_addr}/1 --package-name dai --version 1.0.0 "
+        f"--ethpm-dir {ethpm_dir} --local-ipfs"
     )
     child.expect("EthPM CLI v0.1.0a0\r\n")
     child.expect("\r\n")
@@ -67,8 +67,8 @@ def test_ethpm_install_etherscan_raises_exception_for_unverified_contract(
     ethpm_dir = tmp_path / "_ethpm_packages"
     ethpm_dir.mkdir()
     child = pexpect.spawn(
-        f"ethpm install --etherscan {unverified_contract_addr} --package-name dai --version 1.0.0 "
-        f"--ethpm-dir {ethpm_dir}"
+        f"ethpm install etherscan://{unverified_contract_addr}/1 --package-name dai "
+        f"--version 1.0.0 --ethpm-dir {ethpm_dir}"
     )
     child.expect("EthPM CLI v0.1.0a0\r\n")
     child.expect("\r\n")
