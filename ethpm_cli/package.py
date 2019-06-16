@@ -8,17 +8,13 @@ from ethpm.backends.http import GithubOverHTTPSBackend
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.backends.registry import RegistryURIBackend
 from ethpm.typing import URI, Address, Manifest  # noqa: F401
-from ethpm.utils.ipfs import extract_ipfs_path_from_uri, generate_file_hash, is_ipfs_uri
+from ethpm.utils.ipfs import extract_ipfs_path_from_uri, is_ipfs_uri
 from ethpm.utils.manifest_validation import (
     validate_manifest_against_schema,
     validate_manifest_deployments,
     validate_raw_manifest_format,
 )
-from ethpm.utils.uri import (
-    is_valid_content_addressed_github_uri,
-    parse_registry_uri,
-    validate_blob_uri_contents,
-)
+from ethpm.utils.uri import is_valid_content_addressed_github_uri, parse_registry_uri
 from ethpm.validation import is_valid_registry_uri
 
 from ethpm_cli.exceptions import UriNotSupportedError
@@ -65,21 +61,14 @@ ResolvedManifestURI = namedtuple(
 def resolve_manifest_uri(uri: URI, ipfs: BaseIPFSBackend) -> ResolvedManifestURI:
     if is_valid_content_addressed_github_uri(uri):
         raw_manifest = GithubOverHTTPSBackend().fetch_uri_contents(uri)
-        validate_blob_uri_contents(raw_manifest, uri)
         resolved_content_hash = parse.urlparse(uri).path.split("/")[-1]
     elif is_ipfs_uri(uri):
         raw_manifest = ipfs.fetch_uri_contents(uri)
-        manifest_content_hash = extract_ipfs_path_from_uri(uri)
-        resolved_content_hash = generate_file_hash(raw_manifest)
-        if resolved_content_hash != manifest_content_hash:
-            raise UriNotSupportedError(
-                f"Contents found at {uri} resolved to the content hash {resolved_content_hash} "
-                f"which don't match the uri content hash of {manifest_content_hash}."
-            )
+        resolved_content_hash = extract_ipfs_path_from_uri(uri)
     else:
         raise UriNotSupportedError(
             f"{uri} is not supported. Currently EthPM CLI only supports "
-            "IPFS & Github blob manifest uris."
+            "IPFS and Github blob manifest uris."
         )
     return ResolvedManifestURI(raw_manifest, resolved_content_hash)
 
