@@ -152,6 +152,7 @@ def write_pkg_installation_files(
     (tmp_pkg_dir / "manifest.json").write_bytes(pkg.raw_manifest)
 
     write_sources_to_disk(pkg, tmp_pkg_dir, ipfs_backend)
+    write_docs_to_disk(pkg, tmp_pkg_dir, ipfs_backend)
     write_build_deps_to_disk(pkg, tmp_pkg_dir, ipfs_backend)
     tmp_ethpm_lock = tmp_pkg_dir.parent / LOCKFILE_NAME
     install_to_ethpm_lock(pkg, tmp_ethpm_lock)
@@ -182,6 +183,21 @@ def resolve_sources(
             # for inlined sources
             contents = source
         yield path, contents
+
+
+def write_docs_to_disk(
+    pkg: Package, pkg_dir: Path, ipfs_backend: BaseIPFSBackend
+) -> None:
+    try:
+        doc_uri = pkg.manifest["meta"]["links"]["documentation"]
+    except KeyError:
+        return
+
+    if is_ipfs_uri(doc_uri):
+        documentation = ipfs_backend.fetch_uri_contents(doc_uri)
+        doc_path = pkg_dir / "documentation.md"
+        doc_path.touch()
+        doc_path.write_bytes(documentation)
 
 
 def write_build_deps_to_disk(
