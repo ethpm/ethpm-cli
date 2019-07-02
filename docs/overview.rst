@@ -1,46 +1,49 @@
 Overview
 ========
 
-This is a tool to help manage EthPM packages.
+A command-line tool to help manage EthPM packages and registries.
 
 
-WARNING
+.. warning::
 
-``EthPM CLI`` is currently in public Alpha:
+   ``EthPM CLI`` is currently in public Alpha:
 
-- It is expected to have bugs and is not meant to be used in production 
-- Things may be ridiculously slow or not work at all
+   - It is expected to have bugs and is not meant to be used in production 
+   - Things may be ridiculously slow or not work at all
 
-
-Installing EthPM CLI
-====================
 
 Installing EthPM Packages
-=========================
+-------------------------
+
+.. argparse::
+   :ref: ethpm_cli.parser.parser
+   :prog: ethpm
 
 
-From URI
---------
+URIs
+----
 
-ethpm install <uri> 
+ethPM Cli supports the following URI schemes.
 
+- IPFS
 
-from Etherscan
+  - ``ipfs://[IPFS_HASH]``
 
+- Etherscan
 
-ethpm uninstall <pkg_name>
+  - ``etherscan://[CONTRACT_ADDRESS]/[CHAIN_ID]``
+  - ``CONTRACT_ADDRESS`` and ``CHAIN_ID`` must represent a `Verified Contract <https://etherscan.io/contractsVerified>`_ on Etherscan.
+  - Supported values for ``CHAIN_ID``
 
+      ========  ===== 
+      CHAIN_ID  CHAIN
+      1         Mainnet
+      3         Ropsten
+      4         Rinkeby
+      5         Goerli
+      42        Kovan
+      ========  =====
 
-ethpm list
+- Github Blob 
 
-
-Verifying EthPM Packages
-========================
-
-
-
-IPFS Scraper
-============
-
-ipfs scrape
-
+  - ``https://api.github.com/repos/[OWNER]/[REPO]/git/blobs/[FILE_SHA]``
