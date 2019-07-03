@@ -1,5 +1,5 @@
 ethpm-cli
-==============================
+=========
 
 CLI for EthPM
 
@@ -9,7 +9,9 @@ Contents
 .. toctree::
     :maxdepth: 3
 
-    ethpm_cli
+    overview
+    installation
+    disk
     releases
 
 
@@ -17,4 +19,3 @@ Indices and tables
 ------------------
 
 * :ref:`genindex`
-* :ref:`modindex`

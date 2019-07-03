@@ -49,21 +49,25 @@ def scrape_action(args: argparse.Namespace) -> None:
 
 
 scrape_parser = ethpm_parser.add_parser(
-    "scrape", help="Scrape for new VersionRelease events."
+    "scrape",
+    help=(
+        "Poll for VersionRelease events, scrape emitted IPFS assets "
+        "and write them to local IPFS directory.",
+    ),
 )
 scrape_parser.add_argument(
     "--ipfs-dir",
     dest="ipfs_dir",
     action="store",
     type=Path,
-    help="path to specific IPFS assets dir.",
+    help="Path to specific IPFS directory.",
 )
 scrape_parser.add_argument(
     "--start-block",
     dest="start_block",
     action="store",
     type=int,
-    help="Block number to begin scraping from.",
+    help="Block number from where to begin scraping (Defaults to blocks from ~ March 14, 2019).",
 )
 scrape_parser.set_defaults(func=scrape_action)
 
@@ -86,22 +90,25 @@ def install_action(args: argparse.Namespace) -> None:
     )
 
 
-install_parser = ethpm_parser.add_parser("install", help="Install uri")
+install_parser = ethpm_parser.add_parser(
+    "install",
+    help="Install a target package, by providing its uri, to your ethPM directory.",
+)
 install_parser.add_argument(
     "uri",
     action="store",
     type=str,
-    help="IPFS / Github / Registry URI of package you want to install.",
+    help="IPFS / Github / Etherscan / Registry URI of target package.",
 )
 install_parser.add_argument(
     "--ethpm-dir",
     dest="ethpm_dir",
     action="store",
     type=Path,
-    help="Path to specific ethpm_packages dir.",
+    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
 )
 install_parser.add_argument(
-    "--alias", action="store", type=str, help="Alias for installing package."
+    "--alias", action="store", type=str, help="Alias to install target package under."
 )
 install_parser.add_argument(
     "--local-ipfs",
@@ -124,19 +131,21 @@ def uninstall_action(args: argparse.Namespace) -> None:
     cli_logger.info("%s uninstalled from %s", args.package, config.ethpm_dir)
 
 
-uninstall_parser = ethpm_parser.add_parser("uninstall", help="Uninstall a package.")
+uninstall_parser = ethpm_parser.add_parser(
+    "uninstall", help="Uninstall a package from your ethPM directory."
+)
 uninstall_parser.add_argument(
     "package",
     action="store",
     type=str,
-    help="Package name / alias of package you want to uninstall.",
+    help="Package name / alias of target package to uninstall.",
 )
 uninstall_parser.add_argument(
     "--ethpm-dir",
     dest="ethpm_dir",
     action="store",
     type=Path,
-    help="Path to specific ethpm_packages dir.",
+    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
 )
 uninstall_parser.set_defaults(func=uninstall_action)
 
@@ -151,12 +160,14 @@ def list_action(args: argparse.Namespace) -> None:
     list_installed_packages(config)
 
 
-list_parser = ethpm_parser.add_parser("list", help="List installed packages")
+list_parser = ethpm_parser.add_parser(
+    "list", help="List all installed packages in your ethPM directory."
+)
 list_parser.add_argument(
     "--ethpm-dir",
     dest="ethpm_dir",
     action="store",
     type=Path,
-    help="Path to specific _ethpm_packages dir.",
+    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
 )
 list_parser.set_defaults(func=list_action)

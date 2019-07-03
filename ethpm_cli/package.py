@@ -22,12 +22,12 @@ from ethpm_cli.exceptions import UriNotSupportedError
 
 class Package:
     def __init__(
-        self, target_uri: URI, alias: str, ipfs_backend: BaseIPFSBackend
+        self, install_uri: URI, alias: str, ipfs_backend: BaseIPFSBackend
     ) -> None:
         self.ipfs_backend = ipfs_backend
-        resolved_target_uri = resolve_target_uri(target_uri)
-        self.manifest_uri: URI = resolved_target_uri.manifest_uri
-        self.registry_address: Address = resolved_target_uri.registry_address
+        resolved_install_uri = resolve_install_uri(install_uri)
+        self.manifest_uri: URI = resolved_install_uri.manifest_uri
+        self.registry_address: Address = resolved_install_uri.registry_address
 
         resolved_manifest_uri = resolve_manifest_uri(
             self.manifest_uri, self.ipfs_backend
@@ -37,13 +37,13 @@ class Package:
 
         self.manifest: Manifest = process_and_validate_raw_manifest(self.raw_manifest)
         self.alias = alias if alias else self.manifest["package_name"]
-        self.target_uri = target_uri
+        self.install_uri = install_uri
 
     @to_dict
     def generate_ethpm_lock(self) -> Iterable[Tuple[str, str]]:
         yield "resolved_uri", self.manifest_uri
         yield "resolved_content_hash", self.resolved_content_hash
-        yield "target_uri", self.target_uri
+        yield "install_uri", self.install_uri
         yield "registry_address", self.registry_address
         yield "alias", self.alias
         yield "resolved_version", self.manifest["version"]
@@ -73,7 +73,7 @@ def resolve_manifest_uri(uri: URI, ipfs: BaseIPFSBackend) -> ResolvedManifestURI
     return ResolvedManifestURI(raw_manifest, resolved_content_hash)
 
 
-def resolve_target_uri(uri: URI) -> ResolvedTargetURI:
+def resolve_install_uri(uri: URI) -> ResolvedTargetURI:
     if is_valid_registry_uri(uri):
         manifest_uri = RegistryURIBackend().fetch_uri_contents(uri)
         registry_address = parse_registry_uri(uri).auth

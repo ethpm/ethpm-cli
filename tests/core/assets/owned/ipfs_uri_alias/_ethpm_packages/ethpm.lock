@@ -1,11 +1,11 @@
 {
     "owned-alias": {
         "alias": "owned-alias",
+        "install_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
         "registry_address": null,
         "resolved_content_hash": "QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
         "resolved_package_name": "owned",
         "resolved_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
-        "resolved_version": "1.0.0",
-        "target_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW"
+        "resolved_version": "1.0.0"
     }
 }

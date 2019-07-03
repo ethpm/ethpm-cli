@@ -22,7 +22,7 @@ def config(tmpdir):
     ethpm_dir = Path(tmpdir) / ETHPM_DIR_NAME
     ethpm_dir.mkdir()
     namespace.local_ipfs = False
-    namespace.target_uri = None
+    namespace.install_uri = None
     namespace.alias = None
     namespace.ethpm_dir = ethpm_dir
     return Config(namespace)

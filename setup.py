@@ -22,6 +22,7 @@ extras_require = {
     'doc': [
         "Sphinx>=1.6.5,<2",
         "sphinx_rtd_theme>=0.1.9",
+        "sphinx-argparse>=0.2.5,<1",
     ],
     'dev': [
         "bumpversion>=0.5.3,<1",
