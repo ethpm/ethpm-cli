@@ -52,6 +52,6 @@ A root-level JSON lockfile that manages what packages are currently installed. E
 
        - ``"version"`` resolved from target manifest.
 
-     - ``target_uri``
+     - ``install_uri``
 
        - Content addressed / etherscan / registry URI used to install package.
