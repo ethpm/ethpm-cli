@@ -14,6 +14,7 @@ from ethpm_cli.install import (
     list_installed_packages,
     uninstall_package,
 )
+from ethpm_cli.manifest import generate_manifest
 from ethpm_cli.package import Package
 from ethpm_cli.registry import activate_registry, add_registry, list_registries
 from ethpm_cli.scraper import scrape
@@ -107,15 +108,11 @@ def registry_activate_cmd(args: argparse.Namespace) -> None:
 
 registry_parser = ethpm_parser.add_parser("registry")
 registry_subparsers = registry_parser.add_subparsers(help="registry", dest="registry")
+
 registry_list_parser = registry_subparsers.add_parser("list", help="list")
-registry_list_parser.add_argument(
-    "--ethpm-dir",
-    dest="ethpm_dir",
-    action="store",
-    type=Path,
-    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
-)
+add_ethpm_dir_arg_to_parser(registry_list_parser)
 registry_list_parser.set_defaults(func=registry_list_cmd)
+
 registry_add_parser = registry_subparsers.add_parser("add", help="add")
 registry_add_parser.add_argument(
     "uri", action="store", type=str, help="Registry URI for target registry."
@@ -127,14 +124,9 @@ registry_add_parser.add_argument(
     type=str,
     help="Alias with which to reference this registry.",
 )
-registry_add_parser.add_argument(
-    "--ethpm-dir",
-    dest="ethpm_dir",
-    action="store",
-    type=Path,
-    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
-)
+add_ethpm_dir_arg_to_parser(registry_add_parser)
 registry_add_parser.set_defaults(func=registry_add_cmd)
+
 registry_activate_parser = registry_subparsers.add_parser("activate", help="activate")
 registry_activate_parser.add_argument(
     "uri_or_alias",
@@ -142,14 +134,26 @@ registry_activate_parser.add_argument(
     type=str,
     help="Registry URI or alias for target registry.",
 )
-registry_activate_parser.add_argument(
-    "--ethpm-dir",
-    dest="ethpm_dir",
-    action="store",
-    type=Path,
-    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
-)
+add_ethpm_dir_arg_to_parser(registry_activate_parser)
 registry_activate_parser.set_defaults(func=registry_activate_cmd)
+
+
+#
+# ethpm create
+#
+
+
+def create_action(args: argparse.Namespace) -> None:
+    config = Config(args)
+    generate_manifest(config.ethpm_dir)
+
+create_parser = ethpm_parser.add_parser(
+    "create",
+    help="Create an ethPM manifest from local smart contracts.",
+)
+# change name to projects dir
+add_ethpm_dir_arg_to_parser(create_parser)
+create_parser.set_defaults(func=create_action)
 
 
 #

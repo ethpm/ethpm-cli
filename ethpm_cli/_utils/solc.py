@@ -5,8 +5,7 @@ from typing import Any, Dict, Iterable
 from eth_typing import Manifest
 from eth_utils import to_tuple
 from eth_utils.toolz import assoc
-from ethpm.tools import builder as b
-
+from ethpm.tools import builder as b 
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.constants import SOLC_INPUT, SOLC_OUTPUT
 
@@ -46,16 +45,22 @@ def generate_solc_input(contracts_dir: Path) -> None:
     )
 
 
+def build_sources(contract_types, solc_output, contracts_dir):
+    return (
+        b.inline_source(ctype, solc_output, contracts_dir)
+        for ctype in contract_types
+    )
+
+def build_contract_types(contract_types, solc_output):
+    return (b.contract_type(ctype, solc_output) for ctype in contract_types)
+
 def create_base_manifest_from_solc_output(
     package_name: str, version: str, project_dir: Path
 ) -> Manifest:
     solc_output = json.loads((project_dir / SOLC_OUTPUT).read_text())["contracts"]
     contract_types = get_contract_types(solc_output)
-    built_sources = (
-        b.inline_source(ctype, solc_output, (project_dir / "contracts"))
-        for ctype in contract_types
-    )
-    built_types = (b.contract_type(ctype, solc_output) for ctype in contract_types)
+    built_sources = build_sources(contract_types, solc_output, project_dir / 'contracts')
+    built_types = build_contract_types(contract_types, solc_output)
     return b.build(
         {},
         b.package_name(package_name),
