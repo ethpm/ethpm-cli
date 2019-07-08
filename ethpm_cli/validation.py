@@ -7,9 +7,9 @@ from ethpm.backends.registry import is_valid_registry_uri
 from ethpm.exceptions import EthPMValidationError
 from ethpm.uri import is_supported_content_addressed_uri
 from ethpm.validation.package import validate_package_name
-from ethpm_cli.constants import SOLC_OUTPUT
 from web3 import Web3
 
+from ethpm_cli.constants import SOLC_OUTPUT
 from ethpm_cli.exceptions import InstallError, UriNotSupportedError, ValidationError
 
 
@@ -18,21 +18,36 @@ def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
         raise InstallError(f"{parent_dir} was not found in {child_dir} directory tree.")
 
 
-def validate_project_directory(project_dir):
+def validate_project_directory(project_dir: Path) -> None:
     if not project_dir.is_dir():
         raise ValidationError(f"{project_dir} is not a valid directory")
 
-    if not (project_dir / 'contracts').is_dir():
-        raise ValidationError(f"{project_dir} must contain a contracts/ directory that stores project contracts.")
+    if not (project_dir / "contracts").is_dir():
+        raise ValidationError(
+            f"{project_dir} must contain a contracts/ directory that stores project contracts."
+        )
 
 
-def validate_solc_output(project_dir):
-    if not (project_dir / SOLC_OUTPUT).is_file():
-        raise ValidationError(f"{project_dir} does not contain solc output. Please follow steps xxxxxx.")
+def validate_solc_output(project_dir: Path) -> None:
+    solc_output_path = project_dir / SOLC_OUTPUT
+    if not solc_output_path.is_file():
+        raise ValidationError(
+            f"{project_dir} does not contain solc output. Please follow the steps in the "
+            "documentation to generate your Solidity compiler output."
+        )
     try:
-        json.loads((project_dir / SOLC_OUTPUT).read_text())
+        solc_output_data = json.loads(solc_output_path.read_text())
     except ValueError:
-        raise ValidationError(f"Contents found at {project_dir / SOLC_OUTPUT} are not valid json.")
+        raise ValidationError(
+            f"Content found at {solc_output_path} does not look like valid json."
+        )
+
+    if 'contracts' not in solc_output_data:
+        raise ValidationError(
+            f"JSON found at {solc_output_path} does not look like valid "
+            "Solidity compiler standard json output."
+        )
+
 
 def validate_install_cli_args(args: Namespace) -> None:
     validate_target_uri(args.uri)

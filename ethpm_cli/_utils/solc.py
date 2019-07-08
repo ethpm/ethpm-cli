@@ -1,11 +1,12 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable
+from typing import Any, Callable, Dict, Iterable
 
 from eth_typing import Manifest
 from eth_utils import to_tuple
 from eth_utils.toolz import assoc
-from ethpm.tools import builder as b 
+from ethpm.tools import builder as b
+
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.constants import SOLC_INPUT, SOLC_OUTPUT
 
@@ -35,23 +36,31 @@ def generate_solc_input(contracts_dir: Path) -> None:
     }
     solc_output = assoc(BASE_SOLC_INPUT, "sources", sources)
     (contracts_dir.parent / SOLC_INPUT).touch()
-    (contracts_dir.parent / SOLC_INPUT).write_text(json.dumps(solc_output))
+    (contracts_dir.parent / SOLC_INPUT).write_text(json.dumps(solc_output, indent=4))
     cli_logger.info(
-        "Solidity compiler input successfully created and written to %s/%s.", contracts_dir.parent, SOLC_INPUT
+        "Solidity compiler input successfully created and written to %s/%s.\n",
+        contracts_dir.parent,
+        SOLC_INPUT,
     )
     cli_logger.info(
-        "Use `solc --allow-paths base_dir --standard-json < path/to/solc_input.json "
-        "> path/to/solc_output.json` to generate the Solidity compiler output."
+        f"Use `solc --standard-json --allow-paths {contracts_dir} "
+        f"--standard-json < {SOLC_INPUT} > {contracts_dir.parent / SOLC_OUTPUT}` "
+        "to generate the Solidity compiler output. "
+        "Requires that you have the correct Solidity compiler version installed."
     )
 
 
-def build_sources(contract_types, solc_output, contracts_dir):
+def build_sources(
+    contract_types: Iterable[str], solc_output: Dict[str, Any], contracts_dir: Path
+) -> Iterable[Callable[..., Manifest]]:
     return (
-        b.inline_source(ctype, solc_output, contracts_dir)
-        for ctype in contract_types
+        b.inline_source(ctype, solc_output, contracts_dir) for ctype in contract_types
     )
 
-def build_contract_types(contract_types, solc_output):
+
+def build_contract_types(
+    contract_types: Iterable[str], solc_output: Dict[str, Any]
+) -> Iterable[Callable[..., Manifest]]:
     return (b.contract_type(ctype, solc_output) for ctype in contract_types)
 
 
@@ -60,7 +69,9 @@ def create_basic_manifest_from_solc_output(
 ) -> Manifest:
     solc_output = json.loads((project_dir / SOLC_OUTPUT).read_text())["contracts"]
     contract_types = get_contract_types(solc_output)
-    built_sources = build_sources(contract_types, solc_output, project_dir / 'contracts')
+    built_sources = build_sources(
+        contract_types, solc_output, project_dir / "contracts"
+    )
     built_types = build_contract_types(contract_types, solc_output)
     return b.build(
         {},
