@@ -3,32 +3,34 @@ import json
 from ethpm_cli.constants import SOLC_INPUT, SOLC_OUTPUT
 from ethpm_cli._utils.solc import generate_solc_input, get_contract_types, build_contract_types, build_sources
 from ethpm.tools import builder as b
+from ethpm_cli.validation import validate_project_directory
+from ethpm_cli._utils.solc import create_basic_manifest_from_solc_output
 
 from pathlib import Path
 
-# add useful errror msgs to exceptions
-# and just useful logs that show your progress/what step you are on
 
-def generate_manifest(project_dir_arg):
-    # specify it's for solidity only
+def generate_basic_manifest(package_name, version, project_dir):
+    manifest = create_basic_manifest_from_solc_output(package_name, version, project_dir)
+    builder_fns = (
+        b.validate(),
+        b.write_to_disk(project_dir),
+    )
+    b.build(manifest, *builder_fns)
+    cli_logger.info(f"Manifest successfully created and written to {project_dir}/{manifest['version']}.json.")
+
+
+def generate_custom_manifest(project_dir_arg):
     cli_logger.info('Manifest Creator')
     cli_logger.info('----------------')
-    cli_logger.info('more helpful info here \n')
-    # validate project dir
+    cli_logger.info('Create ethPM manifests for local projects.')
+    cli_logger.info('Project directory must include solc output.')
+    cli_logger.info('Follow steps in docs to generate solc output.')
+
     project_dir = Path(project_dir_arg)
-    if not project_dir.is_dir():
-        raise Exception
     contracts_dir = project_dir / 'contracts'
-    if not contracts_dir.is_dir():
-        raise Exception
 
-    # generate solc input
+    # validate
     solc_output_path = project_dir / SOLC_OUTPUT
-    if not solc_output_path.is_file():
-        generate_solc_input_for_project(contracts_dir)
-    # validate solc_input? # of packages == # of keys in input
-
-    # validate solc_output?
     if not solc_output_path.is_file():
         raise Exception
 
@@ -49,20 +51,18 @@ def generate_manifest(project_dir_arg):
         # todo: *gen_deployments,
         # todo: ipfs pinning support
         gen_validate_manifest(),
-        gen_write_to_disk(project_dir),
+        b.write_to_disk(project_dir),
     )
     final_fns = (fn for fn in builder_fns if fn is not None)
     manifest = b.build({}, *final_fns)
     cli_logger.info(f"Manifest successfully created and written to {project_dir}/{manifest['version']}.json.")
 
-def gen_write_to_disk(project_dir):
-    # overwrite existing manifest?
-    return b.write_to_disk(project_dir)
 
 def gen_validate_manifest():
     flag = parse_bool_flag(input("Would you like to validate your manifest against the json schema? (recommended) (y/n) "))
     if flag:
         return b.validate()
+
 
 def gen_contract_types(solc_output):
     contract_types = get_contract_types(solc_output)
@@ -96,7 +96,7 @@ def gen_sources(solc_output, contracts_dir):
     inline_source_flag = parse_bool_flag(input('Would you like to automatically inline all sources? (y/n) '))
     if not inline_source_flag:
         raise Exception("sorry, we dont support pinning sources yet.")
-    # validate a source for every contract type
+    # todo: validate a source for every contract type
     return build_sources(contract_types, solc_output, contracts_dir)
 
 
@@ -152,8 +152,8 @@ def generate_solc_input_for_project(project_dir):
 
 
 def parse_bool_flag(flag):
-    # enhance
-    # your response ('xxx') was not one of the expected response: repeat
+    # todo: enhance
+    # i.e. your response ('xxx') was not one of the expected response: repeat
     if flag.lower() == "y":
         return True
     return False

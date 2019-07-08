@@ -3,24 +3,26 @@ from pathlib import Path
 
 from eth_utils import humanize_hash
 
+from ethpm_cli._utils.solc import generate_solc_input
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import get_authorized_address, import_keyfile
 from ethpm_cli.config import Config
 from ethpm_cli.constants import IPFS_CHAIN_DATA
-from ethpm_cli.exceptions import AuthorizationError
+from ethpm_cli.exceptions import AuthorizationError, ValidationError
 from ethpm_cli.install import (
     install_package,
     list_installed_packages,
     uninstall_package,
 )
-from ethpm_cli.manifest import generate_manifest
+from ethpm_cli.manifest import generate_custom_manifest, generate_basic_manifest
 from ethpm_cli.package import Package
 from ethpm_cli.registry import activate_registry, add_registry, list_registries
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import (
     validate_chain_data_store,
     validate_install_cli_args,
+    validate_solc_output,
     validate_uninstall_cli_args,
 )
 
@@ -144,15 +146,63 @@ registry_activate_parser.set_defaults(func=registry_activate_cmd)
 
 
 def create_action(args: argparse.Namespace) -> None:
-    config = Config(args)
-    generate_manifest(config.ethpm_dir)
+    validate_project_directory(args.project_dir)
+    if args.solc_input:
+        generate_solc_input(args.project_dir / 'contracts')
+    else:
+        validate_solc_output(args.project_dir)
+        if args.manifest:
+            generate_custom_manifest(args.project_dir)
+        else:
+            if not args.package_name:
+                raise ValidationError("To automatically generate a basic manifest, you must provide a --package-name.")
+
+            if not args.version:
+                raise ValidationError("To automatically generate a basic manifest, you must provide a --version.")
+            generate_basic_manifest(args.package_name, args.version, args.project_dir)
 
 create_parser = ethpm_parser.add_parser(
     "create",
     help="Create an ethPM manifest from local smart contracts.",
 )
-# change name to projects dir
-add_ethpm_dir_arg_to_parser(create_parser)
+create_parser.add_argument(
+    "--project-dir",
+    dest="project_dir",
+    action="store",
+    type=Path,
+    help="Path to specific project directory.",
+)
+create_parser.add_argument(
+    "--package-name",
+    dest="package_name",
+    action="store",
+    type=str,
+    help="Package name for generating a basic manifest.",
+)
+create_parser.add_argument(
+    "--version",
+    dest="version",
+    action="store",
+    type=str,
+    help="Version for generating a basic manifest.",
+)
+create_group = create_parser.add_mutually_exclusive_group(required=True)
+create_group.add_argument(
+    '--manifest',
+    action='store_true',
+    help="Start CLI tool for building custom manifests.",
+)
+create_group.add_argument(
+    '--basic-manifest',
+    action='store_true',
+    help="Generate a basic manifest for given projects dir.",
+)
+create_group.add_argument(
+    '--solc-input',
+    action='store_true',
+    help="Generate solidity compiler standard json input for given projects dir."
+)
+# add_ethpm_dir_arg_to_parser(create_parser)
 create_parser.set_defaults(func=create_action)
 
 

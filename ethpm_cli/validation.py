@@ -7,6 +7,7 @@ from ethpm.backends.registry import is_valid_registry_uri
 from ethpm.exceptions import EthPMValidationError
 from ethpm.uri import is_supported_content_addressed_uri
 from ethpm.validation.package import validate_package_name
+from ethpm_cli.constants import SOLC_OUTPUT
 from web3 import Web3
 
 from ethpm_cli.exceptions import InstallError, UriNotSupportedError, ValidationError
@@ -16,6 +17,22 @@ def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
     if parent_dir not in child_dir.parents:
         raise InstallError(f"{parent_dir} was not found in {child_dir} directory tree.")
 
+
+def validate_project_directory(project_dir):
+    if not project_dir.is_dir():
+        raise ValidationError(f"{project_dir} is not a valid directory")
+
+    if not (project_dir / 'contracts').is_dir():
+        raise ValidationError(f"{project_dir} must contain a contracts/ directory that stores project contracts.")
+
+
+def validate_solc_output(project_dir):
+    if not (project_dir / SOLC_OUTPUT).is_file():
+        raise ValidationError(f"{project_dir} does not contain solc output. Please follow steps xxxxxx.")
+    try:
+        json.loads((project_dir / SOLC_OUTPUT).read_text())
+    except ValueError:
+        raise ValidationError(f"Contents found at {project_dir / SOLC_OUTPUT} are not valid json.")
 
 def validate_install_cli_args(args: Namespace) -> None:
     validate_target_uri(args.uri)
@@ -53,7 +70,7 @@ def validate_alias(alias: str) -> None:
 def validate_ethpm_dir(ethpm_dir: Path) -> None:
     if ethpm_dir.name != "_ethpm_packages" or not ethpm_dir.is_dir():
         raise InstallError(
-            f"--ethpm-dir must point to an existing '_ethpm_packages' directory."
+            "--ethpm-dir must point to an existing '_ethpm_packages' directory."
         )
 
 

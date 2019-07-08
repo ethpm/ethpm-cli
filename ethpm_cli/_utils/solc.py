@@ -37,7 +37,7 @@ def generate_solc_input(contracts_dir: Path) -> None:
     (contracts_dir.parent / SOLC_INPUT).touch()
     (contracts_dir.parent / SOLC_INPUT).write_text(json.dumps(solc_output))
     cli_logger.info(
-        "Solidity compiler input written to %s/%s.", contracts_dir.parent, SOLC_OUTPUT
+        "Solidity compiler input successfully created and written to %s/%s.", contracts_dir.parent, SOLC_INPUT
     )
     cli_logger.info(
         "Use `solc --allow-paths base_dir --standard-json < path/to/solc_input.json "
@@ -54,7 +54,8 @@ def build_sources(contract_types, solc_output, contracts_dir):
 def build_contract_types(contract_types, solc_output):
     return (b.contract_type(ctype, solc_output) for ctype in contract_types)
 
-def create_base_manifest_from_solc_output(
+
+def create_basic_manifest_from_solc_output(
     package_name: str, version: str, project_dir: Path
 ) -> Manifest:
     solc_output = json.loads((project_dir / SOLC_OUTPUT).read_text())["contracts"]

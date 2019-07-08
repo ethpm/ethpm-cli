@@ -5,7 +5,7 @@ from ethpm import ASSETS_DIR
 
 from ethpm_cli._utils.solc import (
     BASE_SOLC_INPUT,
-    create_base_manifest_from_solc_output,
+    create_basic_manifest_from_solc_output,
     generate_solc_input,
 )
 from ethpm_cli.constants import SOLC_INPUT, SOLC_OUTPUT
@@ -22,11 +22,11 @@ def test_generate_solc_input(tmp_path):
     assert len(solc_input["sources"]) == 7
 
 
-def test_create_base_manifest_from_solc_output(tmp_path):
+def test_create_basic_manifest_from_solc_output(tmp_path):
     project_dir = tmp_path / "project"
     shutil.copytree(ASSETS_DIR / "registry", project_dir)
     (project_dir / "registry_compiler_output.json").replace(project_dir / SOLC_OUTPUT)
-    actual_manifest = create_base_manifest_from_solc_output(
+    actual_manifest = create_basic_manifest_from_solc_output(
         "registry", "1.0.0", project_dir
     )
     expected_manifest = json.loads((ASSETS_DIR / "registry" / "1.0.0.json").read_text())

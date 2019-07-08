@@ -1,20 +1,23 @@
 import pexpect
 import filecmp
-from ethpm_cli.constants import SOLC_OUTPUT
+from ethpm_cli.constants import SOLC_OUTPUT, SOLC_INPUT
+from ethpm import ASSETS_DIR
 import shutil
 
-def test_manifest_builder(test_assets_dir, tmp_path):
+def test_custom_manifest_builder(tmp_path):
     tmp_projects_dir = tmp_path / 'registry'
     tmp_projects_dir.mkdir()
     tmp_contracts_dir = tmp_projects_dir / 'contracts'
-    shutil.copytree(test_assets_dir / 'registry' / 'contracts', tmp_contracts_dir)
-    shutil.copyfile(test_assets_dir / 'registry' / SOLC_OUTPUT, tmp_projects_dir / SOLC_OUTPUT)
-    child = pexpect.spawn(f"ethpm create --ethpm-dir {tmp_projects_dir}")
+    shutil.copytree(ASSETS_DIR / 'registry' / 'contracts', tmp_contracts_dir)
+    shutil.copyfile(ASSETS_DIR / 'registry' / SOLC_OUTPUT, tmp_projects_dir / SOLC_OUTPUT)
+    child = pexpect.spawn(f"ethpm create --manifest --project-dir {tmp_projects_dir}")
     child.expect("EthPM CLI v0.1.0a0\r\n")
     child.expect("\r\n")
     child.expect("Manifest Creator\r\n")
     child.expect("----------------\r\n")
-    child.expect("more helpful info here \r\n")
+    child.expect('Create ethPM manifests for local projects.')
+    child.expect('Project directory must include solc output.')
+    child.expect('Follow steps in docs to generate solc output.')
     child.expect("\r\n")
     child.expect("Enter your package's name: ")
     child.sendline("wallet")
@@ -38,7 +41,6 @@ def test_manifest_builder(test_assets_dir, tmp_path):
     child.sendline("wallet, ethereum")
     child.expect("Would you like to add links to the documentation, repo, or website in your package?")
     child.sendline("y")
-    # todo raw string testing!
     child.expect("Enter a link for your documentation")
     child.sendline("www.readthedocs.com")
     child.expect("Enter a link for your repository")
@@ -76,4 +78,28 @@ def test_manifest_builder(test_assets_dir, tmp_path):
     child.expect("Would you like to validate your manifest against the json schema?")
     child.sendline("y")
     child.expect(f"Manifest successfully created and written to {tmp_projects_dir}/0.0.1.json")
-    assert filecmp.cmp(test_assets_dir / 'registry' / '0.0.1.json', tmp_projects_dir / '0.0.1.json')
+    assert filecmp.cmp(ASSETS_DIR / 'registry' / '0.0.1.json', tmp_projects_dir / '0.0.1.json')
+
+
+def test_basic_manifest_builder(tmp_path):
+    tmp_projects_dir = tmp_path / 'registry'
+    tmp_projects_dir.mkdir()
+    tmp_contracts_dir = tmp_projects_dir / 'contracts'
+    shutil.copytree(ASSETS_DIR / 'registry' / 'contracts', tmp_contracts_dir)
+    shutil.copyfile(ASSETS_DIR / 'registry' / SOLC_OUTPUT, tmp_projects_dir / SOLC_OUTPUT)
+    child = pexpect.spawn(f"ethpm create --basic-manifest --project-dir {tmp_projects_dir} --package-name wallet --version 1.0.0")
+    child.expect("EthPM CLI v0.1.0a0\r\n")
+    child.expect("\r\n")
+    child.expect(f"Manifest successfully created and written to {tmp_projects_dir}/1.0.0.json")
+ 
+
+def test_create_solc_input(tmp_path):
+    tmp_projects_dir = tmp_path / 'registry'
+    tmp_projects_dir.mkdir()
+    tmp_contracts_dir = tmp_projects_dir / 'contracts'
+    shutil.copytree(ASSETS_DIR / 'registry' / 'contracts', tmp_contracts_dir)
+    shutil.copyfile(ASSETS_DIR / 'registry' / SOLC_INPUT, tmp_projects_dir / SOLC_INPUT)
+    child = pexpect.spawn(f"ethpm create --solc-input --project-dir {tmp_projects_dir}")
+    child.expect("EthPM CLI v0.1.0a0\r\n")
+    child.expect("\r\n")
+    child.expect(f"Solidity compiler input successfully created and written to {tmp_projects_dir}/{SOLC_INPUT}")
