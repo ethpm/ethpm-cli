@@ -38,6 +38,7 @@ def list_registries(config: Config) -> None:
 def add_registry(registry_uri: URI, alias: str, config: Config) -> None:
     store_path = config.ethpm_dir / REGISTRY_STORE
     if not store_path.is_file():
+        # store_path.touch()
         generate_registry_store(registry_uri, alias, store_path)
     else:
         update_registry_store(registry_uri, alias, store_path)
