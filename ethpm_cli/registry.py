@@ -1,13 +1,15 @@
 import json
 from pathlib import Path
 import tempfile
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, Tuple, NamedTuple
+from collections import namedtuple
 
 from eth_typing import URI
 from eth_utils import to_dict
 from eth_utils.toolz import assoc, assoc_in, dissoc
 from ethpm.backends.registry import parse_registry_uri
 
+from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.config import Config
 from ethpm_cli.constants import REGISTRY_STORE
 from ethpm_cli.exceptions import InstallError
@@ -17,6 +19,27 @@ from ethpm_cli.exceptions import InstallError
 # ethpm registry publish
 # ethpm registry deploy
 # store / list authorized registries
+
+
+class InstalledRegistry(NamedTuple):
+    uri: URI
+    active: bool
+    alias: str
+    ens: str
+
+    @property
+    def format_for_display(self) -> str:
+        activated = "(active)" if self.active else ""
+        return f"{self.uri} --- {self.alias} {activated}"
+
+
+def list_registries(config: Config) -> None:
+    registry_store = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
+    installed_registries = [InstalledRegistry(reg, data['active'], data['alias'], data['ens']) for reg, data in registry_store.items()]
+    for registry in installed_registries:
+        cli_logger.info(dir(registry))
+        cli_logger.info(registry.format_for_display)
+
 
 
 def add_registry(registry_uri: URI, alias: str, config: Config) -> None:

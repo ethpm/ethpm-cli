@@ -15,6 +15,7 @@ from ethpm_cli.install import (
     uninstall_package,
 )
 from ethpm_cli.package import Package
+from ethpm_cli.registry import add_registry, list_registries
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import (
     validate_chain_data_store,
@@ -75,6 +76,56 @@ auth_parser.add_argument(
 )
 auth_parser.set_defaults(func=auth_action)
 
+
+#
+# ethpm registry
+#
+
+def registry_list_cmd(args):
+    config = Config(args)
+    list_registries(config)
+
+
+def registry_add_cmd(args):
+    config = Config(args)
+    add_registry(args.uri, args.alias, config)
+    cli_logger.info(f"Registry @ {args.uri} added to registry store.")
+
+
+registry_parser = ethpm_parser.add_parser("registry")
+registry_subparsers = registry_parser.add_subparsers(help='registry', dest='registry')
+registry_list_parser = registry_subparsers.add_parser("list", help='list')
+registry_list_parser.add_argument(
+    "--ethpm-dir",
+    dest="ethpm_dir",
+    action="store",
+    type=Path,
+    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
+)
+registry_list_parser.set_defaults(func=registry_list_cmd)
+registry_add_parser = registry_subparsers.add_parser("add", help='add')
+registry_add_parser.add_argument(
+    "uri",
+    # dest="registry_uri",
+    action="store",
+    type=str,
+    help="Registry URI for target xxx."
+)
+registry_add_parser.add_argument(
+    "--alias",
+    dest="alias",
+    action="store",
+    type=str,
+    help="Alias with which to reference this registry.",
+)
+registry_add_parser.add_argument(
+    "--ethpm-dir",
+    dest="ethpm_dir",
+    action="store",
+    type=Path,
+    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
+)
+registry_add_parser.set_defaults(func=registry_add_cmd)
 
 #
 # ethpm scrape
