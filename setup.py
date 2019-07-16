@@ -52,8 +52,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "eth-hash[pysha3]>=0.2.0,<1",
-        "eth-utils>=1.6.0,<2",
-        "ethpm>=0.1.4-a18,<2",
+        "web3[tester]>=5.0.0b4,<6",
     ],
     setup_requires=['setuptools-markdown'],
     python_requires='>=3.6, <4',

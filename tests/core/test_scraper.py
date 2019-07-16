@@ -5,8 +5,8 @@ from pathlib import Path
 
 from ethpm import Package
 import pytest
-from pytest_ethereum.deployer import Deployer
 from web3 import Web3
+from web3.tools.pytest_ethereum.deployer import Deployer
 
 from ethpm_cli import CLI_ASSETS_DIR
 from ethpm_cli._utils.testing import check_dir_trees_equal

@@ -9,7 +9,7 @@ from typing import Any, Dict, Iterable, NamedTuple, Tuple
 from eth_utils import to_dict, to_text, to_tuple
 from eth_utils.toolz import assoc, dissoc
 from ethpm.backends.ipfs import BaseIPFSBackend
-from ethpm.utils.ipfs import is_ipfs_uri
+from ethpm.uri import is_ipfs_uri
 
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_DIR_NAME, LOCKFILE_NAME, SRC_DIR_NAME

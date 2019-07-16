@@ -2,11 +2,11 @@ from argparse import Namespace
 import json
 from pathlib import Path
 
+from eth_typing import URI
+from ethpm.backends.registry import is_valid_registry_uri
 from ethpm.exceptions import ValidationError as EthPMValidationError
-from ethpm.typing import URI
-from ethpm.utils.ipfs import is_ipfs_uri
-from ethpm.utils.uri import is_valid_content_addressed_github_uri
-from ethpm.validation import is_valid_registry_uri, validate_package_name
+from ethpm.uri import is_supported_content_addressed_uri
+from ethpm.validation.package import validate_package_name
 from web3 import Web3
 
 from ethpm_cli.exceptions import InstallError, UriNotSupportedError, ValidationError
@@ -33,11 +33,7 @@ def validate_uninstall_cli_args(args: Namespace) -> None:
 
 
 def validate_target_uri(uri: URI) -> None:
-    if (
-        not is_ipfs_uri(uri)
-        and not is_valid_registry_uri(uri)  # noqa: W503
-        and not is_valid_content_addressed_github_uri(uri)  # noqa: W503
-    ):
+    if not is_supported_content_addressed_uri(uri) and not is_valid_registry_uri(uri):
         raise UriNotSupportedError(
             f"Target uri: {uri} not a currently supported uri. "
             "Target uris must be one of: ipfs, github blob, or registry."
