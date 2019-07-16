@@ -2,6 +2,7 @@ import json
 
 from ethpm_cli import CLI_ASSETS_DIR
 
+ETHPM_DIR_ENV_VAR = "ETHPM_CLI_PACKAGES_DIR"
 ETHPM_DIR_NAME = "_ethpm_packages"
 IPFS_ASSETS_DIR = "ipfs"
 LOCKFILE_NAME = "ethpm.lock"

@@ -76,6 +76,7 @@ def resolve_install_uri(uri: URI) -> ResolvedInstallURI:
     if registry_backend.can_translate_uri(uri):
         # todo: replace with registry_backend.fetch_uri_contents(uri) after next web3 release
         from web3.auto.infura import w3
+
         registry_address, chain_id, pkg_name, pkg_version = parse_registry_uri(uri)
         if not hasattr(w3, "_pm"):
             w3.enable_unstable_package_management_api()
