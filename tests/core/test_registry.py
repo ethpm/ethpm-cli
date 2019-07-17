@@ -56,7 +56,7 @@ def test_add_multiple_registries(config, test_assets_dir):
 
 def test_adding_an_existing_registry_raises_exception(config):
     add_registry(URI_1, "mine", config)
-    with pytest.raises(InstallError, match="already added"):
+    with pytest.raises(InstallError, match="already stored."):
         add_registry(URI_1, "mine", config)
 
 
@@ -72,7 +72,7 @@ def test_remove_registry(config, test_assets_dir):
 
 
 def test_remove_registry_with_nonexisting_store(config):
-    with pytest.raises(InstallError, match="no registry store"):
+    with pytest.raises(InstallError, match="Unable to remove registry"):
         remove_registry(URI_2, None, config)
 
 
@@ -113,7 +113,7 @@ def test_remove_active_registry_raises_error():
 def test_activate_different_registry(test_assets_dir, config):
     add_registry(URI_1, "mine", config)
     add_registry(URI_2, "other", config)
-    activate_registry(URI_2, None, config)
+    activate_registry(URI_2, config)
     store_data = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
     assert store_data[URI_2]["active"] is True
     assert store_data[URI_1]["active"] is False
@@ -122,7 +122,7 @@ def test_activate_different_registry(test_assets_dir, config):
 def test_activate_aliased_registry(test_assets_dir, config):
     add_registry(URI_1, "mine", config)
     add_registry(URI_2, "other", config)
-    activate_registry(None, "other", config)
+    activate_registry("other", config)
     store_data = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
     assert store_data[URI_2]["active"] is True
     assert store_data[URI_1]["active"] is False
@@ -131,25 +131,16 @@ def test_activate_aliased_registry(test_assets_dir, config):
 def test_unable_to_activate_nonexistent_registry(config):
     add_registry(URI_1, "mine", config)
     with pytest.raises(InstallError):
-        activate_registry(URI_2, None, config)
+        activate_registry(URI_2, config)
 
 
 def test_unable_to_activate_nonexistent_aliased_registry(config):
     add_registry(URI_1, "mine", config)
     with pytest.raises(InstallError):
-        activate_registry(None, "other", config)
+        activate_registry("other", config)
 
 
 def test_activate_already_active_registry_raise_exception(config):
     add_registry(URI_1, "mine", config)
     with pytest.raises(InstallError):
-        activate_registry(URI_1, None, config)
-
-
-def test_activate_registry_expects_uri_or_alias(config):
-    add_registry(URI_1, "mine", config)
-    add_registry(URI_2, "other", config)
-    with pytest.raises(InstallError):
-        activate_registry(URI_1, "mine", config)
-    with pytest.raises(InstallError):
-        activate_registry(None, None, config)
+        activate_registry(URI_1, config)
