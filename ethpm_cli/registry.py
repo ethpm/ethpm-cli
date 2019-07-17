@@ -35,31 +35,9 @@ def list_registries(config: Config) -> None:
         cli_logger.info(registry.format_for_display)
 
 
-class InstalledRegistry(NamedTuple):
-    uri: URI
-    active: bool
-    alias: str
-    ens: str
-
-    @property
-    def format_for_display(self) -> str:
-        activated = "(active)" if self.active else ""
-        return f"{self.uri} --- {self.alias} {activated}"
-
-
-def list_registries(config: Config) -> None:
-    registry_store = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
-    installed_registries = [InstalledRegistry(reg, data['active'], data['alias'], data['ens']) for reg, data in registry_store.items()]
-    for registry in installed_registries:
-        cli_logger.info(dir(registry))
-        cli_logger.info(registry.format_for_display)
-
-
-
 def add_registry(registry_uri: URI, alias: str, config: Config) -> None:
     store_path = config.ethpm_dir / REGISTRY_STORE
     if not store_path.is_file():
-        # store_path.touch()
         generate_registry_store(registry_uri, alias, store_path)
     else:
         update_registry_store(registry_uri, alias, store_path)

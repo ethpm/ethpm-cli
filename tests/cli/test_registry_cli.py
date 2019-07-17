@@ -7,6 +7,7 @@ from ethpm_cli.constants import ETHPM_CLI_VERSION, ETHPM_PACKAGES_DIR
 
 def test_ethpm_registry_commands(tmpdir):
     tmp_ethpm_dir = Path(tmpdir) / ETHPM_PACKAGES_DIR
+
     # test registry add
     add_child = pexpect.spawn(
         f"ethpm registry add erc1319://0x1230000000000000000000000000000000000000:1 --alias mine --ethpm-dir {tmp_ethpm_dir}"  # noqa: E501
@@ -16,6 +17,7 @@ def test_ethpm_registry_commands(tmpdir):
     add_child.expect(
         r"Registry @ erc1319://0x1230000000000000000000000000000000000000:1 \(alias: mine\) added to registry store."  # noqa: E501
     )
+
     # test registry list
     child = pexpect.spawn(f"ethpm registry list --ethpm-dir {tmp_ethpm_dir}")
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
@@ -23,6 +25,7 @@ def test_ethpm_registry_commands(tmpdir):
     child.expect(
         r"erc1319://0x1230000000000000000000000000000000000000:1 --- mine \(active\)"
     )
+
     # add second registry
     child_add = pexpect.spawn(
         f"ethpm registry add erc1319://0xabc0000000000000000000000000000000000000:3 --alias yours --ethpm-dir {tmp_ethpm_dir}"  # noqa: E501
@@ -32,6 +35,7 @@ def test_ethpm_registry_commands(tmpdir):
     child_add.expect(
         r"Registry @ erc1319://0xabc0000000000000000000000000000000000000:3 \(alias: yours\) added to registry store."  # noqa: E501
     )
+
     # activate using alias
     child_act = pexpect.spawn(
         f"ethpm registry activate yours --ethpm-dir {tmp_ethpm_dir}"
@@ -39,6 +43,7 @@ def test_ethpm_registry_commands(tmpdir):
     child_act.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child_act.expect("\r\n")
     child_act.expect("Registry @ yours activated.")
+
     # check activation successful
     child_two = pexpect.spawn(f"ethpm registry list --ethpm-dir {tmp_ethpm_dir}")
     child_two.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
@@ -47,6 +52,7 @@ def test_ethpm_registry_commands(tmpdir):
     child_two.expect(
         r"erc1319://0xabc0000000000000000000000000000000000000:3 --- yours \(active\)"
     )
+
     # activate using registry uri
     child_three = pexpect.spawn(
         f"ethpm registry activate erc1319://0x1230000000000000000000000000000000000000:1 --ethpm-dir {tmp_ethpm_dir}"  # noqa: E501
@@ -56,6 +62,7 @@ def test_ethpm_registry_commands(tmpdir):
     child_three.expect(
         "Registry @ erc1319://0x1230000000000000000000000000000000000000:1 activated."
     )
+
     # check activation successful
     child_four = pexpect.spawn(f"ethpm registry list --ethpm-dir {tmp_ethpm_dir}")
     child_four.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
