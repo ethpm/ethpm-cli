@@ -21,11 +21,12 @@ from ethpm_cli.exceptions import InstallError
 # store / list authorized registries
 
 
+
 class InstalledRegistry(NamedTuple):
     uri: URI
-    active: bool
-    alias: str
-    ens: str
+    active: bool = False
+    alias: str = None
+    ens: str = None
 
     @property
     def format_for_display(self) -> str:

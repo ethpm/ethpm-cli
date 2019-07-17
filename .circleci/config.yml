@@ -50,22 +50,15 @@ jobs:
   doctest:
     <<: *common
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.7
         environment:
           TOXENV: doctest
   lint:
     <<: *common
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.7
         environment:
           TOXENV: lint
-  py36-core:
-    <<: *common
-    docker:
-      - image: circleci/python:3.6
-        environment:
-          TOXENV: py36-core
-          WEB3_INFURA_PROJECT_ID: 4f1a358967c7474aae6f8f4a7698aefc
   py37-core:
     <<: *common
     docker:
@@ -80,5 +73,4 @@ workflows:
     jobs:
       - doctest
       - lint
-      - py36-core
       - py37-core
