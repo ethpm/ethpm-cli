@@ -7,12 +7,11 @@ import shutil
 import tempfile
 from typing import Any, Dict, Iterable, List, Set, Tuple  # noqa: F401
 
+from eth_typing import URI, Address
 from eth_utils import to_dict, to_list
 from eth_utils.toolz import assoc
-from ethpm.typing import URI, Address
-from ethpm.utils.backend import resolve_uri_contents
-from ethpm.utils.ipfs import extract_ipfs_path_from_uri, is_ipfs_uri
-from ethpm.utils.uri import is_supported_content_addressed_uri
+from ethpm._utils.ipfs import extract_ipfs_path_from_uri, is_ipfs_uri
+from ethpm.uri import is_supported_content_addressed_uri, resolve_uri_contents
 from web3 import Web3
 
 from ethpm_cli._utils.various import flatten
@@ -248,7 +247,7 @@ def pluck_ipfs_uris(manifest: Dict[str, Any]) -> Iterable[List[str]]:
 @to_dict
 def format_version_release_logs(
     all_entries: Dict[Any, Any]
-) -> Iterable[Tuple[str, Any]]:
+) -> Iterable[Tuple[Address, Any]]:
     all_addresses = set(entry["address"] for entry in all_entries)
     for address in all_addresses:
         all_releases_by_address = process_entries(address, all_entries)

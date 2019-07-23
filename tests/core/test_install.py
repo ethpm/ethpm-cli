@@ -62,7 +62,7 @@ def wallet_pkg(config):
             "ipfs_uri_alias",
         ),
         (
-            "ercXXX://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729/owned?version=1.0.0",
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:1/owned?version=1.0.0",
             "owned",
             None,
             "registry_uri",
