@@ -8,6 +8,7 @@ from web3.providers.auto import load_provider_from_uri
 
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
+from ethpm_cli.auth import get_authorized_address, set_auth
 from ethpm_cli.config import Config
 from ethpm_cli.constants import INFURA_HTTP_URI
 from ethpm_cli.install import (
@@ -21,6 +22,27 @@ from ethpm_cli.validation import validate_install_cli_args, validate_uninstall_c
 
 parser = argparse.ArgumentParser(description="ethpm-cli")
 ethpm_parser = parser.add_subparsers(help="commands", dest="command")
+
+
+#
+# ethpm auth
+#
+
+
+def auth_action(args: argparse.Namespace) -> None:
+    set_auth(args.keystore_path, args.password)
+    authorized_address = get_authorized_address()
+    cli_logger.info(f"Authorization enabled for address: {authorized_address}.")
+
+
+auth_parser = ethpm_parser.add_parser("auth", help="auth")
+auth_parser.add_argument(
+    "keystore_path", action="store", type=str, help="Path to your keyfile"
+)
+auth_parser.add_argument(
+    "password", action="store", type=str, help="Password for keyfile."
+)
+auth_parser.set_defaults(func=auth_action)
 
 
 #
