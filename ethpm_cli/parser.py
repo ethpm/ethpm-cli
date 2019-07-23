@@ -17,7 +17,13 @@ from ethpm_cli.install import (
 )
 from ethpm_cli.manifest import generate_basic_manifest, generate_custom_manifest
 from ethpm_cli.package import Package
-from ethpm_cli.registry import activate_registry, add_registry, list_registries
+from ethpm_cli.registry import (
+    activate_registry,
+    add_registry,
+    deploy_registry,
+    list_registries,
+)
+from ethpm_cli.release import release_package
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import (
     validate_chain_data_store,
@@ -26,8 +32,10 @@ from ethpm_cli.validation import (
     validate_uninstall_cli_args,
 )
 
-parser = argparse.ArgumentParser(description="ethpm-cli")
-ethpm_parser = parser.add_subparsers(help="commands", dest="command")
+
+#
+# Shared args
+#
 
 
 def add_chain_id_arg_to_parser(parser: argparse.ArgumentParser) -> None:
@@ -80,6 +88,70 @@ def add_package_version_arg_to_parser(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_keyfile_password_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--keyfile-password",
+        dest="keyfile_password",
+        action="store",
+        type=str,
+        help="Password to local encrypted keyfile."
+    )
+
+def add_keyfile_path_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--keyfile-path",
+        dest="keyfile_path",
+        action="store",
+        type=Path,
+        help="Path to your keyfile.",
+    )
+
+parser = argparse.ArgumentParser(description="ethpm-cli")
+ethpm_parser = parser.add_subparsers(help="commands", dest="command")
+
+
+#
+# ethpm release
+#
+
+
+# todo: extend to pin & release a local manifest
+def release_cmd(args: argparse.Namespace) -> None:
+    config = Config(args)
+    release_package(args.package_name, args.version, args.manifest_uri, config)
+    cli_logger.info(
+        f"{args.package_name} @ {args.version} @ {args.manifest_uri} "
+        "released to registry @ ..."
+    )
+
+
+release_parser = ethpm_parser.add_parser("release")
+release_parser.add_argument(
+    "--package-name",
+    dest="package_name",
+    action="store",
+    type=str,
+    help="Package name of package you want to release. Must match `package_name` in manifest.",
+)
+release_parser.add_argument(
+    "--version",
+    action="store",
+    type=str,
+    help="Version of package you want to release. Must match the `version` field in manifest.",
+)
+release_parser.add_argument(
+    "--manifest-uri",
+    dest="manifest_uri",
+    action="store",
+    type=str,
+    help="Content addressed URI at which the manifest for released package is located.",
+)
+add_ethpm_dir_arg_to_parser(release_parser)
+add_keyfile_password_arg_to_parser(release_parser)
+add_keyfile_path_arg_to_parser(release_parser)
+release_parser.set_defaults(func=release_cmd)
+
+
 #
 # ethpm auth
 #
@@ -87,8 +159,6 @@ def add_package_version_arg_to_parser(parser: argparse.ArgumentParser) -> None:
 
 def auth_action(args: argparse.Namespace) -> None:
     Config(args)
-    if args.keyfile_path:
-        import_keyfile(args.keyfile_path)
     try:
         authorized_address = get_authorized_address()
         cli_logger.info(f"Keyfile stored for address: 0x{authorized_address}.")
@@ -100,13 +170,7 @@ def auth_action(args: argparse.Namespace) -> None:
 
 
 auth_parser = ethpm_parser.add_parser("auth", help="auth")
-auth_parser.add_argument(
-    "--keyfile-path",
-    dest="keyfile_path",
-    action="store",
-    type=Path,
-    help="Path to your keyfile.",
-)
+add_keyfile_path_arg_to_parser(auth_parser)
 auth_parser.set_defaults(func=auth_action)
 
 
@@ -138,13 +202,32 @@ def registry_activate_cmd(args: argparse.Namespace) -> None:
     cli_logger.info(f"Registry @ {args.uri_or_alias} activated.")
 
 
+# ethpm registry deploy --chain-id 1 --ethpm-dir /path
+def registry_deploy_cmd(args: argparse.Namespace) -> None:
+    # add alias
+    config = Config(args)
+    deploy_registry(config, args.chain_id)
+    cli_logger.info("congrats! <link to explorer>")
+    # validate priv key available
+    # specify/validate chain_id
+    # store in registry store
+
+
 registry_parser = ethpm_parser.add_parser("registry")
 registry_subparsers = registry_parser.add_subparsers(help="registry", dest="registry")
 
+# ethpm registry deploy
+registry_deploy_parser = registry_subparsers.add_parser("deploy", help="deploy")
+add_chain_id_arg_to_parser(registry_deploy_parser)
+add_ethpm_dir_arg_to_parser(registry_deploy_parser)
+registry_deploy_parser.set_defaults(func=registry_deploy_cmd)
+
+# ethpm registry list
 registry_list_parser = registry_subparsers.add_parser("list", help="list")
 add_ethpm_dir_arg_to_parser(registry_list_parser)
 registry_list_parser.set_defaults(func=registry_list_cmd)
 
+# ethpm registry add
 registry_add_parser = registry_subparsers.add_parser("add", help="add")
 registry_add_parser.add_argument(
     "uri", action="store", type=str, help="Registry URI for target registry."
@@ -159,6 +242,7 @@ registry_add_parser.add_argument(
 add_ethpm_dir_arg_to_parser(registry_add_parser)
 registry_add_parser.set_defaults(func=registry_add_cmd)
 
+# ethpm registry activate
 registry_activate_parser = registry_subparsers.add_parser("activate", help="activate")
 registry_activate_parser.add_argument(
     "uri_or_alias",
@@ -234,82 +318,6 @@ create_manifest_wizard_parser = create_subparsers.add_parser(
 )
 add_project_dir_arg_to_parser(create_manifest_wizard_parser)
 create_manifest_wizard_parser.set_defaults(func=create_manifest_wizard_cmd)
-
-
-#
-# ethpm registry
-#
-
-
-def registry_list_cmd(args):
-    config = Config(args)
-    list_registries(config)
-
-
-def registry_add_cmd(args):
-    config = Config(args)
-    add_registry(args.uri, args.alias, config)
-    if args.alias:
-        log_msg = (
-            f"Registry @ {args.uri} (alias: {args.alias}) added to registry store."
-        )
-    else:
-        log_msg = f"Registry @ {args.uri} added to registry store."
-    cli_logger.info(log_msg)
-
-
-def registry_activate_cmd(args):
-    config = Config(args)
-    activate_registry(args.uri_or_alias, config)
-    cli_logger.info(f"Registry @ {args.uri_or_alias} activated.")
-
-
-registry_parser = ethpm_parser.add_parser("registry")
-registry_subparsers = registry_parser.add_subparsers(help="registry", dest="registry")
-registry_list_parser = registry_subparsers.add_parser("list", help="list")
-registry_list_parser.add_argument(
-    "--ethpm-dir",
-    dest="ethpm_dir",
-    action="store",
-    type=Path,
-    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
-)
-registry_list_parser.set_defaults(func=registry_list_cmd)
-registry_add_parser = registry_subparsers.add_parser("add", help="add")
-registry_add_parser.add_argument(
-    "uri", action="store", type=str, help="Registry URI for target registry."
-)
-registry_add_parser.add_argument(
-    "--alias",
-    dest="alias",
-    action="store",
-    type=str,
-    help="Alias with which to reference this registry.",
-)
-registry_add_parser.add_argument(
-    "--ethpm-dir",
-    dest="ethpm_dir",
-    action="store",
-    type=Path,
-    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
-)
-registry_add_parser.set_defaults(func=registry_add_cmd)
-registry_activate_parser = registry_subparsers.add_parser("activate", help="activate")
-registry_activate_parser.add_argument(
-    "uri_or_alias",
-    # dest="registry_uri",
-    action="store",
-    type=str,
-    help="Registry URI or alias for target registry.",
-)
-registry_activate_parser.add_argument(
-    "--ethpm-dir",
-    dest="ethpm_dir",
-    action="store",
-    type=Path,
-    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
-)
-registry_activate_parser.set_defaults(func=registry_activate_cmd)
 
 
 #

@@ -6,9 +6,6 @@ import tempfile
 import eth_keyfile
 import pytest
 
-from ethpm_cli.config import Config
-from ethpm_cli.constants import ETHPM_DIR_NAME
-
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR, KEYFILE_PATH

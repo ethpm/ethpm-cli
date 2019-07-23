@@ -5,6 +5,7 @@ from typing import Any, Dict, NamedTuple, Optional
 from eth_typing import URI
 from eth_utils.toolz import assoc, assoc_in, dissoc
 from ethpm.backends.registry import is_valid_registry_uri, parse_registry_uri
+from ethpm.constants import SUPPORTED_CHAIN_IDS
 
 from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.logger import cli_logger
@@ -25,6 +26,20 @@ class StoredRegistry(NamedTuple):
         return f"{self.uri} --- {self.alias}{activated}"
 
 
+def deploy_registry(config: Config, chain_id: int, alias: str = None) -> None:
+    if chain_id not in SUPPORTED_CHAIN_IDS.keys():
+        raise Exception
+    if chain_id != 1:
+        raise Exception("for now")
+    cli_logger.info(f"deploying new registry to mainnet, this may take a minute")
+    # registry_address = '0x1457890158DECD360e6d4d979edBcDD59c35feeB'
+    registry_address = config.w3.pm.deploy_and_set_registry()
+    cli_logger.info(f"new registry @ {registry_address}")
+    registry_uri = URI(f"erc1319://{registry_address}:{chain_id}")
+    add_registry(registry_uri, alias, config)
+    activate_registry(registry_uri, config)
+
+
 def list_registries(config: Config) -> None:
     registry_store = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
     installed_registries = [
@@ -35,7 +50,7 @@ def list_registries(config: Config) -> None:
         cli_logger.info(registry.format_for_display)
 
 
-def add_registry(registry_uri: URI, alias: str, config: Config) -> None:
+def add_registry(registry_uri: URI, alias: Optional[str], config: Config) -> None:
     store_path = config.ethpm_dir / REGISTRY_STORE
     if not store_path.is_file():
         generate_registry_store(registry_uri, alias, store_path)
@@ -43,7 +58,7 @@ def add_registry(registry_uri: URI, alias: str, config: Config) -> None:
         update_registry_store(registry_uri, alias, store_path)
 
 
-def remove_registry(registry_uri: URI, alias: str, config: Config) -> None:
+def remove_registry(registry_uri: URI, alias: Optional[str], config: Config) -> None:
     store_path = config.ethpm_dir / REGISTRY_STORE
     if not store_path.is_file():
         raise InstallError(
@@ -114,7 +129,9 @@ def lookup_uri_by_alias(alias: str, registries_and_aliases: Dict[URI, str]) -> U
     return aliases_and_registries[alias]
 
 
-def generate_registry_store(registry_uri: URI, alias: str, store_path: Path) -> None:
+def generate_registry_store(
+    registry_uri: URI, alias: Optional[str], store_path: Path
+) -> None:
     store_path.touch()
     init_registry_data = {
         registry_uri: generate_registry_store_data(registry_uri, alias, activate=True)
@@ -122,7 +139,9 @@ def generate_registry_store(registry_uri: URI, alias: str, store_path: Path) -> 
     write_store_data_to_disk(init_registry_data, store_path)
 
 
-def update_registry_store(registry_uri: URI, alias: str, store_path: Path) -> None:
+def update_registry_store(
+    registry_uri: URI, alias: Optional[str], store_path: Path
+) -> None:
     all_registries = get_all_registries_and_aliases(store_path).keys()
     if registry_uri in all_registries:
         raise InstallError(f"Registry @ {registry_uri} already stored.")
@@ -143,7 +162,7 @@ def write_store_data_to_disk(store_data: Dict[URI, Any], store_path: Path) -> No
 
 
 def generate_registry_store_data(
-    registry_uri: URI, alias: str, activate: bool = False
+    registry_uri: URI, alias: Optional[str], activate: bool = False
 ) -> Dict[str, Any]:
     parsed_uri = parse_registry_uri(registry_uri)
     # todo: support ens in registry uri
