@@ -15,7 +15,7 @@ from ethpm_cli.install import (
     uninstall_package,
 )
 from ethpm_cli.package import Package
-from ethpm_cli.registry import add_registry, list_registries, activate_registry
+from ethpm_cli.registry import activate_registry, add_registry, list_registries
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import (
     validate_chain_data_store,
@@ -82,12 +82,12 @@ auth_parser.set_defaults(func=auth_action)
 #
 
 
-def registry_list_cmd(args):
+def registry_list_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     list_registries(config)
 
 
-def registry_add_cmd(args):
+def registry_add_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     add_registry(args.uri, args.alias, config)
     if args.alias:
@@ -99,7 +99,7 @@ def registry_add_cmd(args):
     cli_logger.info(log_msg)
 
 
-def registry_activate_cmd(args):
+def registry_activate_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     activate_registry(args.uri_or_alias, config)
     cli_logger.info(f"Registry @ {args.uri_or_alias} activated.")
@@ -138,7 +138,6 @@ registry_add_parser.set_defaults(func=registry_add_cmd)
 registry_activate_parser = registry_subparsers.add_parser("activate", help="activate")
 registry_activate_parser.add_argument(
     "uri_or_alias",
-    # dest="registry_uri",
     action="store",
     type=str,
     help="Registry URI or alias for target registry.",

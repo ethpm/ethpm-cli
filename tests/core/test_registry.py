@@ -106,8 +106,10 @@ def test_remove_registry_expects_uri_or_alias(config):
         remove_registry(URI_2, "mine", config)
 
 
-def test_remove_active_registry_raises_error():
-    pass
+def test_remove_active_registry_raises_error(config):
+    add_registry(URI_1, "mine", config)
+    with pytest.raises(InstallError):
+        remove_registry(URI_2, None, config)
 
 
 def test_activate_different_registry(test_assets_dir, config):

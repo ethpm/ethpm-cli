@@ -1,30 +1,24 @@
 import json
 from pathlib import Path
 import tempfile
-from typing import Any, Dict, Iterable, Tuple, NamedTuple
+from typing import Any, Dict, Iterable, NamedTuple, Optional, Tuple
 
 from eth_typing import URI
 from eth_utils import to_dict
 from eth_utils.toolz import assoc, assoc_in, dissoc
-from ethpm.backends.registry import parse_registry_uri, is_valid_registry_uri
+from ethpm.backends.registry import is_valid_registry_uri, parse_registry_uri
 
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.config import Config
 from ethpm_cli.constants import REGISTRY_STORE
 from ethpm_cli.exceptions import InstallError
 
-# todo:
-# ethpm registry publish
-# ethpm registry deploy
-# ethpm registry remove
-# store / list authorized registries
-
 
 class StoredRegistry(NamedTuple):
     uri: URI
     active: bool = False
-    alias: str = None
-    ens: str = None
+    alias: Optional[str] = None
+    ens: Optional[str] = None
 
     @property
     def format_for_display(self) -> str:
@@ -54,7 +48,7 @@ def remove_registry(registry_uri: URI, alias: str, config: Config) -> None:
     store_path = config.ethpm_dir / REGISTRY_STORE
     if not store_path.is_file():
         raise InstallError(
-            f"Unable to remove registry @ {registry_uri}. "
+            f"Unable to remove registry: {registry_uri}. "
             f"No registry store found in {config.ethpm_dir}."
         )
     registry = resolve_uri_and_alias(registry_uri, alias, store_path)
@@ -82,12 +76,14 @@ def activate_registry(uri_or_alias: str, config: Config) -> None:
 
 def resolve_uri_or_alias(uri_or_alias: str, store_path: Path) -> StoredRegistry:
     if is_valid_registry_uri(uri_or_alias):
-        return resolve_uri_and_alias(uri_or_alias, None, store_path)
+        return resolve_uri_and_alias(URI(uri_or_alias), None, store_path)
     else:
         return resolve_uri_and_alias(None, uri_or_alias, store_path)
 
 
-def resolve_uri_and_alias(registry_uri: URI, alias: str, store_path: Path) -> URI:
+def resolve_uri_and_alias(
+    registry_uri: Optional[URI], alias: Optional[str], store_path: Path
+) -> StoredRegistry:
     if (registry_uri and alias) or (not registry_uri and not alias):
         raise InstallError("Cannot resolve both an alias and registry uri.")
 
@@ -95,11 +91,11 @@ def resolve_uri_and_alias(registry_uri: URI, alias: str, store_path: Path) -> UR
     if alias:
         registry_uri = lookup_uri_by_alias(alias, registries_and_aliases)
 
-    if registry_uri not in registries_and_aliases.keys():
+    if not registry_uri or registry_uri not in registries_and_aliases.keys():
         raise InstallError(
             f"No registry @ {registry_uri} is available in {store_path}."
         )
-    return StoredRegistry(registry_uri, alias, None, None)
+    return StoredRegistry(registry_uri, False, alias, None)
 
 
 def get_active_registry(store_data: Dict[URI, Any]) -> URI:
@@ -153,6 +149,7 @@ def generate_registry_store_data(
     registry_uri: URI, alias: str, activate: bool = False
 ) -> Iterable[Tuple[str, Any]]:
     parsed_uri = parse_registry_uri(registry_uri)
+    # todo: support ens in registry uri
     ens = None
     yield "ens", ens
     yield "address", parsed_uri.address
