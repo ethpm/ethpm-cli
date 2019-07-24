@@ -1,8 +1,10 @@
 from argparse import Namespace
+import os
 from pathlib import Path
 
 from ethpm_cli._utils.ipfs import get_ipfs_backend
-from ethpm_cli.constants import ETHPM_DIR_NAME
+from ethpm_cli.constants import ETHPM_DIR_ENV_VAR, ETHPM_DIR_NAME
+from ethpm_cli.validation import validate_ethpm_dir
 
 
 class Config:
@@ -18,9 +20,12 @@ class Config:
         else:
             self.ipfs_backend = get_ipfs_backend()
 
-        if args.ethpm_dir is None:
+        if args.ethpm_dir:
+            self.ethpm_dir = args.ethpm_dir
+        elif ETHPM_DIR_ENV_VAR in os.environ:
+            self.ethpm_dir = Path(os.environ[ETHPM_DIR_ENV_VAR])
+        else:
             self.ethpm_dir = Path.cwd() / ETHPM_DIR_NAME
             if not self.ethpm_dir.is_dir():
                 self.ethpm_dir.mkdir()
-        else:
-            self.ethpm_dir = args.ethpm_dir
+        validate_ethpm_dir(self.ethpm_dir)
