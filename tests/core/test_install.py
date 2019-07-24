@@ -17,18 +17,6 @@ from ethpm_cli.package import Package
 
 
 @pytest.fixture
-def config(tmpdir):
-    namespace = Namespace()
-    ethpm_dir = Path(tmpdir) / ETHPM_DIR_NAME
-    ethpm_dir.mkdir()
-    namespace.local_ipfs = False
-    namespace.install_uri = None
-    namespace.alias = None
-    namespace.ethpm_dir = ethpm_dir
-    return Config(namespace)
-
-
-@pytest.fixture
 def owned_pkg(config):
     return Package(
         "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
