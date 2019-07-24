@@ -1,8 +1,7 @@
-from pathlib import Path
-import tempfile
 import filecmp
 import json
 import os
+from pathlib import Path
 
 import eth_keyfile
 from eth_utils import is_same_address, to_text
@@ -13,8 +12,7 @@ from ethpm_cli.auth import (
     get_authorized_private_key,
     import_keyfile,
 )
-from ethpm_cli.constants import KEYFILE_PASSWORD, KEYFILE_PATH
-from ethpm_cli.exceptions import ValidationError
+from ethpm_cli.constants import KEYFILE_PATH
 
 PRIVATE_KEY = b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"  # noqa: E501
 ADDRESS = "0x1a642f0E3c3aF545E7AcBD38b07251B3990914F1"
@@ -35,7 +33,6 @@ def keyfile(monkeypatch, tmpdir):
 
 
 def test_import_keyfile(keyfile):
-    # is this even testing anything useful?
     ethpmcli_dir = Path(os.environ["XDG_ETHPMCLI_ROOT"])
     import_keyfile(keyfile)
     assert filecmp.cmp(ethpmcli_dir / KEYFILE_PATH, keyfile)

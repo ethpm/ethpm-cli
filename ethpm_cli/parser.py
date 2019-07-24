@@ -11,6 +11,7 @@ from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import get_authorized_address, import_keyfile
 from ethpm_cli.config import Config
 from ethpm_cli.constants import INFURA_HTTP_URI
+from ethpm_cli.exceptions import AuthorizationError
 from ethpm_cli.install import (
     install_package,
     list_installed_packages,
@@ -30,19 +31,26 @@ ethpm_parser = parser.add_subparsers(help="commands", dest="command")
 
 
 def auth_action(args: argparse.Namespace) -> None:
-    config = Config(args)
-    import_keyfile(args.keystore_path, config)
-    authorized_address = get_authorized_address()
-    cli_logger.info(f"Keyfile copied to ethPM CLI for address: {authorized_address}.")
+    if args.keyfile_path:
+        import_keyfile(args.keyfile_path)
+    try:
+        authorized_address = get_authorized_address()
+        cli_logger.info(f"Keyfile stored for address: 0x{authorized_address}.")
+    except AuthorizationError:
+        cli_logger.info(
+            "No keyfile found. Use `ethpm auth --keyfile-path <path_to_keyfile>` "
+            "to set your keyfile for use with ethPM CLI."
+        )
 
 
 auth_parser = ethpm_parser.add_parser("auth", help="auth")
 auth_parser.add_argument(
-    "keystore_path", action="store", type=str, help="Path to your keyfile"
+    "--keyfile-path",
+    dest="keyfile_path",
+    action="store",
+    type=Path,
+    help="Path to your keyfile",
 )
-# auth_parser.add_argument(
-# "password", action="store", type=str, help="Password for keyfile."
-# )
 auth_parser.set_defaults(func=auth_action)
 
 

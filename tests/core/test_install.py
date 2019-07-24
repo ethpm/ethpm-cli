@@ -1,6 +1,4 @@
-from argparse import Namespace
 import logging
-from pathlib import Path
 
 import pytest
 
@@ -8,7 +6,6 @@ from ethpm_cli._utils.testing import check_dir_trees_equal
 from ethpm_cli.constants import ETHPM_DIR_NAME
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.install import (
-    Config,
     install_package,
     list_installed_packages,
     uninstall_package,

@@ -12,5 +12,4 @@ VERSION_RELEASE_ABI = json.loads((CLI_ASSETS_DIR / "1.0.1.json").read_text())[
     "contract_types"
 ]["Log"]["abi"]
 INFURA_HTTP_URI = f"https://mainnet.infura.io/v3/4f1a358967c7474aae6f8f4a7698aefc"
-KEYFILE_PASSWORD = "ETHPM_CLI_KEYFILE_PASSWORD"
-KEYFILE_PATH = "ETHPM_CLI_KEYFILE_PATH"
+KEYFILE_PATH = "_ethpm_keyfile.json"
