@@ -8,8 +8,10 @@ from web3.providers.auto import load_provider_from_uri
 
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
+from ethpm_cli.auth import get_authorized_address, import_keyfile
 from ethpm_cli.config import Config
 from ethpm_cli.constants import INFURA_HTTP_URI
+from ethpm_cli.exceptions import AuthorizationError
 from ethpm_cli.install import (
     install_package,
     list_installed_packages,
@@ -21,6 +23,35 @@ from ethpm_cli.validation import validate_install_cli_args, validate_uninstall_c
 
 parser = argparse.ArgumentParser(description="ethpm-cli")
 ethpm_parser = parser.add_subparsers(help="commands", dest="command")
+
+
+#
+# ethpm auth
+#
+
+
+def auth_action(args: argparse.Namespace) -> None:
+    if args.keyfile_path:
+        import_keyfile(args.keyfile_path)
+    try:
+        authorized_address = get_authorized_address()
+        cli_logger.info(f"Keyfile stored for address: 0x{authorized_address}.")
+    except AuthorizationError:
+        cli_logger.info(
+            "No keyfile found. Use `ethpm auth --keyfile-path <path_to_keyfile>` "
+            "to set your keyfile for use with ethPM CLI."
+        )
+
+
+auth_parser = ethpm_parser.add_parser("auth", help="auth")
+auth_parser.add_argument(
+    "--keyfile-path",
+    dest="keyfile_path",
+    action="store",
+    type=Path,
+    help="Path to your keyfile",
+)
+auth_parser.set_defaults(func=auth_action)
 
 
 #
