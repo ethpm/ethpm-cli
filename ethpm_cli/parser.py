@@ -31,6 +31,7 @@ ethpm_parser = parser.add_subparsers(help="commands", dest="command")
 
 
 def auth_action(args: argparse.Namespace) -> None:
+    Config(args)
     if args.keyfile_path:
         import_keyfile(args.keyfile_path)
     try:
@@ -60,8 +61,7 @@ auth_parser.set_defaults(func=auth_action)
 
 
 def scrape_action(args: argparse.Namespace) -> None:
-    w3 = Web3(load_provider_from_uri(INFURA_HTTP_URI))
-    w3.middleware_onion.add(local_filter_middleware)
+    Config(args)
     ethpmcli_dir = get_xdg_ethpmcli_root()
 
     start_block = args.start_block if args.start_block else 0

@@ -5,6 +5,9 @@ import pytest
 
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_DIR_ENV_VAR, ETHPM_DIR_NAME
+from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
+
+from ethpm_cli.constants import IPFS_CHAIN_DATA, KEYFILE_PATH
 
 
 @pytest.fixture
@@ -54,3 +57,9 @@ def test_config_with_cli_ethpm_dir_overrides_env_var(tmpdir, namespace, monkeypa
     namespace.ethpm_dir = ethpm_dir_cli
     config = Config(namespace)
     assert config.ethpm_dir == ethpm_dir_cli
+
+# new from xdg migrate
+def test_config_initializes_xdg_dir(config):
+    xdg_ethpm_dir = get_xdg_ethpmcli_root()
+    assert (xdg_ethpm_dir / KEYFILE_PATH).is_file()
+    assert (xdg_ethpm_dir / IPFS_CHAIN_DATA).is_file()

@@ -16,6 +16,7 @@ from web3 import Web3
 
 from ethpm_cli._utils.various import flatten
 from ethpm_cli.constants import VERSION_RELEASE_ABI
+from ethpm_cli.config import initialize_xdg_ethpm_dir, write_updated_chain_data
 from ethpm_cli.exceptions import BlockNotFoundError
 from ethpm_cli.validation import validate_chain_data_store
 
@@ -34,7 +35,6 @@ def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
     If start_block is not 0, scraping begins from start_block.
     Otherwise the scraping begins from the ethpm birth block.
     """
-    initialize_ethpm_dir(ethpm_dir, w3)
     chain_data_path = ethpm_dir / "chain_data.json"
     latest_block = w3.eth.blockNumber
 
@@ -105,21 +105,6 @@ def block_range_needs_scraping(
     return False
 
 
-def initialize_ethpm_dir(ethpm_dir: Path, w3: Web3) -> None:
-    if ethpm_dir.is_dir():
-        chain_data_path = ethpm_dir / "chain_data.json"
-        validate_chain_data_store(chain_data_path, w3)
-    else:
-        ethpm_dir.mkdir()
-        chain_data_path = ethpm_dir / "chain_data.json"
-        chain_data_path.touch()
-        init_json = {
-            "chain_id": w3.eth.chainId,
-            "scraped_blocks": [{"min": "0", "max": "0"}],
-        }
-        write_updated_chain_data(chain_data_path, init_json)
-
-
 def update_chain_data(
     chain_data_path: Path,
     from_block: int,
@@ -134,15 +119,6 @@ def update_chain_data(
 
     chain_data_with_updated_blocks = assoc(chain_data, "scraped_blocks", updated_blocks)
     write_updated_chain_data(chain_data_path, chain_data_with_updated_blocks)
-
-
-def write_updated_chain_data(
-    chain_data_path: Path, updated_data: Dict[str, Any]
-) -> None:
-    tmp_pkg_dir = Path(tempfile.mkdtemp())
-    tmp_data = tmp_pkg_dir / "chain_data.json"
-    tmp_data.write_text(f"{json.dumps(updated_data, indent=4)}\n")
-    shutil.copyfile(tmp_data, chain_data_path)
 
 
 @to_list
