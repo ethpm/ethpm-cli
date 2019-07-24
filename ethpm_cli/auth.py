@@ -1,6 +1,6 @@
 from pathlib import Path
 import tempfile
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import eth_keyfile
 from eth_typing import Address
@@ -49,7 +49,7 @@ def get_authorized_address() -> Address:
     return keyfile["address"]
 
 
-def get_authorized_private_key(password: str) -> Optional[str]:
+def get_authorized_private_key(password: str) -> str:
     """
     Returns the private key associated with stored keyfile. Password required.
     """
