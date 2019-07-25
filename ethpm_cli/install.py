@@ -11,6 +11,7 @@ from eth_utils.toolz import assoc, dissoc
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.uri import is_ipfs_uri
 
+from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR, LOCKFILE_NAME, SRC_DIR_NAME
 from ethpm_cli.exceptions import InstallError
@@ -228,6 +229,6 @@ def install_to_ethpm_lock(pkg: Package, ethpm_lock: Path) -> None:
 def uninstall_from_ethpm_lock(package_name: str, ethpm_lock: Path) -> None:
     old_lock = json.loads(ethpm_lock.read_text())
     new_lock = dissoc(old_lock, package_name)
-    temp_ethpm_lock = Path(tempfile.NamedTemporaryFile().name)
-    temp_ethpm_lock.write_text(f"{json.dumps(new_lock, sort_keys=True, indent=4)}\n")
-    temp_ethpm_lock.replace(ethpm_lock)
+    with atomic_replace(ethpm_lock) as ethpm_lock_file:
+        ethpm_lock_file.write(json.dumps(new_lock, sort_keys=True, indent=4))
+        ethpm_lock_file.write("\n")

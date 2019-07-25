@@ -2,7 +2,7 @@ import shutil
 
 import pexpect
 
-from ethpm_cli._utils.testing import check_dir_trees_equal
+from ethpm_cli._utils.filesystem import check_dir_trees_equal
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR
 
 

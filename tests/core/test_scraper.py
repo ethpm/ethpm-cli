@@ -7,7 +7,7 @@ from web3 import Web3
 from web3.tools.pytest_ethereum.deployer import Deployer
 
 from ethpm_cli import CLI_ASSETS_DIR
-from ethpm_cli._utils.testing import check_dir_trees_equal
+from ethpm_cli._utils.filesystem import check_dir_trees_equal
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.scraper import get_ethpm_birth_block, scrape
 

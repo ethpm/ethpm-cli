@@ -1,5 +1,10 @@
+import contextlib
 import filecmp
 import os.path
+from pathlib import Path
+import shutil
+import tempfile
+from typing import IO, Any, Generator
 
 
 def check_dir_trees_equal(dir1: str, dir2: str) -> bool:
@@ -37,3 +42,13 @@ def check_dir_trees_equal(dir1: str, dir2: str) -> bool:
         if not check_dir_trees_equal(new_dir1, new_dir2):
             return False
     return True
+
+
+@contextlib.contextmanager
+def atomic_replace(path: Path) -> Generator[IO[Any], None, None]:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_file_path = Path(tmpdir) / path.name
+        tmp_file_path.touch()
+        with tmp_file_path.open(mode="w+") as tmpfile:
+            yield tmpfile
+        shutil.copyfile(tmp_file_path, path)

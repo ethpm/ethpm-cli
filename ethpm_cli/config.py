@@ -2,8 +2,6 @@ from argparse import Namespace
 import json
 import os
 from pathlib import Path
-import shutil
-import tempfile
 from typing import Any, Dict
 
 from ethpm.constants import SUPPORTED_CHAIN_IDS
@@ -11,6 +9,7 @@ from web3 import Web3
 from web3.auto.infura.endpoints import build_http_headers, build_infura_url
 from web3.providers.auto import load_provider_from_uri
 
+from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.constants import (
@@ -105,7 +104,6 @@ def initialize_xdg_ethpm_dir(xdg_ethpmcli_root: Path, w3: Web3) -> None:
 def write_updated_chain_data(
     chain_data_path: Path, updated_data: Dict[str, Any]
 ) -> None:
-    tmp_pkg_dir = Path(tempfile.mkdtemp())
-    tmp_data = tmp_pkg_dir / "chain_data.json"
-    tmp_data.write_text(f"{json.dumps(updated_data, indent=4)}\n")
-    shutil.copyfile(tmp_data, chain_data_path)
+    with atomic_replace(chain_data_path) as chain_data_file:
+        chain_data_file.write(json.dumps(updated_data, indent=4))
+        chain_data_file.write("\n")
