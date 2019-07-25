@@ -12,7 +12,7 @@ from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.uri import is_ipfs_uri
 
 from ethpm_cli.config import Config
-from ethpm_cli.constants import ETHPM_DIR_NAME, LOCKFILE_NAME, SRC_DIR_NAME
+from ethpm_cli.constants import ETHPM_PACKAGES_DIR, LOCKFILE_NAME, SRC_DIR_NAME
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.package import Package
 from ethpm_cli.validation import validate_parent_directory
@@ -97,7 +97,7 @@ def get_installed_package_tree(base_dir: Path, depth: int = 0) -> InstalledPacka
 
 @to_tuple
 def get_dependency_dirs(base_dir: Path) -> Iterable[Path]:
-    dep_dir = base_dir / ETHPM_DIR_NAME
+    dep_dir = base_dir / ETHPM_PACKAGES_DIR
     if dep_dir.is_dir():
         for ddir in dep_dir.iterdir():
             if ddir.is_dir():
@@ -124,7 +124,7 @@ def get_package_aliases(package_name: str, config: Config) -> Iterable[Tuple[str
 
 def uninstall_package(package_name: str, config: Config) -> None:
     if is_package_installed(package_name, config):
-        tmp_pkg_dir = Path(tempfile.mkdtemp()) / ETHPM_DIR_NAME
+        tmp_pkg_dir = Path(tempfile.mkdtemp()) / ETHPM_PACKAGES_DIR
         shutil.copytree(config.ethpm_dir, tmp_pkg_dir)
         shutil.rmtree(tmp_pkg_dir / package_name)
         uninstall_from_ethpm_lock(package_name, (tmp_pkg_dir / LOCKFILE_NAME))
@@ -204,7 +204,7 @@ def write_build_deps_to_disk(
     pkg: Package, pkg_dir: Path, ipfs_backend: BaseIPFSBackend
 ) -> None:
     if "build_dependencies" in pkg.manifest:
-        child_ethpm_dir = pkg_dir / ETHPM_DIR_NAME
+        child_ethpm_dir = pkg_dir / ETHPM_PACKAGES_DIR
         child_ethpm_dir.mkdir()
         for name, uri in pkg.manifest["build_dependencies"].items():
             dep_pkg = Package(uri, "", ipfs_backend)

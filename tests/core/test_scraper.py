@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
 import json
-import os
-from pathlib import Path
 
 from ethpm import Package
 import pytest
@@ -44,7 +42,7 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
     ethpmcli_dir = get_xdg_ethpmcli_root()
 
     # validate tmpdir
-    assert 'pytest' in str(ethpmcli_dir)
+    assert "pytest" in str(ethpmcli_dir)
 
     # Initial scrape
     w3.testing.mine(6)

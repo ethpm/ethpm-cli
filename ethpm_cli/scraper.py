@@ -3,8 +3,6 @@ import itertools
 import json
 import logging
 from pathlib import Path
-import shutil
-import tempfile
 from typing import Any, Dict, Iterable, List, Set, Tuple  # noqa: F401
 
 from eth_typing import URI, Address
@@ -15,10 +13,9 @@ from ethpm.uri import is_supported_content_addressed_uri, resolve_uri_contents
 from web3 import Web3
 
 from ethpm_cli._utils.various import flatten
+from ethpm_cli.config import write_updated_chain_data
 from ethpm_cli.constants import VERSION_RELEASE_ABI
-from ethpm_cli.config import initialize_xdg_ethpm_dir, write_updated_chain_data
 from ethpm_cli.exceptions import BlockNotFoundError
-from ethpm_cli.validation import validate_chain_data_store
 
 logger = logging.getLogger("ethpm_cli.scraper.Scraper")
 

@@ -33,8 +33,6 @@ def get_keyfile_path() -> Path:
 
 def get_keyfile_data() -> Dict[str, Any]:
     keyfile_path = get_keyfile_path()
-    if not keyfile_path.read_text():
-        raise Exception
     return eth_keyfile.load_keyfile(str(keyfile_path))
 
 

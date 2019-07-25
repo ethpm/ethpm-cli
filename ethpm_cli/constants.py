@@ -3,9 +3,9 @@ import json
 from ethpm_cli import CLI_ASSETS_DIR
 
 ETHPM_DIR_ENV_VAR = "ETHPM_CLI_PACKAGES_DIR"
-ETHPM_DIR_NAME = "_ethpm_packages"
+ETHPM_PACKAGES_DIR = "_ethpm_packages"
 IPFS_ASSETS_DIR = "ipfs"
-IPFS_CHAIN_DATA = 'chain_data.json'
+IPFS_CHAIN_DATA = "chain_data.json"
 KEYFILE_PATH = "_ethpm_keyfile.json"
 LOCKFILE_NAME = "ethpm.lock"
 SRC_DIR_NAME = "_src"
