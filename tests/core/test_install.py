@@ -2,8 +2,8 @@ import logging
 
 import pytest
 
-from ethpm_cli._utils.testing import check_dir_trees_equal
-from ethpm_cli.constants import ETHPM_DIR_NAME
+from ethpm_cli._utils.filesystem import check_dir_trees_equal
+from ethpm_cli.constants import ETHPM_PACKAGES_DIR
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.install import (
     install_package,
@@ -64,7 +64,7 @@ def test_install_package(uri, pkg_name, alias, install_type, config, test_assets
     pkg = Package(uri, alias, config.ipfs_backend)
     install_package(pkg, config)
 
-    expected_package = test_assets_dir / pkg_name / install_type / ETHPM_DIR_NAME
+    expected_package = test_assets_dir / pkg_name / install_type / ETHPM_PACKAGES_DIR
     assert check_dir_trees_equal(config.ethpm_dir, expected_package)
 
 
@@ -87,12 +87,16 @@ def test_can_install_same_package_twice_if_aliased(config, owned_pkg, test_asset
     assert (config.ethpm_dir / "owned").is_dir()
     assert check_dir_trees_equal(
         config.ethpm_dir / "owned",
-        test_assets_dir / "owned" / "ipfs_uri" / ETHPM_DIR_NAME / "owned",
+        test_assets_dir / "owned" / "ipfs_uri" / ETHPM_PACKAGES_DIR / "owned",
     )
     assert (config.ethpm_dir / "owned-alias").is_dir()
     assert check_dir_trees_equal(
         config.ethpm_dir / "owned-alias",
-        test_assets_dir / "owned" / "ipfs_uri_alias" / ETHPM_DIR_NAME / "owned-alias",
+        test_assets_dir
+        / "owned"  # noqa: W503
+        / "ipfs_uri_alias"  # noqa: W503
+        / ETHPM_PACKAGES_DIR  # noqa: W503
+        / "owned-alias",  # noqa: W503
     )
 
 
@@ -103,7 +107,7 @@ def test_install_multiple_packages(config, test_assets_dir, owned_pkg, wallet_pk
     assert (config.ethpm_dir / "wallet").is_dir()
     assert (config.ethpm_dir / "owned").is_dir()
     assert check_dir_trees_equal(
-        config.ethpm_dir, (test_assets_dir / "multiple" / ETHPM_DIR_NAME)
+        config.ethpm_dir, (test_assets_dir / "multiple" / ETHPM_PACKAGES_DIR)
     )
 
 
@@ -118,7 +122,7 @@ def test_uninstall_packages(
     assert (config.ethpm_dir / keep).is_dir()
     assert not (config.ethpm_dir / uninstall).is_dir()
     assert check_dir_trees_equal(
-        config.ethpm_dir, (test_assets_dir / keep / "ipfs_uri" / ETHPM_DIR_NAME)
+        config.ethpm_dir, (test_assets_dir / keep / "ipfs_uri" / ETHPM_PACKAGES_DIR)
     )
 
 

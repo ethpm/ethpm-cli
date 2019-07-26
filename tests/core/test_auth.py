@@ -1,9 +1,8 @@
 import filecmp
-import os
-from pathlib import Path
 
 from eth_utils import is_same_address, to_text
 
+from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import (
     get_authorized_address,
     get_authorized_private_key,
@@ -14,7 +13,7 @@ from ethpm_cli.constants import KEYFILE_PATH
 
 
 def test_import_keyfile(keyfile):
-    ethpmcli_dir = Path(os.environ["XDG_ETHPMCLI_ROOT"])
+    ethpmcli_dir = get_xdg_ethpmcli_root()
     import_keyfile(keyfile)
     assert filecmp.cmp(ethpmcli_dir / KEYFILE_PATH, keyfile)
 

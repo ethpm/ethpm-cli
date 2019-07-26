@@ -2,15 +2,12 @@ import argparse
 from pathlib import Path
 
 from eth_utils import humanize_hash
-from web3 import Web3
-from web3.middleware import local_filter_middleware
-from web3.providers.auto import load_provider_from_uri
 
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import get_authorized_address, import_keyfile
 from ethpm_cli.config import Config
-from ethpm_cli.constants import INFURA_HTTP_URI
+from ethpm_cli.constants import IPFS_CHAIN_DATA
 from ethpm_cli.exceptions import AuthorizationError
 from ethpm_cli.install import (
     install_package,
@@ -19,10 +16,34 @@ from ethpm_cli.install import (
 )
 from ethpm_cli.package import Package
 from ethpm_cli.scraper import scrape
-from ethpm_cli.validation import validate_install_cli_args, validate_uninstall_cli_args
+from ethpm_cli.validation import (
+    validate_chain_data_store,
+    validate_install_cli_args,
+    validate_uninstall_cli_args,
+)
 
 parser = argparse.ArgumentParser(description="ethpm-cli")
 ethpm_parser = parser.add_subparsers(help="commands", dest="command")
+
+
+def add_chain_id_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--chain-id",
+        dest="chain_id",
+        action="store",
+        type=int,
+        help="Chain ID of target blockchain to use.",
+    )
+
+
+def add_ethpm_dir_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--ethpm-dir",
+        dest="ethpm_dir",
+        action="store",
+        type=Path,
+        help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
+    )
 
 
 #
@@ -31,6 +52,7 @@ ethpm_parser = parser.add_subparsers(help="commands", dest="command")
 
 
 def auth_action(args: argparse.Namespace) -> None:
+    Config(args)
     if args.keyfile_path:
         import_keyfile(args.keyfile_path)
     try:
@@ -38,7 +60,7 @@ def auth_action(args: argparse.Namespace) -> None:
         cli_logger.info(f"Keyfile stored for address: 0x{authorized_address}.")
     except AuthorizationError:
         cli_logger.info(
-            "No keyfile found. Use `ethpm auth --keyfile-path <path_to_keyfile>` "
+            "No valid keyfile found. Use `ethpm auth --keyfile-path <path_to_keyfile>` "
             "to set your keyfile for use with ethPM CLI."
         )
 
@@ -60,13 +82,14 @@ auth_parser.set_defaults(func=auth_action)
 
 
 def scrape_action(args: argparse.Namespace) -> None:
-    w3 = Web3(load_provider_from_uri(INFURA_HTTP_URI))
-    w3.middleware_onion.add(local_filter_middleware)
-    ethpmcli_dir = get_xdg_ethpmcli_root()
-
+    config = Config(args)
+    xdg_ethpmcli_root = get_xdg_ethpmcli_root()
+    chain_data_path = xdg_ethpmcli_root / IPFS_CHAIN_DATA
+    validate_chain_data_store(chain_data_path, config.w3)
+    cli_logger.info("Loading IPFS scraper...")
     start_block = args.start_block if args.start_block else 0
-    last_scraped_block = scrape(w3, ethpmcli_dir, start_block)
-    last_scraped_block_hash = w3.eth.getBlock(last_scraped_block)["hash"]
+    last_scraped_block = scrape(config.w3, xdg_ethpmcli_root, start_block)
+    last_scraped_block_hash = config.w3.eth.getBlock(last_scraped_block)["hash"]
     cli_logger.info(
         "All blocks scraped up to # %d: %s.",
         last_scraped_block,
@@ -100,6 +123,7 @@ scrape_parser.add_argument(
     type=int,
     help="Block number from where to begin scraping (Defaults to blocks from ~ March 14, 2019).",
 )
+add_chain_id_arg_to_parser(scrape_parser)
 scrape_parser.set_defaults(func=scrape_action)
 
 
@@ -132,13 +156,6 @@ install_parser.add_argument(
     help="IPFS / Github / Etherscan / Registry URI of target package.",
 )
 install_parser.add_argument(
-    "--ethpm-dir",
-    dest="ethpm_dir",
-    action="store",
-    type=Path,
-    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
-)
-install_parser.add_argument(
     "--alias", action="store", type=str, help="Alias to install target package under."
 )
 install_parser.add_argument(
@@ -147,6 +164,7 @@ install_parser.add_argument(
     action="store_true",
     help="Flag to use locally running IPFS node.",
 )
+add_ethpm_dir_arg_to_parser(install_parser)
 install_parser.set_defaults(func=install_action)
 
 
@@ -171,13 +189,7 @@ uninstall_parser.add_argument(
     type=str,
     help="Package name / alias of target package to uninstall.",
 )
-uninstall_parser.add_argument(
-    "--ethpm-dir",
-    dest="ethpm_dir",
-    action="store",
-    type=Path,
-    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
-)
+add_ethpm_dir_arg_to_parser(uninstall_parser)
 uninstall_parser.set_defaults(func=uninstall_action)
 
 
@@ -194,11 +206,5 @@ def list_action(args: argparse.Namespace) -> None:
 list_parser = ethpm_parser.add_parser(
     "list", help="List all installed packages in your ethPM directory."
 )
-list_parser.add_argument(
-    "--ethpm-dir",
-    dest="ethpm_dir",
-    action="store",
-    type=Path,
-    help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
-)
+add_ethpm_dir_arg_to_parser(list_parser)
 list_parser.set_defaults(func=list_action)

@@ -25,6 +25,9 @@ def get_keyfile_path() -> Path:
     keyfile_path = ethpm_xdg_root / KEYFILE_PATH
     if not keyfile_path.is_file():
         raise AuthorizationError(f"No keyfile located at {keyfile_path}.")
+
+    if not keyfile_path.read_text():
+        raise AuthorizationError(f"Empty keyfile located at {keyfile_path}.")
     return keyfile_path
 
 

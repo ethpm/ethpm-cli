@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
 import json
-import os
-from pathlib import Path
 
 from ethpm import Package
 import pytest
@@ -9,7 +7,8 @@ from web3 import Web3
 from web3.tools.pytest_ethereum.deployer import Deployer
 
 from ethpm_cli import CLI_ASSETS_DIR
-from ethpm_cli._utils.testing import check_dir_trees_equal
+from ethpm_cli._utils.filesystem import check_dir_trees_equal
+from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.scraper import get_ethpm_birth_block, scrape
 
 
@@ -25,9 +24,7 @@ def log_deployer(w3):
 
 
 @pytest.fixture
-def log(log_deployer, tmpdir, monkeypatch):
-    monkeypatch.chdir(tmpdir)
-    monkeypatch.setenv("XDG_ETHPMCLI_ROOT", str(Path(tmpdir / "ethpmcli_dir")))
+def log(log_deployer):
     return log_deployer.deploy("Log").deployments.get_instance("Log")
 
 
@@ -42,12 +39,15 @@ def release(log, w3, name, version, uri):
 
 
 def test_scraper_logs_scraped_block_ranges(log, w3):
-    ethpmcli_dir = Path(os.environ["XDG_ETHPMCLI_ROOT"])
+    ethpmcli_dir = get_xdg_ethpmcli_root()
+
+    # validate tmpdir
+    assert "pytest" in str(ethpmcli_dir)
 
     # Initial scrape
     w3.testing.mine(6)
     scrape(w3, ethpmcli_dir, 1)
-    expected_1 = {"chain_id": "0x3d", "scraped_blocks": [{"min": "0", "max": "6"}]}
+    expected_1 = {"chain_id": "0x1", "scraped_blocks": [{"min": "0", "max": "6"}]}
     actual_1 = json.loads((ethpmcli_dir / "chain_data.json").read_text())
     assert actual_1 == expected_1
 
@@ -55,7 +55,7 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
     w3.testing.mine(4)
     scrape(w3, ethpmcli_dir, 9)
     expected_2 = {
-        "chain_id": "0x3d",
+        "chain_id": "0x1",
         "scraped_blocks": [{"min": "0", "max": "6"}, {"min": "9", "max": "10"}],
     }
     actual_2 = json.loads((ethpmcli_dir / "chain_data.json").read_text())
@@ -64,7 +64,7 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
     # Complex scrape from custom start block
     w3.testing.mine(4)
     expected_3 = {
-        "chain_id": "0x3d",
+        "chain_id": "0x1",
         "scraped_blocks": [
             {"min": "0", "max": "6"},
             {"min": "9", "max": "10"},
@@ -78,7 +78,7 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
     # Test ranges partially collapse
     scrape(w3, ethpmcli_dir, 10)
     expected_4 = {
-        "chain_id": "0x3d",
+        "chain_id": "0x1",
         "scraped_blocks": [{"min": "0", "max": "6"}, {"min": "9", "max": "14"}],
     }
     actual_4 = json.loads((ethpmcli_dir / "chain_data.json").read_text())
@@ -86,7 +86,7 @@ def test_scraper_logs_scraped_block_ranges(log, w3):
 
     # Test ranges fully collapse
     scrape(w3, ethpmcli_dir, 1)
-    expected_5 = {"chain_id": "0x3d", "scraped_blocks": [{"min": "0", "max": "14"}]}
+    expected_5 = {"chain_id": "0x1", "scraped_blocks": [{"min": "0", "max": "14"}]}
     actual_5 = json.loads((ethpmcli_dir / "chain_data.json").read_text())
     assert actual_5 == expected_5
 
@@ -119,7 +119,7 @@ def test_scraper_writes_to_disk(log, log_2, test_assets_dir, w3):
     )
 
     w3.testing.mine(3)
-    ethpmcli_dir = Path(os.environ["XDG_ETHPMCLI_ROOT"])
+    ethpmcli_dir = get_xdg_ethpmcli_root()
     scrape(w3, ethpmcli_dir, 1)
     assert check_dir_trees_equal(ethpmcli_dir, (test_assets_dir.parent / "ipfs"))
 
@@ -142,7 +142,7 @@ def test_scraper_imports_existing_ethpmcli_dir(log, log_2, test_assets_dir, w3):
         "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
     )
 
-    ethpmcli_dir = Path(os.environ["XDG_ETHPMCLI_ROOT"])
+    ethpmcli_dir = get_xdg_ethpmcli_root()
     # First scrape
     scrape(w3, ethpmcli_dir, 1)
     w3.testing.mine(3)
