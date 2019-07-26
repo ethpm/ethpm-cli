@@ -24,7 +24,7 @@ def validate_project_directory(project_dir: Path) -> None:
 
     if not (project_dir / "contracts").is_dir():
         raise ValidationError(
-            f"{project_dir} must contain a contracts/ directory that stores project contracts."
+            f"{project_dir} must contain a contracts/ directory that contains project contracts."
         )
 
 
@@ -42,7 +42,7 @@ def validate_solc_output(project_dir: Path) -> None:
             f"Content found at {solc_output_path} does not look like valid json."
         )
 
-    if 'contracts' not in solc_output_data:
+    if "contracts" not in solc_output_data:
         raise ValidationError(
             f"JSON found at {solc_output_path} does not look like valid "
             "Solidity compiler standard json output."

@@ -67,9 +67,7 @@ def generate_custom_manifest(project_dir: Path) -> None:
 
 def gen_validate_manifest() -> Optional[Callable[..., Manifest]]:
     flag = parse_bool_flag(
-        input(
-            "Would you like to validate your manifest against the json schema? (recommended) (y/n) "
-        )
+        "Would you like to validate your manifest against the json schema? (recommended) (y/n) "
     )
     if flag:
         return b.validate()
@@ -82,14 +80,12 @@ def gen_contract_types(
     contract_types = get_contract_types(solc_output)
     pretty = "\n".join(contract_types)
     flag = parse_bool_flag(
-        input(
-            f"{len(contract_types)} contract types available.\n\n"
-            f"{pretty}. \n"
-            "Would you like to include all available contract types? (y/n)\n"
-        )
+        f"{len(contract_types)} contract types available.\n\n"
+        f"{pretty}. \n"
+        "Would you like to include all available contract types? (y/n)\n"
     )
     if not flag:
-        raise Exception("no custom contract types yet")
+        raise Exception("Custom contract types are not supported yet.")
     return build_contract_types(contract_types, solc_output)
 
 
@@ -100,21 +96,19 @@ def gen_sources(
         str(src.relative_to(contracts_dir)) for src in contracts_dir.glob("**/*.sol")
     ]
     contract_types = get_contract_types(solc_output)
-    pretty = "\n".join(available_sources)
+    pretty = "\n".join(sorted(available_sources))
     flag = parse_bool_flag(
-        input(
-            f"{len(available_sources)} sources available.\n\n"
-            f"{pretty}. \n"
-            "Would you like to include all available sources? (y/n)\n"
-        )
+        f"{len(available_sources)} sources available.\n\n"
+        f"{pretty}. \n"
+        "Would you like to include all available sources? (y/n)\n"
     )
     if not flag:
         raise Exception("sorry, we dont support specific source selection yet.")
     inline_source_flag = parse_bool_flag(
-        input("Would you like to automatically inline all sources? (y/n) ")
+        "Would you like to automatically inline all sources? (y/n) "
     )
     if not inline_source_flag:
-        raise Exception("sorry, we dont support pinning sources yet.")
+        raise Exception("Sorry, we dont support pinning sources yet.")
     # todo: validate a source for every contract type
     return build_sources(contract_types, solc_output, contracts_dir)
 
@@ -135,7 +129,7 @@ def gen_manifest_version() -> Callable[..., Manifest]:
 
 def gen_description() -> Optional[Callable[..., Manifest]]:
     flag = parse_bool_flag(
-        input("Would you like to add a description to your package? (y/n) ")
+        "Would you like to add a description to your package? (y/n) "
     )
     if flag:
         description = input("Enter your description: ")
@@ -144,9 +138,7 @@ def gen_description() -> Optional[Callable[..., Manifest]]:
 
 
 def gen_license() -> Optional[Callable[..., Manifest]]:
-    flag = parse_bool_flag(
-        input("Would you like to add a license to your package? (y/n) ")
-    )
+    flag = parse_bool_flag("Would you like to add a license to your package? (y/n) ")
     if flag:
         license = input("Enter your license: ")
         return b.license(license)
@@ -154,9 +146,7 @@ def gen_license() -> Optional[Callable[..., Manifest]]:
 
 
 def gen_authors() -> Optional[Callable[..., Manifest]]:
-    flag = parse_bool_flag(
-        input("Would you like to add authors to your package? (y/n) ")
-    )
+    flag = parse_bool_flag("Would you like to add authors to your package? (y/n) ")
     if flag:
         authors = input("Enter an author, or multiple authors separated by commas: ")
         return b.authors(*authors.split(","))
@@ -164,9 +154,7 @@ def gen_authors() -> Optional[Callable[..., Manifest]]:
 
 
 def gen_keywords() -> Optional[Callable[..., Manifest]]:
-    flag = parse_bool_flag(
-        input("Would you like to add keywords to your package? (y/n) ")
-    )
+    flag = parse_bool_flag("Would you like to add keywords to your package? (y/n) ")
     if flag:
         keywords = input("Enter a keyword, or multiple keywords separated by commas: ")
         return b.keywords(*keywords.split(","))
@@ -175,10 +163,8 @@ def gen_keywords() -> Optional[Callable[..., Manifest]]:
 
 def gen_links() -> Optional[Callable[..., Manifest]]:
     flag = parse_bool_flag(
-        input(
-            "Would you like to add links to the documentation, "
-            "repo, or website in your package? (y/n) "
-        )
+        "Would you like to add links to the documentation, "
+        "repo, or website in your package? (y/n) "
     )
     if flag:
         documentation = input(
@@ -197,9 +183,11 @@ def generate_solc_input_for_project(project_dir: Path) -> None:
     generate_solc_input(project_dir)
 
 
-def parse_bool_flag(flag: str) -> bool:
-    # todo: enhance
-    # i.e. your response ('xxx') was not one of the expected response: repeat
-    if flag.lower() == "y":
+def parse_bool_flag(question: str, err_msg: str = None) -> bool:
+    response = input(f"{err_msg}{question}")
+
+    if response.lower() == "y":
         return True
-    return False
+    if response.lower() == "n":
+        return False
+    return parse_bool_flag(question, f"Invalid response: {response}. ")

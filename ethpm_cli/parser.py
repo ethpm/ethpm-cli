@@ -22,7 +22,6 @@ from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import (
     validate_chain_data_store,
     validate_install_cli_args,
-    validate_project_directory,
     validate_solc_output,
     validate_uninstall_cli_args,
 )
@@ -147,13 +146,22 @@ registry_activate_parser.set_defaults(func=registry_activate_cmd)
 
 
 def create_action(args: argparse.Namespace) -> None:
-    validate_project_directory(args.project_dir)
+    config = Config(args)
+    if not config.project_dir:
+        raise Exception
+
+    # ethpm create --solc-input
     if args.solc_input:
         generate_solc_input(args.project_dir / "contracts")
+
     else:
         validate_solc_output(args.project_dir)
+
+        # ethpm create --manifest
         if args.manifest:
             generate_custom_manifest(args.project_dir)
+
+        # ethpm create --basic-manifest
         else:
             if not args.package_name:
                 raise ValidationError(
@@ -172,8 +180,8 @@ create_parser = ethpm_parser.add_parser(
 )
 create_parser.add_argument(
     "--project-dir",
-    dest="project_dir",
     action="store",
+    dest="project_dir",
     type=Path,
     help="Path to specific project directory.",
 )
@@ -191,6 +199,7 @@ create_parser.add_argument(
     type=str,
     help="Version for generating a basic manifest.",
 )
+add_ethpm_dir_arg_to_parser(create_parser)
 create_group = create_parser.add_mutually_exclusive_group(required=True)
 create_group.add_argument(
     "--manifest",
@@ -207,7 +216,6 @@ create_group.add_argument(
     action="store_true",
     help="Generate solidity compiler standard json input for given projects dir.",
 )
-# add_ethpm_dir_arg_to_parser(create_parser)
 create_parser.set_defaults(func=create_action)
 
 
