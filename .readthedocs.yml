@@ -2,5 +2,6 @@ build:
   image: latest
 
 python:
+  pip_install: true
   extra_requirements:
     - doc
