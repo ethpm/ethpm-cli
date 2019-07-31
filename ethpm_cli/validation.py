@@ -4,7 +4,7 @@ from pathlib import Path
 
 from eth_typing import URI
 from ethpm.backends.registry import is_valid_registry_uri
-from ethpm.exceptions import ValidationError as EthPMValidationError
+from ethpm.exceptions import EthPMValidationError
 from ethpm.uri import is_supported_content_addressed_uri
 from ethpm.validation.package import validate_package_name
 from web3 import Web3

@@ -1,13 +1,12 @@
 import json
 from pathlib import Path
-import tempfile
-from typing import Any, Dict, Iterable, NamedTuple, Optional, Tuple
+from typing import Any, Dict, NamedTuple, Optional
 
 from eth_typing import URI
-from eth_utils import to_dict
 from eth_utils.toolz import assoc, assoc_in, dissoc
 from ethpm.backends.registry import is_valid_registry_uri, parse_registry_uri
 
+from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.config import Config
 from ethpm_cli.constants import REGISTRY_STORE
@@ -22,8 +21,8 @@ class StoredRegistry(NamedTuple):
 
     @property
     def format_for_display(self) -> str:
-        activated = "(active)" if self.active else ""
-        return f"{self.uri} --- {self.alias} {activated}"
+        activated = " (active)" if self.active else ""
+        return f"{self.uri} --- {self.alias}{activated}"
 
 
 def list_registries(config: Config) -> None:
@@ -109,7 +108,7 @@ def lookup_uri_by_alias(alias: str, registries_and_aliases: Dict[URI, str]) -> U
     aliases_and_registries = {v: k for k, v in registries_and_aliases.items()}
     if alias not in aliases_and_registries:
         raise InstallError(
-            f"alias: {alias} not available. "
+            f"Alias: {alias} not available. "
             f"Available aliases include: {list(aliases_and_registries.keys())}."
         )
     return aliases_and_registries[alias]
@@ -139,19 +138,18 @@ def get_all_registries_and_aliases(store_path: Path) -> Dict[URI, str]:
 
 
 def write_store_data_to_disk(store_data: Dict[URI, Any], store_path: Path) -> None:
-    temp_store = Path(tempfile.NamedTemporaryFile().name)
-    temp_store.write_text(json.dumps(store_data, indent=4, sort_keys=True))
-    temp_store.replace(store_path)
+    with atomic_replace(store_path) as f:
+        f.write(json.dumps(store_data, indent=4, sort_keys=True))
 
 
-@to_dict
 def generate_registry_store_data(
     registry_uri: URI, alias: str, activate: bool = False
-) -> Iterable[Tuple[str, Any]]:
+) -> Dict[str, Any]:
     parsed_uri = parse_registry_uri(registry_uri)
     # todo: support ens in registry uri
-    ens = None
-    yield "ens", ens
-    yield "address", parsed_uri.address
-    yield "alias", alias
-    yield "active", activate
+    return {
+        "ens": None,
+        "address": parsed_uri.address,
+        "alias": alias,
+        "active": activate,
+    }

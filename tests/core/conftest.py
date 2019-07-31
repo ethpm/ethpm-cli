@@ -2,12 +2,12 @@ import json
 
 import pytest
 
-from ethpm_cli.constants import ETHPM_DIR_NAME
+from ethpm_cli.constants import ETHPM_PACKAGES_DIR
 
 
 @pytest.fixture
 def owned_pkg_data(test_assets_dir):
-    owned_dir = test_assets_dir / "owned" / "ipfs_uri" / ETHPM_DIR_NAME / "owned"
+    owned_dir = test_assets_dir / "owned" / "ipfs_uri" / ETHPM_PACKAGES_DIR / "owned"
     owned_raw_manifest = (owned_dir / "manifest.json").read_bytes()
     return {
         "raw_manifest": owned_raw_manifest,
