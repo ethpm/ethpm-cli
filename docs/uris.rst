@@ -1,25 +1,3 @@
-Overview
-========
-
-A command-line tool to help manage EthPM packages and registries.
-
-
-.. warning::
-
-   ``EthPM CLI`` is currently in public Alpha:
-
-   - It is expected to have bugs and is not meant to be used in production 
-   - Things may be ridiculously slow or not work at all
-
-
-Installing EthPM Packages
--------------------------
-
-.. argparse::
-   :ref: ethpm_cli.parser.parser
-   :prog: ethpm
-
-
 URIs
 ----
 

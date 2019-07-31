@@ -9,9 +9,10 @@ Contents
 .. toctree::
     :maxdepth: 3
 
-    overview
+    commands
     installation
     disk
+    uris
     releases
 
 
