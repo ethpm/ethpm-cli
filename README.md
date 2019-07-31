@@ -1,7 +1,7 @@
 # ethpm-cli
 
 [![Join the chat at https://gitter.im/ethereum/ethpm-cli](https://badges.gitter.im/ethereum/ethpm-cli.svg)](https://gitter.im/ethereum/ethpm-cli?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://circleci.com/gh/ethereum/ethpm-cli.svg?style=shield)](https://circleci.com/gh/ethereum/ethpm-cli)
+[![CircleCI](https://circleci.com/gh/ethpm/ethpm-cli.svg?style=svg)](https://circleci.com/gh/ethpm/ethpm-cli)
 [![PyPI version](https://badge.fury.io/py/ethpm-cli.svg)](https://badge.fury.io/py/ethpm-cli)
 [![Python versions](https://img.shields.io/pypi/pyversions/ethpm-cli.svg)](https://pypi.python.org/pypi/ethpm-cli)
 [![Docs build](https://readthedocs.org/projects/ethpm-cli/badge/?version=latest)](http://ethpm-cli.readthedocs.io/en/latest/?badge=latest)
