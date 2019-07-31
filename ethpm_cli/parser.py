@@ -32,7 +32,7 @@ def add_chain_id_arg_to_parser(parser: argparse.ArgumentParser) -> None:
         dest="chain_id",
         action="store",
         type=int,
-        help="Chain ID of target blockchain to use.",
+        help="Chain ID of target blockchain.",
     )
 
 
@@ -71,7 +71,7 @@ auth_parser.add_argument(
     dest="keyfile_path",
     action="store",
     type=Path,
-    help="Path to your keyfile",
+    help="Path to your keyfile.",
 )
 auth_parser.set_defaults(func=auth_action)
 
@@ -121,7 +121,7 @@ scrape_parser.add_argument(
     dest="start_block",
     action="store",
     type=int,
-    help="Block number from where to begin scraping (Defaults to blocks from ~ March 14, 2019).",
+    help="Block number to begin scraping from (defaults to blocks from ~ March 14, 2019).",
 )
 add_chain_id_arg_to_parser(scrape_parser)
 scrape_parser.set_defaults(func=scrape_action)

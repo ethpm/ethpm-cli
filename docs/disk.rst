@@ -1,7 +1,10 @@
 Disk Format
 ===========
 
-ethPM cli writes package assets to your disk using the following format.
+_ethpm_packages/
+----------------
+
+ethPM cli writes ethPM package assets to your disk using the following format. You can have multiple different ``_ethpm_packages/`` local directories. The ``--ethpm-dir`` flag is available on most ``ethpm-cli`` commands to target a specific ``_ethpm_packages/`` dir. You can also set the environment variable ``ETHPM_CLI_PACKAGES_DIR`` to your target ``_ethpm_packages/`` directory. Otherwise, the cli will automatically lookup any ``_ethpm_packages/`` directory available under the current working dirctory.
 
 
 - CWD
@@ -55,3 +58,9 @@ A root-level JSON lockfile that manages what packages are currently installed. E
      - ``install_uri``
 
        - Content addressed / etherscan / registry URI used to install package.
+
+
+ethPM XDG
+---------
+
+For storing IPFS assets and the registry config file, ethPM-CLI uses the XDG Base Directory Specification `<https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.6.html>`_. These files are written to ``$XDG_DATA_HOME / 'ethpmcli'``.  A user will only have one local ethPM XDG directory.
