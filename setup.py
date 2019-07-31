@@ -9,7 +9,7 @@ extras_require = {
     'test': [
         "pexpect>=4.7.0,<5",
         "pytest>=4.4.0,<5",
-        "pytest-xdist==1.*",
+        "pytest-xdist>=1.29,<2",
         "tox>=2.9.1,<3",
     ],
     'lint': [
