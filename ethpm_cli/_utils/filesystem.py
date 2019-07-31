@@ -46,6 +46,12 @@ def check_dir_trees_equal(dir1: str, dir2: str) -> bool:
 
 @contextlib.contextmanager
 def atomic_replace(path: Path) -> Generator[IO[Any], None, None]:
+    """
+    Usage:
+
+    with atomic_replace(original: Path) as file:
+        file.write("new text")
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_file_path = Path(tmpdir) / path.name
         tmp_file_path.touch()

@@ -52,10 +52,10 @@ setup(
     include_package_data=True,
     install_requires=[
         "eth-hash[pysha3]>=0.2.0,<1",
-        "web3[tester]>=5.0.0b4,<6",
+        "web3[tester]>=5.0.0b5,<6",
     ],
     setup_requires=['setuptools-markdown'],
-    python_requires='>=3.6, <4',
+    python_requires='>=3.7, <4',
     extras_require=extras_require,
     py_modules=['ethpm_cli'],
     license="MIT",
@@ -68,7 +68,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
     entry_points={
