@@ -50,6 +50,21 @@ ethpm auth
 
 Link a keyfile to authorize on-chain transactions (i.e. deploying a registry / releasing a package). To generate a keyfile, use `eth-keyfile <https://github.com/ethereum/eth-keyfile>`_.
 
+.. code-block:: python
+
+   # Example script to generate your own keyfile
+   import json
+   from pathlib import Path
+   from eth_keyfile import create_keyfile_json
+
+   keyfile_json = create_keyfile_json(
+      private_key = b"11111111111111111111111111111111",  # A bytestring of length 32
+      password = b"foo"  # A bytestring which will be the password that can be used to decrypt the resulting keyfile.
+   )
+   keyfile_path = Path.cwd() / 'keyfile.json'
+   keyfile_path.touch()
+   keyfile_path.write_text(json.dumps(keyfile_json))
+
 .. argparse::
    :ref: ethpm_cli.parser.parser
    :prog: ethpm
