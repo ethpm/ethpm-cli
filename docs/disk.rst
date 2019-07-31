@@ -4,10 +4,16 @@ Disk Format
 _ethpm_packages/
 ----------------
 
-ethPM cli writes ethPM package assets to your disk using the following format. You can have multiple different ``_ethpm_packages/`` local directories. The ``--ethpm-dir`` flag is available on most ``ethpm-cli`` commands to target a specific ``_ethpm_packages/`` dir. You can also set the environment variable ``ETHPM_CLI_PACKAGES_DIR`` to your target ``_ethpm_packages/`` directory. Otherwise, the cli will automatically lookup any ``_ethpm_packages/`` directory available under the current working dirctory.
+A user can have one or many different ``_ethpm_packages/`` local directories. Think of it like the ``node_modules/`` directory in Node or a virtual environment in Python.
+
+   - By default, ``ethpm-cli`` will target the ``./_ethpm_packages/`` directory available under the current working directory.
+   - If ``--ethpm-dir`` flag is specified on a cli command, the cli will target the provided directory.
+   - If the environmnet variable ``ETHPM_CLI_PACKAGES_DIR`` is set, the cli will use this directory if one is not specified using the ``--ethpm-dir`` flag.
 
 
-- CWD
+ethPM cli writes ethPM package assets to your disk using the following format. 
+
+- ``.cwd/`` (current working directory)
 
   - ``_ethpm_packages/``
 
