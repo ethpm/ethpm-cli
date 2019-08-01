@@ -11,7 +11,7 @@ from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.config import Config
 from ethpm_cli.constants import REGISTRY_STORE
-from ethpm_cli.exceptions import InstallError
+from ethpm_cli.exceptions import AmbigiousFileSystem, AuthorizationError, InstallError
 
 
 class StoredRegistry(NamedTuple):
@@ -26,22 +26,33 @@ class StoredRegistry(NamedTuple):
         return f"{self.uri} --- {self.alias}{activated}"
 
 
-def deploy_registry(config: Config, chain_id: int, alias: str = None) -> None:
-    if chain_id not in SUPPORTED_CHAIN_IDS.keys():
-        raise Exception
-    if chain_id != 1:
-        raise Exception("for now")
-    cli_logger.info(f"deploying new registry to mainnet, this may take a minute")
-    # registry_address = '0x1457890158DECD360e6d4d979edBcDD59c35feeB'
+def deploy_registry(config: Config, alias: str = None) -> str:
+    if not config.private_key:
+        raise AuthorizationError(
+            "To deploy a registry, you must provide the password for your local keyfile."
+        )
+    chain_id = config.w3.eth.chainId
+    chain_name = SUPPORTED_CHAIN_IDS[chain_id]
+    cli_logger.info(
+        f"Deploying a new registry to {chain_name}, this may take a minute..."
+    )
+    # todo: handle tx timeout error gracefully
     registry_address = config.w3.pm.deploy_and_set_registry()
-    cli_logger.info(f"new registry @ {registry_address}")
+    cli_logger.info(f"New registry deployed to {registry_address} on {chain_name}.")
     registry_uri = URI(f"erc1319://{registry_address}:{chain_id}")
     add_registry(registry_uri, alias, config)
     activate_registry(registry_uri, config)
+    return registry_address
 
 
 def list_registries(config: Config) -> None:
-    registry_store = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
+    registry_store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
+    if not registry_store_path.is_file():
+        raise AmbigiousFileSystem(
+            "No registry store found in ethPM CLI xdg root. "
+            "Create one with `ethpm registry add`"
+        )
+    registry_store = json.loads((config.xdg_ethpmcli_root / REGISTRY_STORE).read_text())
     installed_registries = [
         StoredRegistry(reg, data["active"], data["alias"], data["ens"])
         for reg, data in registry_store.items()
@@ -51,7 +62,7 @@ def list_registries(config: Config) -> None:
 
 
 def add_registry(registry_uri: URI, alias: Optional[str], config: Config) -> None:
-    store_path = config.ethpm_dir / REGISTRY_STORE
+    store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
     if not store_path.is_file():
         generate_registry_store(registry_uri, alias, store_path)
     else:
@@ -59,11 +70,11 @@ def add_registry(registry_uri: URI, alias: Optional[str], config: Config) -> Non
 
 
 def remove_registry(registry_uri: URI, alias: Optional[str], config: Config) -> None:
-    store_path = config.ethpm_dir / REGISTRY_STORE
+    store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
     if not store_path.is_file():
         raise InstallError(
             f"Unable to remove registry: {registry_uri}. "
-            f"No registry store found in {config.ethpm_dir}."
+            f"No registry store found in {config.xdg_ethpmcli_root}."
         )
     registry = resolve_uri_and_alias(registry_uri, alias, store_path)
     old_store_data = json.loads(store_path.read_text())
@@ -72,20 +83,18 @@ def remove_registry(registry_uri: URI, alias: Optional[str], config: Config) -> 
 
 
 def activate_registry(uri_or_alias: str, config: Config) -> None:
-    store_path = config.ethpm_dir / REGISTRY_STORE
+    store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
     store_data = json.loads(store_path.read_text())
     registry = resolve_uri_or_alias(uri_or_alias, store_path)
     active_registry_uri = get_active_registry(store_data)
-    if registry.uri == active_registry_uri:
-        alias_msg = f" (alias: {registry.alias})" if registry.alias else " "
-        raise InstallError(f"Registry @ {registry.uri}{alias_msg}, already activated.")
-    deactivated_store_data = assoc_in(
-        store_data, [active_registry_uri, "active"], False
-    )
-    activated_store_data = assoc_in(
-        deactivated_store_data, [registry.uri, "active"], True
-    )
-    write_store_data_to_disk(activated_store_data, store_path)
+    if registry.uri != active_registry_uri:
+        deactivated_store_data = assoc_in(
+            store_data, [active_registry_uri, "active"], False
+        )
+        activated_store_data = assoc_in(
+            deactivated_store_data, [registry.uri, "active"], True
+        )
+        write_store_data_to_disk(activated_store_data, store_path)
 
 
 def resolve_uri_or_alias(uri_or_alias: str, store_path: Path) -> StoredRegistry:

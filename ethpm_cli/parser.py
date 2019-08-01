@@ -6,7 +6,7 @@ from eth_utils import humanize_hash
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
-from ethpm_cli.auth import get_authorized_address, import_keyfile
+from ethpm_cli.auth import get_authorized_address
 from ethpm_cli.config import Config, validate_config_has_project_dir_attr
 from ethpm_cli.constants import IPFS_CHAIN_DATA
 from ethpm_cli.exceptions import AuthorizationError, ValidationError
@@ -31,7 +31,6 @@ from ethpm_cli.validation import (
     validate_solc_output,
     validate_uninstall_cli_args,
 )
-
 
 #
 # Shared args
@@ -94,8 +93,9 @@ def add_keyfile_password_arg_to_parser(parser: argparse.ArgumentParser) -> None:
         dest="keyfile_password",
         action="store",
         type=str,
-        help="Password to local encrypted keyfile."
+        help="Password to local encrypted keyfile.",
     )
+
 
 def add_keyfile_path_arg_to_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
@@ -105,6 +105,17 @@ def add_keyfile_path_arg_to_parser(parser: argparse.ArgumentParser) -> None:
         type=Path,
         help="Path to your keyfile.",
     )
+
+
+def add_alias_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--alias",
+        dest="alias",
+        action="store",
+        type=str,
+        help="Alias to use in reference to this target registry / package.",
+    )
+
 
 parser = argparse.ArgumentParser(description="ethpm-cli")
 ethpm_parser = parser.add_subparsers(help="commands", dest="command")
@@ -202,15 +213,18 @@ def registry_activate_cmd(args: argparse.Namespace) -> None:
     cli_logger.info(f"Registry @ {args.uri_or_alias} activated.")
 
 
-# ethpm registry deploy --chain-id 1 --ethpm-dir /path
 def registry_deploy_cmd(args: argparse.Namespace) -> None:
-    # add alias
     config = Config(args)
-    deploy_registry(config, args.chain_id)
-    cli_logger.info("congrats! <link to explorer>")
-    # validate priv key available
-    # specify/validate chain_id
-    # store in registry store
+    registry_address = deploy_registry(config, args.alias)
+    explorer_uri = (
+        f"http://explorer.ethpm.com/browse/{config.w3.eth.chainId}/{registry_address}"
+    )
+    cli_logger.info(
+        f"Congrats on your new ethPM registry! Check it out @ {explorer_uri}."
+    )
+    cli_logger.info(
+        "You can now release a package on your registrywith `ethpm release`."
+    )
 
 
 registry_parser = ethpm_parser.add_parser("registry")
@@ -218,13 +232,13 @@ registry_subparsers = registry_parser.add_subparsers(help="registry", dest="regi
 
 # ethpm registry deploy
 registry_deploy_parser = registry_subparsers.add_parser("deploy", help="deploy")
+add_alias_arg_to_parser(registry_deploy_parser)
 add_chain_id_arg_to_parser(registry_deploy_parser)
-add_ethpm_dir_arg_to_parser(registry_deploy_parser)
+add_keyfile_password_arg_to_parser(registry_deploy_parser)
 registry_deploy_parser.set_defaults(func=registry_deploy_cmd)
 
 # ethpm registry list
 registry_list_parser = registry_subparsers.add_parser("list", help="list")
-add_ethpm_dir_arg_to_parser(registry_list_parser)
 registry_list_parser.set_defaults(func=registry_list_cmd)
 
 # ethpm registry add
@@ -232,14 +246,7 @@ registry_add_parser = registry_subparsers.add_parser("add", help="add")
 registry_add_parser.add_argument(
     "uri", action="store", type=str, help="Registry URI for target registry."
 )
-registry_add_parser.add_argument(
-    "--alias",
-    dest="alias",
-    action="store",
-    type=str,
-    help="Alias with which to reference this registry.",
-)
-add_ethpm_dir_arg_to_parser(registry_add_parser)
+add_alias_arg_to_parser(registry_add_parser)
 registry_add_parser.set_defaults(func=registry_add_cmd)
 
 # ethpm registry activate
@@ -250,7 +257,6 @@ registry_activate_parser.add_argument(
     type=str,
     help="Registry URI or alias for target registry.",
 )
-add_ethpm_dir_arg_to_parser(registry_activate_parser)
 registry_activate_parser.set_defaults(func=registry_activate_cmd)
 
 
@@ -402,14 +408,12 @@ install_parser.add_argument(
 add_package_name_arg_to_parser(install_parser)
 add_package_version_arg_to_parser(install_parser)
 install_parser.add_argument(
-    "--alias", action="store", type=str, help="Alias to install target package under."
-)
-install_parser.add_argument(
     "--local-ipfs",
     dest="local_ipfs",
     action="store_true",
     help="Flag to use locally running IPFS node.",
 )
+add_alias_arg_to_parser(install_parser)
 add_ethpm_dir_arg_to_parser(install_parser)
 install_parser.set_defaults(func=install_action)
 

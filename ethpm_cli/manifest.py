@@ -17,7 +17,7 @@ from ethpm_cli._utils.solc import (
     create_basic_manifest_from_solc_output,
     get_contract_types,
 )
-from ethpm_cli.config import get_w3
+from ethpm_cli.config import setup_w3
 from ethpm_cli.constants import SOLC_OUTPUT
 from ethpm_cli.validation import validate_solc_output
 
@@ -144,7 +144,7 @@ def gen_all_deployments(solc_output: Dict[str, Any]) -> Iterable[Dict[str, Any]]
 
 def gen_single_deployment(solc_output: Dict[str, Any]) -> Dict[str, Any]:
     chain_id = get_chain_id()
-    w3 = get_w3(chain_id)
+    w3 = setup_w3(chain_id)
     block_uri = create_latest_block_uri(w3)
     address = get_deployment_address()
     contract_type = get_deployment_contract_type(solc_output)

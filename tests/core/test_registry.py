@@ -40,7 +40,9 @@ def test_add_registry(config, test_assets_dir):
         (test_assets_dir / "registry_store" / "init.json").read_text()
     )
     add_registry(URI_1, "mine", config)
-    actual_registry_store = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
+    actual_registry_store = json.loads(
+        (config.xdg_ethpmcli_root / REGISTRY_STORE).read_text()
+    )
     assert actual_registry_store == expected_registry_store
 
 
@@ -50,7 +52,9 @@ def test_add_multiple_registries(config, test_assets_dir):
     )
     add_registry(URI_1, "mine", config)
     add_registry(URI_2, "other", config)
-    actual_registry_store = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
+    actual_registry_store = json.loads(
+        (config.xdg_ethpmcli_root / REGISTRY_STORE).read_text()
+    )
     assert actual_registry_store == expected_registry_store
 
 
@@ -67,7 +71,9 @@ def test_remove_registry(config, test_assets_dir):
     expected_registry_store = json.loads(
         (test_assets_dir / "registry_store" / "init.json").read_text()
     )
-    actual_registry_store = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
+    actual_registry_store = json.loads(
+        (config.xdg_ethpmcli_root / REGISTRY_STORE).read_text()
+    )
     assert actual_registry_store == expected_registry_store
 
 
@@ -83,7 +89,9 @@ def test_remove_aliased_registry(test_assets_dir, config):
     expected_registry_store = json.loads(
         (test_assets_dir / "registry_store" / "init.json").read_text()
     )
-    actual_registry_store = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
+    actual_registry_store = json.loads(
+        (config.xdg_ethpmcli_root / REGISTRY_STORE).read_text()
+    )
     assert actual_registry_store == expected_registry_store
 
 
@@ -116,7 +124,7 @@ def test_activate_different_registry(test_assets_dir, config):
     add_registry(URI_1, "mine", config)
     add_registry(URI_2, "other", config)
     activate_registry(URI_2, config)
-    store_data = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
+    store_data = json.loads((config.xdg_ethpmcli_root / REGISTRY_STORE).read_text())
     assert store_data[URI_2]["active"] is True
     assert store_data[URI_1]["active"] is False
 
@@ -125,7 +133,7 @@ def test_activate_aliased_registry(test_assets_dir, config):
     add_registry(URI_1, "mine", config)
     add_registry(URI_2, "other", config)
     activate_registry("other", config)
-    store_data = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
+    store_data = json.loads((config.xdg_ethpmcli_root / REGISTRY_STORE).read_text())
     assert store_data[URI_2]["active"] is True
     assert store_data[URI_1]["active"] is False
 
@@ -140,9 +148,3 @@ def test_unable_to_activate_nonexistent_aliased_registry(config):
     add_registry(URI_1, "mine", config)
     with pytest.raises(InstallError):
         activate_registry("other", config)
-
-
-def test_activate_already_active_registry_raise_exception(config):
-    add_registry(URI_1, "mine", config)
-    with pytest.raises(InstallError):
-        activate_registry(URI_1, config)

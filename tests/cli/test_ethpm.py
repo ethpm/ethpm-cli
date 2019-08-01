@@ -55,7 +55,7 @@ def test_unsupported_command():
     child.expect("\r\n")
     child.expect(
         "ethpm: error: argument command: invalid choice: 'invalid' "
-        r"\(choose from 'release', 'auth', 'registry', 'scrape', "
+        r"\(choose from 'release', 'auth', 'registry', 'create', 'scrape', "
         r"'install', 'uninstall', 'list'\)\r\n"
     )
 

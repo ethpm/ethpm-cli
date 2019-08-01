@@ -12,9 +12,10 @@ from ethpm_cli.registry import get_active_registry
 def release_package(
     package_name: str, version: str, manifest_uri: URI, config: Config
 ) -> bytes:
-    # todo: validate release privileges on registry?
     if not config.private_key:
-        raise AuthorizationError("To release a package you must provide the password for your local keyfile.")
+        raise AuthorizationError(
+            "To release a package you must provide the password for your local keyfile."
+        )
 
     registry_store_data = json.loads((config.ethpm_dir / REGISTRY_STORE).read_text())
     active_registry_uri = get_active_registry(registry_store_data)

@@ -14,6 +14,7 @@ from web3.providers.auto import load_provider_from_uri
 
 from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.ipfs import get_ipfs_backend
+from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import get_authorized_private_key, import_keyfile
 from ethpm_cli.constants import (
@@ -35,6 +36,7 @@ class Config:
     - Setup w3
     - Projects dir
     """
+
     private_key = None
 
     def __init__(self, args: Namespace) -> None:
@@ -66,12 +68,11 @@ class Config:
 
         if "keyfile_password" in args and args.keyfile_password:
             self.private_key = get_authorized_private_key(args.keyfile_password)
-
         self.w3 = setup_w3(chain_id, self.private_key)
 
         # Setup xdg ethpm dir
-        xdg_ethpmcli_root = get_xdg_ethpmcli_root()
-        setup_xdg_ethpm_dir(xdg_ethpmcli_root, self.w3)
+        self.xdg_ethpmcli_root = get_xdg_ethpmcli_root()
+        setup_xdg_ethpm_dir(self.xdg_ethpmcli_root, self.w3)
 
         # Setup projects dir
         if "project_dir" in args and args.project_dir:
@@ -92,11 +93,14 @@ def setup_w3(chain_id: int, private_key: str = None) -> Web3:
     infura_url = build_infura_url(infura_url)
     w3 = Web3(load_provider_from_uri(infura_url, headers))
 
-    if private_key:
+    if private_key is not None:
         owner_address = Account.from_key(private_key).address
         signing_middleware = construct_sign_and_send_raw_middleware(private_key)
         w3.middleware_onion.add(signing_middleware)
         w3.eth.defaultAccount = to_checksum_address(owner_address)
+        cli_logger.debug(
+            "In-flight tx signing has been enabled for address: {owner_address}."
+        )
     w3.enable_unstable_package_management_api()
     return w3
 
