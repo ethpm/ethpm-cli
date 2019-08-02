@@ -19,7 +19,7 @@ from ethpm_cli.constants import (
     KEYFILE_PATH,
 )
 from ethpm_cli.exceptions import ValidationError
-from ethpm_cli.validation import validate_ethpm_dir
+from ethpm_cli.validation import validate_ethpm_dir, validate_project_directory
 
 
 class Config:
@@ -29,6 +29,7 @@ class Config:
     - IPFS Backend
     - Validate / Initialize ethpm packages dir
     - Setup w3
+    - Projects dir
     """
 
     def __init__(self, args: Namespace) -> None:
@@ -58,6 +59,13 @@ class Config:
         # Setup xdg ethpm dir
         xdg_ethpmcli_root = get_xdg_ethpmcli_root()
         setup_xdg_ethpm_dir(xdg_ethpmcli_root, self.w3)
+
+        # Setup projects dir
+        if "project_dir" in args and args.project_dir:
+            validate_project_directory(args.project_dir)
+            self.project_dir = args.project_dir
+        else:
+            self.project_dir = None
 
 
 def get_w3(chain_id: int) -> Web3:

@@ -9,12 +9,44 @@ from ethpm.uri import is_supported_content_addressed_uri
 from ethpm.validation.package import validate_package_name
 from web3 import Web3
 
+from ethpm_cli.constants import SOLC_OUTPUT
 from ethpm_cli.exceptions import InstallError, UriNotSupportedError, ValidationError
 
 
 def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
     if parent_dir not in child_dir.parents:
         raise InstallError(f"{parent_dir} was not found in {child_dir} directory tree.")
+
+
+def validate_project_directory(project_dir: Path) -> None:
+    if not project_dir.is_dir():
+        raise ValidationError(f"{project_dir} is not a valid directory")
+
+    if not (project_dir / "contracts").is_dir():
+        raise ValidationError(
+            f"{project_dir} must contain a contracts/ directory that contains project contracts."
+        )
+
+
+def validate_solc_output(project_dir: Path) -> None:
+    solc_output_path = project_dir / SOLC_OUTPUT
+    if not solc_output_path.is_file():
+        raise ValidationError(
+            f"{project_dir} does not contain solc output. Please follow the steps in the "
+            "documentation to generate your Solidity compiler output."
+        )
+    try:
+        solc_output_data = json.loads(solc_output_path.read_text())
+    except ValueError:
+        raise ValidationError(
+            f"Content found at {solc_output_path} does not look like valid json."
+        )
+
+    if "contracts" not in solc_output_data:
+        raise ValidationError(
+            f"JSON found at {solc_output_path} does not look like valid "
+            "Solidity compiler standard json output."
+        )
 
 
 def validate_install_cli_args(args: Namespace) -> None:
@@ -53,7 +85,7 @@ def validate_alias(alias: str) -> None:
 def validate_ethpm_dir(ethpm_dir: Path) -> None:
     if ethpm_dir.name != "_ethpm_packages" or not ethpm_dir.is_dir():
         raise InstallError(
-            f"--ethpm-dir must point to an existing '_ethpm_packages' directory."
+            "--ethpm-dir must point to an existing '_ethpm_packages' directory."
         )
 
 

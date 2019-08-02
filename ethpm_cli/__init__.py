@@ -1,5 +1,7 @@
 from pathlib import Path
 
-CLI_ASSETS_DIR: Path = Path(__file__).parent / "assets"
+ETHPM_CLI_DIR = Path(__file__).parent
+CLI_ASSETS_DIR: Path = ETHPM_CLI_DIR / "assets"
+PROJECTS_DIR: Path = ETHPM_CLI_DIR / "projects"
 
 from .main import main  # noqa: F401
