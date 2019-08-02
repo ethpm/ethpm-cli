@@ -8,7 +8,7 @@ from ethpm_cli.constants import ETHPM_CLI_VERSION, SOLC_INPUT
 
 def test_custom_manifest_builder(tmp_project_dir):
     child = pexpect.spawn(
-        f"ethpm create --manifest-wizard --project-dir {tmp_project_dir}"
+        f"ethpm create manifest-wizard --project-dir {tmp_project_dir}"
     )
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
@@ -78,7 +78,7 @@ def test_custom_manifest_builder(tmp_project_dir):
 
 def test_basic_manifest_builder(tmp_project_dir):
     child = pexpect.spawn(
-        f"ethpm create --basic-manifest --project-dir {tmp_project_dir} "
+        f"ethpm create basic-manifest --project-dir {tmp_project_dir} "
         "--package-name wallet --package-version 1.0.0"
     )
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
@@ -89,7 +89,7 @@ def test_basic_manifest_builder(tmp_project_dir):
 
 
 def test_create_solc_input(tmp_project_dir):
-    child = pexpect.spawn(f"ethpm create --solc-input --project-dir {tmp_project_dir}")
+    child = pexpect.spawn(f"ethpm create solc-input --project-dir {tmp_project_dir}")
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect(

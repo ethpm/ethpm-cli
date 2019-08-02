@@ -115,3 +115,11 @@ def write_updated_chain_data(
     with atomic_replace(chain_data_path) as chain_data_file:
         chain_data_file.write(json.dumps(updated_data, indent=4))
         chain_data_file.write("\n")
+
+
+def validate_config_has_project_dir_attr(config: Config) -> None:
+    if not config.project_dir:
+        raise FileNotFoundError(
+            "Please provide a project directory containing the contracts you want to package. "
+            "For more information on project directory structure, refer to the docs."
+        )
