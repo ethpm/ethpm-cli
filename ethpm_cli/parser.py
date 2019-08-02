@@ -9,7 +9,7 @@ from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import get_authorized_address, import_keyfile
 from ethpm_cli.config import Config
 from ethpm_cli.constants import IPFS_CHAIN_DATA
-from ethpm_cli.exceptions import AuthorizationError, ValidationError
+from ethpm_cli.exceptions import AuthorizationError, InstallError, ValidationError
 from ethpm_cli.install import (
     install_package,
     list_installed_packages,
@@ -148,31 +148,40 @@ registry_activate_parser.set_defaults(func=registry_activate_cmd)
 def create_action(args: argparse.Namespace) -> None:
     config = Config(args)
     if not config.project_dir:
-        raise Exception
+        raise FileNotFoundError(
+            "Please provide a project directory containing the contracts you want to package. "
+            "For more information on project directory structure, refer to the docs."
+        )
 
     # ethpm create --solc-input
     if args.solc_input:
         generate_solc_input(args.project_dir / "contracts")
 
-    else:
+    # ethpm create --manifest-wizard
+    elif args.manifest_wizard:
         validate_solc_output(args.project_dir)
+        generate_custom_manifest(args.project_dir)
 
-        # ethpm create --manifest
-        if args.manifest:
-            generate_custom_manifest(args.project_dir)
+    # ethpm create --basic-manifest
+    elif args.basic_manifest:
+        validate_solc_output(args.project_dir)
+        if not args.package_name:
+            raise ValidationError(
+                "To automatically generate a basic manifest, you must provide a --package-name."
+            )
 
-        # ethpm create --basic-manifest
-        else:
-            if not args.package_name:
-                raise ValidationError(
-                    "To automatically generate a basic manifest, you must provide a --package-name."
-                )
-
-            if not args.version:
-                raise ValidationError(
-                    "To automatically generate a basic manifest, you must provide a --version."
-                )
-            generate_basic_manifest(args.package_name, args.version, args.project_dir)
+        if not args.package_version:
+            raise ValidationError(
+                "To automatically generate a basic manifest, you must provide a --package-version."
+            )
+        generate_basic_manifest(
+            args.package_name, args.package_version, args.project_dir
+        )
+    else:
+        raise InstallError(
+            "To use `ethpm create` you must provide one of the following flags. "
+            "--solc-input, --manifest-wizard, --basic-manifest."
+        )
 
 
 create_parser = ethpm_parser.add_parser(
@@ -193,23 +202,24 @@ create_parser.add_argument(
     help="Package name for generating a basic manifest.",
 )
 create_parser.add_argument(
-    "--version",
-    dest="version",
+    "--package-version",
+    dest="package_version",
     action="store",
     type=str,
-    help="Version for generating a basic manifest.",
+    help="Package version for generating a basic manifest.",
 )
 add_ethpm_dir_arg_to_parser(create_parser)
 create_group = create_parser.add_mutually_exclusive_group(required=True)
 create_group.add_argument(
-    "--manifest",
+    "--manifest-wizard",
     action="store_true",
-    help="Start CLI tool for building custom manifests.",
+    help="Start CLI wizard for building custom manifests.",
 )
 create_group.add_argument(
     "--basic-manifest",
     action="store_true",
-    help="Generate a basic manifest for given projects dir.",
+    help="Automatically generate a basic manifest for given projects dir. "
+    "The generated manifest will package up all available sources and contract types.",
 )
 create_group.add_argument(
     "--solc-input",

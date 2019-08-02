@@ -3,7 +3,7 @@ import pexpect
 
 def test_parse_bool_flag(tmp_project_dir):
     child = pexpect.spawn(
-        f"ethpm create --manifest --project-dir {tmp_project_dir}", timeout=5
+        f"ethpm create --manifest-wizard --project-dir {tmp_project_dir}", timeout=5
     )
     child.expect("Enter your package's name: ")
     child.sendline("wallet")
@@ -21,13 +21,16 @@ def test_parse_bool_flag(tmp_project_dir):
 
     # test parse bool will ask question again if invalid response
     child.sendline("")
-    child.expect("Invalid response: . Would you like to add authors to your package?")
+    child.expect("Invalid response: .\r\n")
+    child.expect("Would you like to add authors to your package?")
 
     child.sendline("1")
-    child.expect("Invalid response: 1. Would you like to add authors to your package?")
+    child.expect("Invalid response: 1.\r\n")
+    child.expect("Would you like to add authors to your package?")
 
     child.sendline("x")
-    child.expect("Invalid response: x. Would you like to add authors to your package?")
+    child.expect("Invalid response: x.\r\n")
+    child.expect("Would you like to add authors to your package?")
 
     # test parse bool accepts "y" for True
     child.sendline("y")

@@ -1,5 +1,5 @@
 {
-    "chain_id": "0x1",
+    "chain_id": 1,
     "scraped_blocks": [
         {
             "min": "0",

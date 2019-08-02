@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Iterable, Optional
 
 from eth_typing import Manifest
 from ethpm.tools import builder as b
+from ethpm.validation.package import validate_package_name
 
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import (
@@ -115,6 +116,7 @@ def gen_sources(
 
 def gen_package_name() -> Callable[..., Manifest]:
     package_name = input("Enter your package's name: ")
+    validate_package_name(package_name)
     return b.package_name(package_name)
 
 
@@ -183,11 +185,13 @@ def generate_solc_input_for_project(project_dir: Path) -> None:
     generate_solc_input(project_dir)
 
 
-def parse_bool_flag(question: str, err_msg: str = None) -> bool:
-    response = input(f"{err_msg}{question}")
-
-    if response.lower() == "y":
-        return True
-    if response.lower() == "n":
-        return False
-    return parse_bool_flag(question, f"Invalid response: {response}. ")
+def parse_bool_flag(question: str) -> bool:
+    while True:
+        response = input(question)
+        if response.lower() == "y":
+            return True
+        elif response.lower() == "n":
+            return False
+        else:
+            cli_logger.info(f"Invalid response: {response}.")
+            continue
