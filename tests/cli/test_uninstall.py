@@ -1,26 +1,26 @@
-import shutil
+from distutils.dir_util import copy_tree
 
 import pexpect
 
-from ethpm_cli._utils.testing import check_dir_trees_equal
+from ethpm_cli._utils.filesystem import check_dir_trees_equal
+from ethpm_cli.constants import ETHPM_CLI_VERSION, ETHPM_PACKAGES_DIR
 
 
 def test_ethpm_uninstall(tmp_path, test_assets_dir):
-    ethpm_dir = tmp_path / "_ethpm_packages"
-    shutil.copytree(test_assets_dir / "multiple" / "_ethpm_packages", ethpm_dir)
+    ethpm_dir = tmp_path / ETHPM_PACKAGES_DIR
+    copy_tree(str(test_assets_dir / "multiple" / ETHPM_PACKAGES_DIR), str(ethpm_dir))
     assert check_dir_trees_equal(
-        ethpm_dir, test_assets_dir / "multiple" / "_ethpm_packages"
+        ethpm_dir, test_assets_dir / "multiple" / ETHPM_PACKAGES_DIR
     )
     child = pexpect.spawn(f"ethpm uninstall owned --ethpm-dir {ethpm_dir}")
     child.expect(f"owned uninstalled from {ethpm_dir}\r\n")
     assert check_dir_trees_equal(
-        ethpm_dir, test_assets_dir / "wallet" / "ipfs_uri" / "_ethpm_packages"
+        ethpm_dir, test_assets_dir / "wallet" / "ipfs_uri" / ETHPM_PACKAGES_DIR
     )
 
 
 def test_ethpm_uninstall_nonexistent_package(tmp_path):
-    ethpm_dir = tmp_path / "_ethpm_packages"
-    ethpm_dir.mkdir()
+    ethpm_dir = tmp_path / ETHPM_PACKAGES_DIR
     child = pexpect.spawn(f"ethpm uninstall owned --ethpm-dir {ethpm_dir}")
     child.expect(
         f"No package with the name owned found installed under {ethpm_dir}.\r\n"
@@ -28,15 +28,16 @@ def test_ethpm_uninstall_nonexistent_package(tmp_path):
 
 
 def test_ethpm_uninstall_aliased_package(tmp_path, test_assets_dir):
-    ethpm_dir = tmp_path / "_ethpm_packages"
-    shutil.copytree(
-        test_assets_dir / "owned" / "ipfs_uri_alias" / "_ethpm_packages", ethpm_dir
+    ethpm_dir = tmp_path / ETHPM_PACKAGES_DIR
+    copy_tree(
+        str(test_assets_dir / "owned" / "ipfs_uri_alias" / ETHPM_PACKAGES_DIR),
+        str(ethpm_dir),
     )
     assert check_dir_trees_equal(
-        ethpm_dir, test_assets_dir / "owned" / "ipfs_uri_alias" / "_ethpm_packages"
+        ethpm_dir, test_assets_dir / "owned" / "ipfs_uri_alias" / ETHPM_PACKAGES_DIR
     )
     child = pexpect.spawn(f"ethpm uninstall owned --ethpm-dir {ethpm_dir}")
-    child.expect("EthPM CLI v0.1.0a0\r\n")
+    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect(r"Found owned installed under the alias\(es\): \('owned-alias',\). ")
     child.expect(

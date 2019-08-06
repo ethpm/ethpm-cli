@@ -10,8 +10,7 @@ from eth_utils.toolz import assoc, dissoc
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.uri import is_ipfs_uri
 
-from ethpm_cli._utils.filesystem import atomic_replace
-from ethpm_cli._utils.ethpmdir import is_package_installed
+from ethpm_cli._utils.filesystem import atomic_replace, is_package_installed
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR, LOCKFILE_NAME, SRC_DIR_NAME
 from ethpm_cli.exceptions import InstallError

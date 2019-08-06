@@ -25,9 +25,7 @@ from ethpm_cli.validation import (
     validate_install_cli_args,
     validate_solc_output,
     validate_uninstall_cli_args,
-    validate_verify_cli_args,
 )
-from ethpm_cli.verify import verify_contract
 
 parser = argparse.ArgumentParser(description="ethpm-cli")
 ethpm_parser = parser.add_subparsers(help="commands", dest="command")
@@ -50,6 +48,26 @@ def add_ethpm_dir_arg_to_parser(parser: argparse.ArgumentParser) -> None:
         action="store",
         type=Path,
         help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
+    )
+
+
+def add_package_name_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--package-name",
+        dest="package_name",
+        action="store",
+        type=str,
+        help="Package name for generated manifest.",
+    )
+
+
+def add_package_version_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--package-version",
+        dest="package_version",
+        action="store",
+        type=str,
+        help="Package version for generated manifest.",
     )
 
 
@@ -197,20 +215,8 @@ create_parser.add_argument(
     type=Path,
     help="Path to specific project directory.",
 )
-create_parser.add_argument(
-    "--package-name",
-    dest="package_name",
-    action="store",
-    type=str,
-    help="Package name for generating a basic manifest.",
-)
-create_parser.add_argument(
-    "--package-version",
-    dest="package_version",
-    action="store",
-    type=str,
-    help="Package version for generating a basic manifest.",
-)
+add_package_name_arg_to_parser(create_parser)
+add_package_version_arg_to_parser(create_parser)
 add_ethpm_dir_arg_to_parser(create_parser)
 create_group = create_parser.add_mutually_exclusive_group(required=True)
 create_group.add_argument(
@@ -314,20 +320,8 @@ install_parser.add_argument(
     type=str,
     help="IPFS / Github / Etherscan / Registry URI of target package.",
 )
-install_parser.add_argument(
-    "--package-name",
-    dest="package_name",
-    action="store",
-    type=str,
-    help="Package name for Etherscan verified contract.",
-)
-install_parser.add_argument(
-    "--version",
-    dest="version",
-    action="store",
-    type=str,
-    help="Version for Etherscan verified contract.",
-)
+add_package_name_arg_to_parser(install_parser)
+add_package_version_arg_to_parser(install_parser)
 install_parser.add_argument(
     "--alias", action="store", type=str, help="Alias to install target package under."
 )

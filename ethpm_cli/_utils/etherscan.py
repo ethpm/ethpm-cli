@@ -1,8 +1,7 @@
 from typing import Any
 from urllib import parse
 
-from eth_typing import URI
-from eth_utils import is_hex_address
+from eth_utils import is_checksum_address
 
 ETHERSCAN_SUPPORTED_CHAIN_IDS = {
     "1": "",
@@ -18,13 +17,14 @@ def is_etherscan_uri(value: Any) -> bool:
         return False
 
     parsed = parse.urlparse(value)
-    if parsed.scheme != "etherscan" or not parsed.netloc or not parsed.path:
+    if parsed.scheme != "etherscan" or not parsed.netloc:
         return False
 
-    contract_address = parsed.netloc
-    chain_id = parsed.path.lstrip("/")
+    if ":" not in parsed.netloc:
+        return False
 
-    if not is_hex_address(contract_address):
+    address, chain_id = parsed.netloc.split(":")
+    if not is_checksum_address(address):
         return False
 
     if chain_id not in ETHERSCAN_SUPPORTED_CHAIN_IDS:
@@ -33,7 +33,5 @@ def is_etherscan_uri(value: Any) -> bool:
     return True
 
 
-def get_etherscan_network(uri: URI) -> str:
-    parsed = parse.urlparse(uri)
-    chain_id = parsed.path.lstrip("/")
+def get_etherscan_network(chain_id: str) -> str:
     return ETHERSCAN_SUPPORTED_CHAIN_IDS[chain_id]

@@ -1,10 +1,13 @@
 import contextlib
 import filecmp
-import os.path
+import os
 from pathlib import Path
 import shutil
 import tempfile
-from typing import IO, Any, Generator
+from typing import IO, TYPE_CHECKING, Any, Generator
+
+if TYPE_CHECKING:
+    from ethpm_cli.config import Config
 
 
 def check_dir_trees_equal(dir1: str, dir2: str) -> bool:
@@ -58,3 +61,7 @@ def atomic_replace(path: Path) -> Generator[IO[Any], None, None]:
         with tmp_file_path.open(mode="w+") as tmpfile:
             yield tmpfile
         shutil.copyfile(tmp_file_path, path)
+
+
+def is_package_installed(package_name: str, config: "Config") -> bool:
+    return os.path.exists(config.ethpm_dir / package_name)

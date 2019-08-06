@@ -50,7 +50,7 @@ class AuthorizationError(BaseEthpmCliError):
     """
     Raised when there is insufficient authorization to perform a task.
     """
-    
+
     pass
 
 

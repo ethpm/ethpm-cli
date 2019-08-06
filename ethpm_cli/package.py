@@ -6,28 +6,23 @@ from typing import Any, Dict, Iterable, Tuple  # noqa: F401
 from urllib import parse
 
 from eth_typing import URI, Address, Manifest  # noqa: F401
-from eth_utils import to_dict, to_text, to_hex
+from eth_utils import to_dict, to_hex, to_int, to_text
 from ethpm._utils.ipfs import extract_ipfs_path_from_uri
 from ethpm.backends.http import GithubOverHTTPSBackend
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.backends.registry import RegistryURIBackend, parse_registry_uri
 from ethpm.tools import builder
+from ethpm.uri import create_latest_block_uri
 from ethpm.validation.manifest import (
-from ethpm.utils.chains import create_latest_block_uri
-import requests
-from ethpm.utils.manifest_validation import (
     validate_manifest_against_schema,
     validate_manifest_deployments,
     validate_raw_manifest_format,
 )
-from ethpm.utils.uri import is_valid_content_addressed_github_uri, parse_registry_uri
-from ethpm.validation import is_valid_registry_uri
 import requests
-from web3.auto.infura import w3
 
 from ethpm_cli._utils.etherscan import get_etherscan_network
 from ethpm_cli._utils.ipfs import get_ipfs_backend
-from ethpm_cli.config import Config
+from ethpm_cli.config import Config, get_w3
 from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR
 from ethpm_cli.exceptions import ContractNotVerified, UriNotSupportedError
 from ethpm_cli.validation import validate_etherscan_key_available
@@ -80,7 +75,7 @@ def resolve_manifest_uri(uri: URI, ipfs: BaseIPFSBackend) -> ResolvedManifestURI
         resolved_content_hash = extract_ipfs_path_from_uri(uri)
     else:
         raise UriNotSupportedError(
-            f"{uri} is not supported. Currently EthPM CLI only supports "
+            f"{uri} is not supported. Currently ethPM CLI only supports "
             "IPFS and Github blob manifest uris."
         )
     return ResolvedManifestURI(raw_manifest, resolved_content_hash)
@@ -113,49 +108,53 @@ def process_and_validate_raw_manifest(raw_manifest: bytes) -> Manifest:
 
 
 def package_from_etherscan(args: Namespace, config: Config) -> Package:
-    contract_addr = parse.urlparse(args.uri).netloc
-    network = get_etherscan_network(args.uri)
-    body = make_etherscan_request(contract_addr, network)
-
-    contract_type = body["ContractName"]
-    block_uri = create_latest_block_uri(w3)
-    runtime_bytecode = to_hex(w3.eth.getCode(contract_addr))
-    manifest = {
-        "package_name": args.package_name,
-        "manifest_version": "2",
-        "version": args.version,
-        "sources": {f"./{contract_type}.sol": body["SourceCode"]},
-        "contract_types": {
-            contract_type: {
-                "abi": json.loads(body["ABI"]),
-                "runtime_bytecode": {"bytecode": runtime_bytecode},
-                "compiler": generate_compiler_info(body),
-            }
-        },
-        "deployments": {
-            block_uri: {
-                contract_type: {
-                    "contract_type": contract_type,
-                    "address": contract_addr,
-                }
-            }
-        },
-    }
-
+    manifest = build_etherscan_manifest(
+        args.uri, args.package_name, args.package_version
+    )
     ipfs_backend = get_ipfs_backend()
     ipfs_data = builder.build(
         manifest, builder.validate(), builder.pin_to_ipfs(backend=ipfs_backend)
     )
     ipfs_uri = URI(f"ipfs://{ipfs_data[0]['Hash']}")
+    package = Package(ipfs_uri, args.alias, ipfs_backend)
+    package.install_uri = args.uri
+    return package
 
-    return Package(ipfs_uri, args.alias, ipfs_backend)
+
+@to_dict
+def build_etherscan_manifest(
+    uri: URI, package_name: str, version: str
+) -> Iterable[Tuple[str, Any]]:
+    address, chain_id = parse.urlparse(uri).netloc.split(":")
+    network = get_etherscan_network(chain_id)
+    body = make_etherscan_request(address, network)
+    contract_type = body["ContractName"]
+    w3 = get_w3(to_int(text=chain_id))
+    block_uri = create_latest_block_uri(w3)
+    runtime_bytecode = to_hex(w3.eth.getCode(address))
+
+    yield "package_name", package_name
+    yield "version", version
+    yield "manifest_version", "2"
+    yield "sources", {f"./{contract_type}.sol": body["SourceCode"]}
+    yield "contract_types", {
+        contract_type: {
+            "abi": json.loads(body["ABI"]),
+            "runtime_bytecode": {"bytecode": runtime_bytecode},
+            "compiler": generate_compiler_info(body),
+        }
+    }
+    yield "deployments", {
+        block_uri: {contract_type: {"contract_type": contract_type, "address": address}}
+    }
 
 
-def make_etherscan_request(contract_addr: Address, network: str) -> Dict[str, str]:
+def make_etherscan_request(contract_addr: str, network: str) -> Dict[str, Any]:
     validate_etherscan_key_available()
     etherscan_api_key = os.getenv(ETHERSCAN_KEY_ENV_VAR)
+    etherscan_req_uri = f"https://api{network}.etherscan.io/api"
     response = requests.get(  # type: ignore
-        f"https://api{network}.etherscan.io/api",
+        etherscan_req_uri,
         params=[
             ("module", "contract"),
             ("action", "getsourcecode"),
@@ -163,7 +162,12 @@ def make_etherscan_request(contract_addr: Address, network: str) -> Dict[str, st
             ("apikey", etherscan_api_key),
         ],
     ).json()
+    return parse_etherscan_response(response, contract_addr)
 
+
+def parse_etherscan_response(
+    response: Dict[str, Any], contract_addr: str
+) -> Dict[str, Any]:
     if response["message"] == "NOTOK":
         raise ContractNotVerified(
             f"Contract at {contract_addr} has not been verified on Etherscan."

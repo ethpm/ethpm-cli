@@ -1,8 +1,11 @@
+from argparse import Namespace
 import logging
+from pathlib import Path
 
 import pytest
 
 from ethpm_cli._utils.filesystem import check_dir_trees_equal
+from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.install import (
@@ -11,21 +14,6 @@ from ethpm_cli.install import (
     uninstall_package,
 )
 from ethpm_cli.package import Package
-
-
-@pytest.fixture
-def config(tmpdir):
-    namespace = Namespace()
-    ethpm_dir = Path(tmpdir) / ETHPM_DIR_NAME
-    ethpm_dir.mkdir()
-    namespace.local_ipfs = False
-    namespace.target_uri = None
-    namespace.alias = None
-    namespace.etherscan = None
-    namespace.package_name = None
-    namespace.version = None
-    namespace.ethpm_dir = ethpm_dir
-    return Config(namespace)
 
 
 @pytest.fixture
