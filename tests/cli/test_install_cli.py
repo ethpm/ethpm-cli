@@ -40,14 +40,14 @@ def test_ethpm_install_from_etherscan(tmp_path, test_assets_dir, monkeypatch):
     ethpm_dir = tmp_path / ETHPM_PACKAGES_DIR
     child = pexpect.spawn(
         f"ethpm install {etherscan_uri} --package-name dai --package-version 1.0.0 "
-        f"--ethpm-dir {ethpm_dir} --local-ipfs"
+        f"--ethpm-dir {ethpm_dir}"
     )
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect(
-        f"dai package sourced from {etherscan_uri} " f"installed to {ethpm_dir}.\r\n"
+        f"dai package sourced from {etherscan_uri} installed to {ethpm_dir}.\r\n"
     )
-    # cannot check_dir_trees_equal b/c block uri is always updated to newest value
+    # cannot check_dir_trees_equal b/c block_uri is always updated to newest value
 
 
 def test_ethpm_install_etherscan_raises_exception_for_unverified_contract(
@@ -71,5 +71,6 @@ def test_ethpm_install_etherscan_raises_exception_for_unverified_contract(
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect(
-        f"Contract at {unverified_contract_addr} has not been verified on Etherscan."
+        f"Contract at {unverified_contract_addr} unavailable or has not "
+        "been verified on Etherscan."
     )

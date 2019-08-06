@@ -3,7 +3,6 @@ from pathlib import Path
 
 from eth_utils import humanize_hash
 
-from ethpm_cli._utils.etherscan import is_etherscan_uri
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
@@ -17,7 +16,7 @@ from ethpm_cli.install import (
     uninstall_package,
 )
 from ethpm_cli.manifest import generate_basic_manifest, generate_custom_manifest
-from ethpm_cli.package import Package, package_from_etherscan
+from ethpm_cli.package import Package
 from ethpm_cli.registry import activate_registry, add_registry, list_registries
 from ethpm_cli.scraper import scrape
 from ethpm_cli.validation import (
@@ -297,10 +296,7 @@ scrape_parser.set_defaults(func=scrape_action)
 def install_action(args: argparse.Namespace) -> None:
     validate_install_cli_args(args)
     config = Config(args)
-    if is_etherscan_uri(args.uri):
-        package = package_from_etherscan(args, config)
-    else:
-        package = Package(args.uri, args.alias, config.ipfs_backend)
+    package = Package(args, config.ipfs_backend)
     install_package(package, config)
     cli_logger.info(
         "%s package sourced from %s installed to %s.",

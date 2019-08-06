@@ -1,11 +1,9 @@
 from argparse import Namespace
 import logging
-from pathlib import Path
 
 import pytest
 
 from ethpm_cli._utils.filesystem import check_dir_trees_equal
-from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.install import (
@@ -18,53 +16,48 @@ from ethpm_cli.package import Package
 
 @pytest.fixture
 def owned_pkg(config):
-    return Package(
-        "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
-        None,
-        config.ipfs_backend,
-    )
+    args = Namespace(uri="ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW")
+    return Package(args, config.ipfs_backend)
 
 
 @pytest.fixture
 def wallet_pkg(config):
-    return Package(
-        "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
-        None,
-        config.ipfs_backend,
-    )
+    args = Namespace(uri="ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1")
+    return Package(args, config.ipfs_backend)
 
 
 @pytest.mark.parametrize(
-    "uri,pkg_name,alias,install_type",
+    "args,pkg_name,install_type",
     (
         (
-            "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+            Namespace(uri="ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW"),
             "owned",
-            None,
             "ipfs_uri",
         ),
         (
-            "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+            Namespace(
+                uri="ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+                alias="owned-alias",
+            ),
             "owned",
-            "owned-alias",
             "ipfs_uri_alias",
         ),
         (
-            "erc1319://0x1457890158DECD360e6d4d979edBcDD59c35feeB:1/owned?version=1.0.0",
+            Namespace(
+                uri="erc1319://0x1457890158DECD360e6d4d979edBcDD59c35feeB:1/owned?version=1.0.0"
+            ),
             "owned",
-            None,
             "registry_uri",
         ),
         (
-            "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+            Namespace(uri="ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1"),
             "wallet",
-            None,
             "ipfs_uri",
         ),
     ),
 )
-def test_install_package(uri, pkg_name, alias, install_type, config, test_assets_dir):
-    pkg = Package(uri, alias, config.ipfs_backend)
+def test_install_package(args, pkg_name, install_type, config, test_assets_dir):
+    pkg = Package(args, config.ipfs_backend)
     install_package(pkg, config)
 
     expected_package = test_assets_dir / pkg_name / install_type / ETHPM_PACKAGES_DIR
@@ -80,8 +73,10 @@ def test_cannot_install_same_package_twice(config, owned_pkg):
 
 def test_can_install_same_package_twice_if_aliased(config, owned_pkg, test_assets_dir):
     aliased_pkg = Package(
-        "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
-        "owned-alias",
+        Namespace(
+            uri="ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+            alias="owned-alias",
+        ),
         config.ipfs_backend,
     )
     install_package(owned_pkg, config)

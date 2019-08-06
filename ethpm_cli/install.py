@@ -1,3 +1,4 @@
+from argparse import Namespace
 import json
 import logging
 from pathlib import Path
@@ -203,7 +204,7 @@ def write_build_deps_to_disk(
         child_ethpm_dir = pkg_dir / ETHPM_PACKAGES_DIR
         child_ethpm_dir.mkdir()
         for name, uri in pkg.manifest["build_dependencies"].items():
-            dep_pkg = Package(uri, "", ipfs_backend)
+            dep_pkg = Package(Namespace(uri=uri, alias=""), ipfs_backend)
             tmp_dep_dir = child_ethpm_dir / name
             tmp_dep_dir.mkdir()
             validate_parent_directory(pkg_dir, tmp_dep_dir)
