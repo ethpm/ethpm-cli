@@ -7,9 +7,9 @@ from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import get_authorized_address, import_keyfile
-from ethpm_cli.config import Config
+from ethpm_cli.config import Config, validate_config_has_project_dir_attr
 from ethpm_cli.constants import IPFS_CHAIN_DATA
-from ethpm_cli.exceptions import AuthorizationError, InstallError, ValidationError
+from ethpm_cli.exceptions import AuthorizationError, ValidationError
 from ethpm_cli.install import (
     install_package,
     list_installed_packages,
@@ -47,6 +47,16 @@ def add_ethpm_dir_arg_to_parser(parser: argparse.ArgumentParser) -> None:
         action="store",
         type=Path,
         help="Path to specific ethPM directory (Defaults to ``./_ethpm_packages``).",
+    )
+
+
+def add_project_dir_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--project-dir",
+        action="store",
+        dest="project_dir",
+        type=Path,
+        help="Path to specific project directory.",
     )
 
 
@@ -165,76 +175,65 @@ registry_activate_parser.set_defaults(func=registry_activate_cmd)
 #
 
 
-def create_action(args: argparse.Namespace) -> None:
+def create_solc_input_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
-    if not config.project_dir:
-        raise FileNotFoundError(
-            "Please provide a project directory containing the contracts you want to package. "
-            "Refer to the docs for more information on project directory structure."
+    validate_config_has_project_dir_attr(config)
+    generate_solc_input(args.project_dir / "contracts")
+
+
+def create_manifest_wizard_cmd(args: argparse.Namespace) -> None:
+    config = Config(args)
+    validate_config_has_project_dir_attr(config)
+    validate_solc_output(args.project_dir)
+    generate_custom_manifest(args.project_dir)
+
+
+def create_basic_manifest_cmd(args: argparse.Namespace) -> None:
+    config = Config(args)
+    validate_config_has_project_dir_attr(config)
+    validate_solc_output(args.project_dir)
+    if not args.package_name:
+        raise ValidationError(
+            "To automatically generate a basic manifest, you must provide a --package-name."
         )
 
-    # ethpm create --solc-input
-    if args.solc_input:
-        generate_solc_input(args.project_dir / "contracts")
-
-    # ethpm create --manifest-wizard
-    elif args.manifest_wizard:
-        validate_solc_output(args.project_dir)
-        generate_custom_manifest(args.project_dir)
-
-    # ethpm create --basic-manifest
-    elif args.basic_manifest:
-        validate_solc_output(args.project_dir)
-        if not args.package_name:
-            raise ValidationError(
-                "To automatically generate a basic manifest, you must provide a --package-name."
-            )
-
-        if not args.package_version:
-            raise ValidationError(
-                "To automatically generate a basic manifest, you must provide a --package-version."
-            )
-        generate_basic_manifest(
-            args.package_name, args.package_version, args.project_dir
+    if not args.package_version:
+        raise ValidationError(
+            "To automatically generate a basic manifest, you must provide a --package-version."
         )
-    else:
-        raise InstallError(
-            "To use `ethpm create` you must provide one of the following flags. "
-            "--solc-input, --manifest-wizard, --basic-manifest."
-        )
+    generate_basic_manifest(args.package_name, args.package_version, args.project_dir)
 
 
 create_parser = ethpm_parser.add_parser(
     "create", help="Create an ethPM manifest from local smart contracts."
 )
-create_parser.add_argument(
-    "--project-dir",
-    action="store",
-    dest="project_dir",
-    type=Path,
-    help="Path to specific project directory.",
-)
-add_package_name_arg_to_parser(create_parser)
-add_package_version_arg_to_parser(create_parser)
-add_ethpm_dir_arg_to_parser(create_parser)
-create_group = create_parser.add_mutually_exclusive_group(required=True)
-create_group.add_argument(
-    "--manifest-wizard",
-    action="store_true",
-    help="Start CLI wizard for building custom manifests.",
-)
-create_group.add_argument(
-    "--basic-manifest",
-    action="store_true",
+create_subparsers = create_parser.add_subparsers(help="create", dest="create")
+
+# ethpm create basic-manifest
+create_basic_manifest_parser = create_subparsers.add_parser(
+    "basic-manifest",
     help="Automatically generate a basic manifest for given projects dir. "
     "The generated manifest will package up all available sources and contract types.",
 )
-create_group.add_argument(
-    "--solc-input",
-    action="store_true",
+add_package_name_arg_to_parser(create_basic_manifest_parser)
+add_package_version_arg_to_parser(create_basic_manifest_parser)
+add_project_dir_arg_to_parser(create_basic_manifest_parser)
+create_basic_manifest_parser.set_defaults(func=create_basic_manifest_cmd)
+
+# ethpm create solc-input
+create_solc_input_parser = create_subparsers.add_parser(
+    "solc-input",
     help="Generate solidity compiler standard json input for given projects dir.",
 )
-create_parser.set_defaults(func=create_action)
+add_project_dir_arg_to_parser(create_solc_input_parser)
+create_solc_input_parser.set_defaults(func=create_solc_input_cmd)
+
+# ethpm create manifest-wizard
+create_manifest_wizard_parser = create_subparsers.add_parser(
+    "manifest-wizard", help="Start CLI wizard for building custom manifests."
+)
+add_project_dir_arg_to_parser(create_manifest_wizard_parser)
+create_manifest_wizard_parser.set_defaults(func=create_manifest_wizard_cmd)
 
 
 #
