@@ -52,3 +52,19 @@ class AuthorizationError(BaseEthpmCliError):
     """
 
     pass
+
+
+class EtherscanKeyNotFound(BaseEthpmCliError):
+    """
+    Raised when no Etherscan API key is set as environment variable.
+    """
+
+    pass
+
+
+class ContractNotVerified(BaseEthpmCliError):
+    """
+    Raised when a request to Etherscan points to an unverified contract.
+    """
+
+    pass

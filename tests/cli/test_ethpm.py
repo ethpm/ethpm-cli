@@ -36,22 +36,6 @@ def test_ethpm_list_with_aliased_package(test_assets_dir):
     )
 
 
-def test_ethpm_install(config, test_assets_dir):
-    child = pexpect.spawn(
-        "ethpm install ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "
-        f"--ethpm-dir {config.ethpm_dir}"
-    )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
-    child.expect("\r\n")
-    child.expect(
-        "owned package sourced from ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "
-        f"installed to {config.ethpm_dir}.\r\n"
-    )
-    assert check_dir_trees_equal(
-        config.ethpm_dir, test_assets_dir / "owned" / "ipfs_uri" / ETHPM_PACKAGES_DIR
-    )
-
-
 def test_ethpm_uninstall(config, test_assets_dir):
     test_ethpm_dir = config.ethpm_dir / ETHPM_PACKAGES_DIR
     shutil.copytree(test_assets_dir / "multiple" / ETHPM_PACKAGES_DIR, test_ethpm_dir)

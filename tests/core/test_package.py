@@ -1,3 +1,5 @@
+from argparse import Namespace
+
 import pytest
 
 from ethpm_cli._utils.ipfs import get_ipfs_backend
@@ -10,7 +12,8 @@ def ipfs_backend():
 
 
 def test_package(owned_pkg_data, ipfs_backend):
-    package = Package(owned_pkg_data["ipfs_uri"], None, ipfs_backend)
+    args = Namespace(uri=owned_pkg_data["ipfs_uri"])
+    package = Package(args, ipfs_backend)
 
     assert package.alias == "owned"
     assert package.install_uri == owned_pkg_data["ipfs_uri"]
@@ -22,7 +25,8 @@ def test_package(owned_pkg_data, ipfs_backend):
 
 
 def test_package_with_alias(owned_pkg_data, ipfs_backend):
-    package = Package(owned_pkg_data["ipfs_uri"], "owned-alias", ipfs_backend)
+    args = Namespace(uri=owned_pkg_data["ipfs_uri"], alias="owned-alias")
+    package = Package(args, ipfs_backend)
 
     assert package.alias == "owned-alias"
     assert package.install_uri == owned_pkg_data["ipfs_uri"]
@@ -34,7 +38,8 @@ def test_package_with_alias(owned_pkg_data, ipfs_backend):
 
 
 def test_package_with_registry_uri(owned_pkg_data, ipfs_backend):
-    package = Package(owned_pkg_data["registry_uri"], None, ipfs_backend)
+    args = Namespace(uri=owned_pkg_data["registry_uri"])
+    package = Package(args, ipfs_backend)
 
     assert package.alias == "owned"
     assert package.install_uri == owned_pkg_data["registry_uri"]
@@ -46,7 +51,8 @@ def test_package_with_registry_uri(owned_pkg_data, ipfs_backend):
 
 
 def test_package_with_registry_uri_with_alias(owned_pkg_data, ipfs_backend):
-    package = Package(owned_pkg_data["registry_uri"], "owned-alias", ipfs_backend)
+    args = Namespace(uri=owned_pkg_data["registry_uri"], alias="owned-alias")
+    package = Package(args, ipfs_backend)
 
     assert package.alias == "owned-alias"
     assert package.install_uri == owned_pkg_data["registry_uri"]

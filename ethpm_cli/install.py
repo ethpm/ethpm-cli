@@ -1,6 +1,6 @@
+from argparse import Namespace
 import json
 import logging
-import os
 from pathlib import Path
 import shutil
 import tempfile
@@ -11,7 +11,7 @@ from eth_utils.toolz import assoc, dissoc
 from ethpm.backends.ipfs import BaseIPFSBackend
 from ethpm.uri import is_ipfs_uri
 
-from ethpm_cli._utils.filesystem import atomic_replace
+from ethpm_cli._utils.filesystem import atomic_replace, is_package_installed
 from ethpm_cli.config import Config
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR, LOCKFILE_NAME, SRC_DIR_NAME
 from ethpm_cli.exceptions import InstallError
@@ -103,10 +103,6 @@ def get_dependency_dirs(base_dir: Path) -> Iterable[Path]:
         for ddir in dep_dir.iterdir():
             if ddir.is_dir():
                 yield ddir
-
-
-def is_package_installed(package_name: str, config: Config) -> bool:
-    return os.path.exists(config.ethpm_dir / package_name)
 
 
 @to_tuple
@@ -208,7 +204,7 @@ def write_build_deps_to_disk(
         child_ethpm_dir = pkg_dir / ETHPM_PACKAGES_DIR
         child_ethpm_dir.mkdir()
         for name, uri in pkg.manifest["build_dependencies"].items():
-            dep_pkg = Package(uri, "", ipfs_backend)
+            dep_pkg = Package(Namespace(uri=uri, alias=""), ipfs_backend)
             tmp_dep_dir = child_ethpm_dir / name
             tmp_dep_dir.mkdir()
             validate_parent_directory(pkg_dir, tmp_dep_dir)

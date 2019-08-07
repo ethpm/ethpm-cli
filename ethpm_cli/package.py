@@ -1,3 +1,4 @@
+from argparse import Namespace
 from collections import namedtuple
 import json
 from typing import Any, Dict, Iterable, Tuple  # noqa: F401
@@ -15,15 +16,14 @@ from ethpm.validation.manifest import (
     validate_raw_manifest_format,
 )
 
+from ethpm_cli.etherscan import EtherscanURIBackend
 from ethpm_cli.exceptions import UriNotSupportedError
 
 
 class Package:
-    def __init__(
-        self, install_uri: URI, alias: str, ipfs_backend: BaseIPFSBackend
-    ) -> None:
+    def __init__(self, args: Namespace, ipfs_backend: BaseIPFSBackend) -> None:
         self.ipfs_backend = ipfs_backend
-        resolved_install_uri = resolve_install_uri(install_uri)
+        resolved_install_uri = resolve_install_uri(args)
         self.manifest_uri: URI = resolved_install_uri.manifest_uri
         self.registry_address: Address = resolved_install_uri.registry_address
         resolved_manifest_uri = resolve_manifest_uri(
@@ -33,8 +33,11 @@ class Package:
         self.resolved_content_hash: str = resolved_manifest_uri.resolved_content_hash
 
         self.manifest: Manifest = process_and_validate_raw_manifest(self.raw_manifest)
-        self.alias = alias if alias else self.manifest["package_name"]
-        self.install_uri = install_uri
+        if "alias" in args and args.alias:
+            self.alias = args.alias
+        else:
+            self.alias = self.manifest["package_name"]
+        self.install_uri = args.uri
 
     @to_dict
     def generate_ethpm_lock(self) -> Iterable[Tuple[str, Any]]:
@@ -65,25 +68,25 @@ def resolve_manifest_uri(uri: URI, ipfs: BaseIPFSBackend) -> ResolvedManifestURI
         resolved_content_hash = extract_ipfs_path_from_uri(uri)
     else:
         raise UriNotSupportedError(
-            f"{uri} is not supported. Currently EthPM CLI only supports "
+            f"{uri} is not supported. Currently ethPM CLI only supports "
             "IPFS and Github blob manifest uris."
         )
     return ResolvedManifestURI(raw_manifest, resolved_content_hash)
 
 
-def resolve_install_uri(uri: URI) -> ResolvedInstallURI:
+def resolve_install_uri(args: Namespace) -> ResolvedInstallURI:
     registry_backend = RegistryURIBackend()
-    if registry_backend.can_translate_uri(uri):
-        # todo: replace with registry_backend.fetch_uri_contents(uri) after next web3 release
-        from web3.auto.infura import w3
-
-        registry_address, chain_id, pkg_name, pkg_version = parse_registry_uri(uri)
-        if not hasattr(w3, "_pm"):
-            w3.enable_unstable_package_management_api()
-        w3.pm.set_registry(registry_address)
-        _, _, manifest_uri = w3.pm.get_release_data(pkg_name, pkg_version)
+    etherscan_backend = EtherscanURIBackend()
+    if etherscan_backend.can_translate_uri(args.uri):
+        manifest_uri = etherscan_backend.fetch_uri_contents(
+            args.uri, args.package_name, args.package_version
+        )
+        registry_address = None
+    elif registry_backend.can_translate_uri(args.uri):
+        registry_address, _, _, _ = parse_registry_uri(args.uri)
+        manifest_uri = registry_backend.fetch_uri_contents(args.uri)
     else:
-        manifest_uri = uri
+        manifest_uri = args.uri
         registry_address = None
     return ResolvedInstallURI(manifest_uri, registry_address)
 

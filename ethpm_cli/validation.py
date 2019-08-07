@@ -1,16 +1,23 @@
 from argparse import Namespace
 import json
+import os
 from pathlib import Path
 
 from eth_typing import URI
 from ethpm.backends.registry import is_valid_registry_uri
 from ethpm.exceptions import EthPMValidationError
-from ethpm.uri import is_supported_content_addressed_uri
+from ethpm.uri import is_ipfs_uri, is_valid_content_addressed_github_uri
 from ethpm.validation.package import validate_package_name
 from web3 import Web3
 
-from ethpm_cli.constants import SOLC_OUTPUT
-from ethpm_cli.exceptions import InstallError, UriNotSupportedError, ValidationError
+from ethpm_cli._utils.etherscan import is_etherscan_uri
+from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR, SOLC_OUTPUT
+from ethpm_cli.exceptions import (
+    EtherscanKeyNotFound,
+    InstallError,
+    UriNotSupportedError,
+    ValidationError,
+)
 
 
 def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
@@ -50,12 +57,30 @@ def validate_solc_output(project_dir: Path) -> None:
 
 
 def validate_install_cli_args(args: Namespace) -> None:
-    validate_target_uri(args.uri)
+    validate_supported_uri(args.uri)
     if args.alias:
         validate_alias(args.alias)
 
     if args.ethpm_dir:
         validate_ethpm_dir(args.ethpm_dir)
+
+    if is_etherscan_uri(args.uri):
+        if not args.package_name or not args.package_version:
+            raise InstallError(
+                "To install an Etherscan verified contract, you must specify both the "
+                "--package-name and --package-version."
+            )
+    else:
+        if args.package_name:
+            raise InstallError(
+                "You cannot redefine the package_name of an existing package. "
+                "Consider aliasing the package instead."
+            )
+
+        if args.package_version:
+            raise InstallError(
+                "You cannot redefine the version of an existing package."
+            )
 
 
 def validate_uninstall_cli_args(args: Namespace) -> None:
@@ -64,11 +89,24 @@ def validate_uninstall_cli_args(args: Namespace) -> None:
         validate_ethpm_dir(args.ethpm_dir)
 
 
-def validate_target_uri(uri: URI) -> None:
-    if not is_supported_content_addressed_uri(uri) and not is_valid_registry_uri(uri):
+def validate_etherscan_key_available() -> None:
+    if ETHERSCAN_KEY_ENV_VAR not in os.environ:
+        raise EtherscanKeyNotFound(
+            "No Etherscan API key found. Please ensure that the "
+            f"{ETHERSCAN_KEY_ENV_VAR} environment variable is set."
+        )
+
+
+def validate_supported_uri(uri: URI) -> None:
+    if (
+        not is_ipfs_uri(uri)
+        and not is_etherscan_uri(uri)  # noqa: W503
+        and not is_valid_registry_uri(uri)  # noqa: W503
+        and not is_valid_content_addressed_github_uri(uri)  # noqa: W503
+    ):
         raise UriNotSupportedError(
             f"Target uri: {uri} not a currently supported uri. "
-            "Target uris must be one of: ipfs, github blob, or registry."
+            "Target uris must be one of: ipfs, github blob, etherscan, or registry."
         )
 
 

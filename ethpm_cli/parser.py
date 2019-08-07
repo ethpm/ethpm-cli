@@ -50,6 +50,26 @@ def add_ethpm_dir_arg_to_parser(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_package_name_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--package-name",
+        dest="package_name",
+        action="store",
+        type=str,
+        help="Package name for generated manifest.",
+    )
+
+
+def add_package_version_arg_to_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--package-version",
+        dest="package_version",
+        action="store",
+        type=str,
+        help="Package version for generated manifest.",
+    )
+
+
 #
 # ethpm auth
 #
@@ -194,20 +214,8 @@ create_parser.add_argument(
     type=Path,
     help="Path to specific project directory.",
 )
-create_parser.add_argument(
-    "--package-name",
-    dest="package_name",
-    action="store",
-    type=str,
-    help="Package name for generating a basic manifest.",
-)
-create_parser.add_argument(
-    "--package-version",
-    dest="package_version",
-    action="store",
-    type=str,
-    help="Package version for generating a basic manifest.",
-)
+add_package_name_arg_to_parser(create_parser)
+add_package_version_arg_to_parser(create_parser)
 add_ethpm_dir_arg_to_parser(create_parser)
 create_group = create_parser.add_mutually_exclusive_group(required=True)
 create_group.add_argument(
@@ -288,7 +296,7 @@ scrape_parser.set_defaults(func=scrape_action)
 def install_action(args: argparse.Namespace) -> None:
     validate_install_cli_args(args)
     config = Config(args)
-    package = Package(args.uri, args.alias, config.ipfs_backend)
+    package = Package(args, config.ipfs_backend)
     install_package(package, config)
     cli_logger.info(
         "%s package sourced from %s installed to %s.",
@@ -308,6 +316,8 @@ install_parser.add_argument(
     type=str,
     help="IPFS / Github / Etherscan / Registry URI of target package.",
 )
+add_package_name_arg_to_parser(install_parser)
+add_package_version_arg_to_parser(install_parser)
 install_parser.add_argument(
     "--alias", action="store", type=str, help="Alias to install target package under."
 )
