@@ -4,7 +4,7 @@ from urllib import parse
 from eth_utils import is_checksum_address
 
 ETHERSCAN_SUPPORTED_CHAIN_IDS = {
-    "1": "",
+    "1": "",  # mainnet
     "3": "-ropsten",
     "4": "-rinkeby",
     "5": "-goerli",

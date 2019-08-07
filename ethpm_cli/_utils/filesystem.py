@@ -64,4 +64,8 @@ def atomic_replace(path: Path) -> Generator[IO[Any], None, None]:
 
 
 def is_package_installed(package_name: str, config: "Config") -> bool:
-    return os.path.exists(config.ethpm_dir / package_name)
+    if not (config.ethpm_dir / package_name).is_dir():
+        return False
+    if not (config.ethpm_dir / package_name / "manifest.json").is_file():
+        return False
+    return True

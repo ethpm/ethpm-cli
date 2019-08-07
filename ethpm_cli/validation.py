@@ -2,7 +2,6 @@ from argparse import Namespace
 import json
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from eth_typing import URI
 from ethpm.backends.registry import is_valid_registry_uri
@@ -12,7 +11,6 @@ from ethpm.validation.package import validate_package_name
 from web3 import Web3
 
 from ethpm_cli._utils.etherscan import is_etherscan_uri
-from ethpm_cli._utils.filesystem import is_package_installed
 from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR, SOLC_OUTPUT
 from ethpm_cli.exceptions import (
     EtherscanKeyNotFound,
@@ -20,9 +18,6 @@ from ethpm_cli.exceptions import (
     UriNotSupportedError,
     ValidationError,
 )
-
-if TYPE_CHECKING:
-    from ethpm_cli.config import Config
 
 
 def validate_parent_directory(parent_dir: Path, child_dir: Path) -> None:
@@ -92,13 +87,6 @@ def validate_uninstall_cli_args(args: Namespace) -> None:
     validate_package_name(args.package)
     if args.ethpm_dir:
         validate_ethpm_dir(args.ethpm_dir)
-
-
-def validate_package_is_installed(contract_type_id: str, config: "Config") -> None:
-    package, contract_type = contract_type_id.split(":")
-    validate_package_name(package)
-    if not is_package_installed(package, config):
-        raise InstallError(f"{package} is not installed.")
 
 
 def validate_etherscan_key_available() -> None:
