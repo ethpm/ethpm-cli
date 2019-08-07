@@ -4,14 +4,19 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
+from eth_account import Account
+from eth_utils import to_checksum_address
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 from web3 import Web3
 from web3.auto.infura.endpoints import build_http_headers, build_infura_url
+from web3.middleware import construct_sign_and_send_raw_middleware
 from web3.providers.auto import load_provider_from_uri
 
 from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.ipfs import get_ipfs_backend
+from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
+from ethpm_cli.auth import get_authorized_private_key, import_keyfile
 from ethpm_cli.constants import (
     ETHPM_DIR_ENV_VAR,
     ETHPM_PACKAGES_DIR,
@@ -31,6 +36,8 @@ class Config:
     - Setup w3
     - Projects dir
     """
+
+    private_key = None
 
     def __init__(self, args: Namespace) -> None:
         # Setup IPFS backend
@@ -52,13 +59,20 @@ class Config:
 
         # Setup w3
         if "chain_id" in args and args.chain_id:
-            self.w3 = get_w3(args.chain_id)
+            chain_id = args.chain_id
         else:
-            self.w3 = get_w3(1)
+            chain_id = 1
+
+        if "keyfile_path" in args and args.keyfile_path:
+            import_keyfile(args.keyfile_path)
+
+        if "keyfile_password" in args and args.keyfile_password:
+            self.private_key = get_authorized_private_key(args.keyfile_password)
+        self.w3 = setup_w3(chain_id, self.private_key)
 
         # Setup xdg ethpm dir
-        xdg_ethpmcli_root = get_xdg_ethpmcli_root()
-        setup_xdg_ethpm_dir(xdg_ethpmcli_root, self.w3)
+        self.xdg_ethpmcli_root = get_xdg_ethpmcli_root()
+        setup_xdg_ethpm_dir(self.xdg_ethpmcli_root, self.w3)
 
         # Setup projects dir
         if "project_dir" in args and args.project_dir:
@@ -68,7 +82,7 @@ class Config:
             self.project_dir = None
 
 
-def get_w3(chain_id: int) -> Web3:
+def setup_w3(chain_id: int, private_key: str = None) -> Web3:
     if chain_id not in SUPPORTED_CHAIN_IDS.keys():
         raise ValidationError(
             f"Chain ID: {chain_id} is invalid. Currently supported chain ids "
@@ -77,7 +91,18 @@ def get_w3(chain_id: int) -> Web3:
     infura_url = f"{SUPPORTED_CHAIN_IDS[chain_id]}.infura.io"
     headers = build_http_headers()
     infura_url = build_infura_url(infura_url)
-    return Web3(load_provider_from_uri(infura_url, headers))
+    w3 = Web3(load_provider_from_uri(infura_url, headers))
+
+    if private_key is not None:
+        owner_address = Account.from_key(private_key).address
+        signing_middleware = construct_sign_and_send_raw_middleware(private_key)
+        w3.middleware_onion.add(signing_middleware)
+        w3.eth.defaultAccount = to_checksum_address(owner_address)
+        cli_logger.debug(
+            "In-flight tx signing has been enabled for address: {owner_address}."
+        )
+    w3.enable_unstable_package_management_api()
+    return w3
 
 
 def setup_xdg_ethpm_dir(xdg_ethpmcli_root: Path, w3: Web3) -> None:

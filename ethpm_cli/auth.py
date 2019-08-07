@@ -57,7 +57,13 @@ def get_authorized_private_key(password: str) -> str:
     Returns the private key associated with stored keyfile. Password required.
     """
     keyfile_path = get_keyfile_path()
-    private_key = eth_keyfile.extract_key_from_keyfile(
-        str(keyfile_path), to_bytes(text=password)
-    )
+    try:
+        private_key = eth_keyfile.extract_key_from_keyfile(
+            str(keyfile_path), to_bytes(text=password)
+        )
+    except ValueError:
+        raise AuthorizationError(
+            f"Provided keyfile password: {password} is not a valid "
+            f"password for encrypted keyfile at {keyfile_path}."
+        )
     return private_key

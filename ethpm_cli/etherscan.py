@@ -11,7 +11,7 @@ from ethpm.uri import create_latest_block_uri
 import requests
 
 from ethpm_cli._utils.etherscan import get_etherscan_network, is_etherscan_uri
-from ethpm_cli.config import get_ipfs_backend, get_w3
+from ethpm_cli.config import get_ipfs_backend, setup_w3
 from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR
 from ethpm_cli.exceptions import ContractNotVerified
 from ethpm_cli.validation import validate_etherscan_key_available
@@ -43,7 +43,7 @@ def build_etherscan_manifest(
     network = get_etherscan_network(chain_id)
     body = make_etherscan_request(address, network)
     contract_type = body["ContractName"]
-    w3 = get_w3(to_int(text=chain_id))
+    w3 = setup_w3(to_int(text=chain_id))
     block_uri = create_latest_block_uri(w3)
     runtime_bytecode = to_hex(w3.eth.getCode(address))
 
