@@ -67,7 +67,7 @@ def test_adding_an_existing_registry_raises_exception(config):
 def test_remove_registry(config, test_assets_dir):
     add_registry(URI_1, "mine", config)
     add_registry(URI_2, "other", config)
-    remove_registry(URI_2, None, config)
+    remove_registry(URI_2, config)
     expected_registry_store = json.loads(
         (test_assets_dir / "registry_store" / "init.json").read_text()
     )
@@ -79,13 +79,13 @@ def test_remove_registry(config, test_assets_dir):
 
 def test_remove_registry_with_nonexisting_store(config):
     with pytest.raises(InstallError, match="Unable to remove registry"):
-        remove_registry(URI_2, None, config)
+        remove_registry(URI_2, config)
 
 
 def test_remove_aliased_registry(test_assets_dir, config):
     add_registry(URI_1, "mine", config)
     add_registry(URI_2, "other", config)
-    remove_registry(None, "other", config)
+    remove_registry("other", config)
     expected_registry_store = json.loads(
         (test_assets_dir / "registry_store" / "init.json").read_text()
     )
@@ -98,26 +98,19 @@ def test_remove_aliased_registry(test_assets_dir, config):
 def test_remove_nonexisting_registry_raises_exception(config):
     add_registry(URI_1, "mine", config)
     with pytest.raises(InstallError):
-        remove_registry(URI_2, None, config)
+        remove_registry(URI_2, config)
 
 
 def test_remove_nonexisting_aliased_registry_raises_exception(config):
     add_registry(URI_1, "mine", config)
     with pytest.raises(InstallError):
-        remove_registry(None, "other", config)
-
-
-def test_remove_registry_expects_uri_or_alias(config):
-    with pytest.raises(InstallError):
-        remove_registry(None, None, config)
-    with pytest.raises(InstallError):
-        remove_registry(URI_2, "mine", config)
+        remove_registry("other", config)
 
 
 def test_remove_active_registry_raises_error(config):
     add_registry(URI_1, "mine", config)
     with pytest.raises(InstallError):
-        remove_registry(URI_2, None, config)
+        remove_registry(URI_2, config)
 
 
 def test_activate_different_registry(test_assets_dir, config):

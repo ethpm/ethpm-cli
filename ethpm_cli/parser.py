@@ -22,6 +22,7 @@ from ethpm_cli.registry import (
     add_registry,
     deploy_registry,
     list_registries,
+    remove_registry,
 )
 from ethpm_cli.release import release_package
 from ethpm_cli.scraper import scrape
@@ -227,6 +228,12 @@ def registry_deploy_cmd(args: argparse.Namespace) -> None:
     )
 
 
+def registry_remove_cmd(args: argparse.Namespace) -> None:
+    config = Config(args)
+    remove_registry(args.uri_or_alias, config)
+    cli_logger.info(f"Registry: {args.uri_or_alias} removed from registry store.")
+
+
 registry_parser = ethpm_parser.add_parser("registry")
 registry_subparsers = registry_parser.add_subparsers(help="registry", dest="registry")
 
@@ -248,6 +255,13 @@ registry_add_parser.add_argument(
 )
 add_alias_arg_to_parser(registry_add_parser)
 registry_add_parser.set_defaults(func=registry_add_cmd)
+
+# ethpm registry remove
+registry_remove_parser = registry_subparsers.add_parser("remove", help="remove")
+registry_remove_parser.add_argument(
+    "uri_or_alias", type=str, help="Registry URI or alias for registry to remove."
+)
+registry_remove_parser.set_defaults(func=registry_remove_cmd)
 
 # ethpm registry activate
 registry_activate_parser = registry_subparsers.add_parser("activate", help="activate")

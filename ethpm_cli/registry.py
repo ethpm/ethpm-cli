@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, NamedTuple, Optional
+from typing import Any, Dict, Iterable, NamedTuple, Optional, Tuple
 
 from eth_typing import URI
+from eth_utils import to_tuple
 from eth_utils.toolz import assoc, assoc_in, dissoc
 from ethpm.backends.registry import is_valid_registry_uri, parse_registry_uri
 from ethpm.constants import SUPPORTED_CHAIN_IDS
@@ -23,7 +24,8 @@ class StoredRegistry(NamedTuple):
     @property
     def format_for_display(self) -> str:
         activated = " (active)" if self.active else ""
-        return f"{self.uri} --- {self.alias}{activated}"
+        alias = f" --- {self.alias}" if self.alias else ""
+        return f"{self.uri}{alias}{activated}"
 
 
 def deploy_registry(config: Config, alias: str = None) -> str:
@@ -69,14 +71,19 @@ def add_registry(registry_uri: URI, alias: Optional[str], config: Config) -> Non
         update_registry_store(registry_uri, alias, store_path)
 
 
-def remove_registry(registry_uri: URI, alias: Optional[str], config: Config) -> None:
+def remove_registry(uri_or_alias: str, config: Config) -> None:
     store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
     if not store_path.is_file():
         raise InstallError(
-            f"Unable to remove registry: {registry_uri}. "
+            f"Unable to remove registry: {uri_or_alias}. "
             f"No registry store found in {config.xdg_ethpmcli_root}."
         )
-    registry = resolve_uri_and_alias(registry_uri, alias, store_path)
+    registry = resolve_uri_or_alias(uri_or_alias, store_path)
+    if registry.active:
+        raise InstallError(
+            "Unable to remove an active registry. Please activate a different "
+            f"registry before removing registry: {registry.uri}."
+        )
     old_store_data = json.loads(store_path.read_text())
     updated_store_data = dissoc(old_store_data, registry.uri)
     write_store_data_to_disk(updated_store_data, store_path)
@@ -86,10 +93,10 @@ def activate_registry(uri_or_alias: str, config: Config) -> None:
     store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
     store_data = json.loads(store_path.read_text())
     registry = resolve_uri_or_alias(uri_or_alias, store_path)
-    active_registry_uri = get_active_registry(store_data)
-    if registry.uri != active_registry_uri:
+    active_registry = get_active_registry(store_path)
+    if registry.uri != active_registry.uri:
         deactivated_store_data = assoc_in(
-            store_data, [active_registry_uri, "active"], False
+            store_data, [active_registry.uri, "active"], False
         )
         activated_store_data = assoc_in(
             deactivated_store_data, [registry.uri, "active"], True
@@ -109,33 +116,49 @@ def resolve_uri_and_alias(
 ) -> StoredRegistry:
     if (registry_uri and alias) or (not registry_uri and not alias):
         raise InstallError("Cannot resolve both an alias and registry uri.")
-
-    registries_and_aliases = get_all_registries_and_aliases(store_path)
+    all_registries = get_all_registries(store_path)
     if alias:
-        registry_uri = lookup_uri_by_alias(alias, registries_and_aliases)
+        return lookup_registry_by_alias(alias, all_registries)
 
-    if not registry_uri or registry_uri not in registries_and_aliases.keys():
+    all_registry_uris = (reg.uri for reg in all_registries)
+    if not registry_uri or registry_uri not in all_registry_uris:
         raise InstallError(
             f"No registry @ {registry_uri} is available in {store_path}."
         )
-    return StoredRegistry(registry_uri, False, alias, None)
+    for reg in all_registries:
+        if reg.uri == registry_uri:
+            return reg
+    raise InstallError("Cannot resolve registry uri: {registry_uri} or alias: {alias}.")
 
 
-def get_active_registry(store_data: Dict[URI, Any]) -> URI:
-    for registry, data in store_data.items():
-        if data["active"] is True:
+@to_tuple
+def get_all_registries(store_path: Path) -> Iterable[StoredRegistry]:
+    store_data = json.loads(store_path.read_text())
+    for registry_uri, data in store_data.items():
+        yield StoredRegistry(registry_uri, data["active"], data["alias"], data["ens"])
+
+
+def get_active_registry(store_path: Path) -> StoredRegistry:
+    all_registries = get_all_registries(store_path)
+    for registry in all_registries:
+        if registry.active is True:
             return registry
     raise InstallError("Invalid registry store data found.")
 
 
-def lookup_uri_by_alias(alias: str, registries_and_aliases: Dict[URI, str]) -> URI:
-    aliases_and_registries = {v: k for k, v in registries_and_aliases.items()}
-    if alias not in aliases_and_registries:
+def lookup_registry_by_alias(
+    alias: str, all_registries: Tuple[StoredRegistry, ...]
+) -> StoredRegistry:
+    all_aliases = (registry.alias for registry in all_registries)
+    if alias not in all_aliases:
         raise InstallError(
-            f"Alias: {alias} not available. "
-            f"Available aliases include: {list(aliases_and_registries.keys())}."
+            f"Alias: {alias} not found in registry store. "
+            f"Available registry aliases include: {list(all_aliases)}."
         )
-    return aliases_and_registries[alias]
+    for registry in all_registries:
+        if alias == registry.alias:
+            return registry
+    raise InstallError(f"Unable to lookup registry under the alias: {alias}.")
 
 
 def generate_registry_store(
@@ -151,18 +174,14 @@ def generate_registry_store(
 def update_registry_store(
     registry_uri: URI, alias: Optional[str], store_path: Path
 ) -> None:
-    all_registries = get_all_registries_and_aliases(store_path).keys()
-    if registry_uri in all_registries:
+    all_registries = get_all_registries(store_path)
+    all_registry_uris = (registry.uri for registry in all_registries)
+    if registry_uri in all_registry_uris:
         raise InstallError(f"Registry @ {registry_uri} already stored.")
     old_store_data = json.loads(store_path.read_text())
     new_registry_data = generate_registry_store_data(registry_uri, alias)
     updated_store_data = assoc(old_store_data, registry_uri, new_registry_data)
     write_store_data_to_disk(updated_store_data, store_path)
-
-
-def get_all_registries_and_aliases(store_path: Path) -> Dict[URI, str]:
-    store_data = json.loads(store_path.read_text())
-    return {uri: store_data[uri]["alias"] for uri in store_data}
 
 
 def write_store_data_to_disk(store_data: Dict[URI, Any], store_path: Path) -> None:
