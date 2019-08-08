@@ -1,7 +1,7 @@
 ethpm-cli
 =========
 
-CLI for EthPM
+CLI for ethPM
 
 Contents
 --------
@@ -10,6 +10,7 @@ Contents
     :maxdepth: 3
 
     commands
+    create
     installation
     disk
     uris
