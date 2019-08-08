@@ -2,13 +2,14 @@ import argparse
 from pathlib import Path
 
 from eth_utils import humanize_hash
+from ethpm.constants import SUPPORTED_CHAIN_IDS
 
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import get_authorized_address
 from ethpm_cli.config import Config, validate_config_has_project_dir_attr
-from ethpm_cli.constants import IPFS_CHAIN_DATA
+from ethpm_cli.constants import IPFS_CHAIN_DATA, REGISTRY_STORE
 from ethpm_cli.exceptions import AuthorizationError, ValidationError
 from ethpm_cli.install import (
     install_package,
@@ -21,6 +22,7 @@ from ethpm_cli.registry import (
     activate_registry,
     add_registry,
     deploy_registry,
+    get_active_registry,
     list_registries,
     remove_registry,
 )
@@ -131,9 +133,10 @@ ethpm_parser = parser.add_subparsers(help="CLI commands", dest="command")
 def release_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     release_package(args.package_name, args.version, args.manifest_uri, config)
+    active_registry = get_active_registry(config.xdg_ethpmcli_root / REGISTRY_STORE)
     cli_logger.info(
-        f"{args.package_name} @ {args.version} @ {args.manifest_uri} "
-        "released to registry @ ..."
+        f"{args.package_name} v{args.version} @ {args.manifest_uri} "
+        f"released to registry @ {active_registry.uri}."
     )
 
 
@@ -220,14 +223,13 @@ def registry_activate_cmd(args: argparse.Namespace) -> None:
 def registry_deploy_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     registry_address = deploy_registry(config, args.alias)
-    explorer_uri = (
-        f"http://explorer.ethpm.com/browse/{config.w3.eth.chainId}/{registry_address}"
-    )
+    chain_name = SUPPORTED_CHAIN_IDS[config.w3.eth.chainId]
+    explorer_uri = f"http://explorer.ethpm.com/browse/{chain_name}/{registry_address}"
     cli_logger.info(
         f"Congrats on your new ethPM registry! Check it out @ {explorer_uri}."
     )
     cli_logger.info(
-        "You can now release a package on your registrywith `ethpm release`."
+        "You can now release a package on your registry with `ethpm release`."
     )
 
 

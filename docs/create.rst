@@ -35,7 +35,7 @@ Example..
 Creating your ethPM manifest
 ============================
 
-Now that you have the solidity compiler output for your project, there are two options for creating a valid ethPM manifest.
+Now that you have the solidity compiler output for your project, there are two options for creating an ethPM manifest.
 
 Manifest Wizard
 ~~~~~~~~~~~~~~~
@@ -49,7 +49,7 @@ The most comprehensive option for generating a manifest is the manifest wizard. 
 Basic Manifest
 ~~~~~~~~~~~~~~
 
-If you want a quick and easy option to generate a valid manifest for your project, you can use the ``basic-manifest`` flag. This will automatically package up all available sources and contract types found in your project's ``solc_output.json``, and create a manifest with the provided ``--package-name`` and ``--package-version``. Finally, it will write the generated manifest to your project's directory in the format ``[package_version].json``.
+If you want a quick and easy option to generate a valid manifest for your project, you can use the ``basic-manifest`` command. This will automatically package up all available sources and contract types found in your project's ``solc_output.json``, and create a manifest with the provided ``--package-name`` and ``--package-version``. Finally, it will write the generated manifest to your project's directory in the format ``[package_version].json``.
 
 .. code-block:: shell
 
