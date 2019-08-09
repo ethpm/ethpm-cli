@@ -2,13 +2,14 @@ import argparse
 from pathlib import Path
 
 from eth_utils import humanize_hash
+from ethpm.constants import SUPPORTED_CHAIN_IDS
 
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import get_authorized_address
 from ethpm_cli.config import Config, validate_config_has_project_dir_attr
-from ethpm_cli.constants import IPFS_CHAIN_DATA
+from ethpm_cli.constants import IPFS_CHAIN_DATA, REGISTRY_STORE
 from ethpm_cli.exceptions import AuthorizationError, ValidationError
 from ethpm_cli.install import (
     install_package,
@@ -21,6 +22,7 @@ from ethpm_cli.registry import (
     activate_registry,
     add_registry,
     deploy_registry,
+    get_active_registry,
     list_registries,
     remove_registry,
 )
@@ -104,7 +106,7 @@ def add_keyfile_path_arg_to_parser(parser: argparse.ArgumentParser) -> None:
         dest="keyfile_path",
         action="store",
         type=Path,
-        help="Path to your keyfile.",
+        help="Path to the keyfile you want to set as default.",
     )
 
 
@@ -119,7 +121,7 @@ def add_alias_arg_to_parser(parser: argparse.ArgumentParser) -> None:
 
 
 parser = argparse.ArgumentParser(description="ethpm-cli")
-ethpm_parser = parser.add_subparsers(help="commands", dest="command")
+ethpm_parser = parser.add_subparsers(help="CLI commands", dest="command")
 
 
 #
@@ -131,13 +133,16 @@ ethpm_parser = parser.add_subparsers(help="commands", dest="command")
 def release_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     release_package(args.package_name, args.version, args.manifest_uri, config)
+    active_registry = get_active_registry(config.xdg_ethpmcli_root / REGISTRY_STORE)
     cli_logger.info(
-        f"{args.package_name} @ {args.version} @ {args.manifest_uri} "
-        "released to registry @ ..."
+        f"{args.package_name} v{args.version} @ {args.manifest_uri} "
+        f"released to registry @ {active_registry.uri}."
     )
 
 
-release_parser = ethpm_parser.add_parser("release")
+release_parser = ethpm_parser.add_parser(
+    "release", help="Release a package on the active registry."
+)
 release_parser.add_argument(
     "--package-name",
     dest="package_name",
@@ -160,7 +165,6 @@ release_parser.add_argument(
 )
 add_ethpm_dir_arg_to_parser(release_parser)
 add_keyfile_password_arg_to_parser(release_parser)
-add_keyfile_path_arg_to_parser(release_parser)
 release_parser.set_defaults(func=release_cmd)
 
 
@@ -181,7 +185,9 @@ def auth_action(args: argparse.Namespace) -> None:
         )
 
 
-auth_parser = ethpm_parser.add_parser("auth", help="auth")
+auth_parser = ethpm_parser.add_parser(
+    "auth", help="Authorization for automatically signing txs."
+)
 add_keyfile_path_arg_to_parser(auth_parser)
 auth_parser.set_defaults(func=auth_action)
 
@@ -217,14 +223,13 @@ def registry_activate_cmd(args: argparse.Namespace) -> None:
 def registry_deploy_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     registry_address = deploy_registry(config, args.alias)
-    explorer_uri = (
-        f"http://explorer.ethpm.com/browse/{config.w3.eth.chainId}/{registry_address}"
-    )
+    chain_name = SUPPORTED_CHAIN_IDS[config.w3.eth.chainId]
+    explorer_uri = f"http://explorer.ethpm.com/browse/{chain_name}/{registry_address}"
     cli_logger.info(
         f"Congrats on your new ethPM registry! Check it out @ {explorer_uri}."
     )
     cli_logger.info(
-        "You can now release a package on your registrywith `ethpm release`."
+        "You can now release a package on your registry with `ethpm release`."
     )
 
 
@@ -234,22 +239,29 @@ def registry_remove_cmd(args: argparse.Namespace) -> None:
     cli_logger.info(f"Registry: {args.uri_or_alias} removed from registry store.")
 
 
-registry_parser = ethpm_parser.add_parser("registry")
-registry_subparsers = registry_parser.add_subparsers(help="registry", dest="registry")
+registry_parser = ethpm_parser.add_parser("registry", help="Manage the registry store.")
+registry_subparsers = registry_parser.add_subparsers(dest="registry")
 
 # ethpm registry deploy
-registry_deploy_parser = registry_subparsers.add_parser("deploy", help="deploy")
+registry_deploy_parser = registry_subparsers.add_parser(
+    "deploy",
+    help="Deploy a new ERC1319 registry on the chain associated with provided chain ID.",
+)
 add_alias_arg_to_parser(registry_deploy_parser)
 add_chain_id_arg_to_parser(registry_deploy_parser)
 add_keyfile_password_arg_to_parser(registry_deploy_parser)
 registry_deploy_parser.set_defaults(func=registry_deploy_cmd)
 
 # ethpm registry list
-registry_list_parser = registry_subparsers.add_parser("list", help="list")
+registry_list_parser = registry_subparsers.add_parser(
+    "list", help="List all of the available registries in registry store."
+)
 registry_list_parser.set_defaults(func=registry_list_cmd)
 
 # ethpm registry add
-registry_add_parser = registry_subparsers.add_parser("add", help="add")
+registry_add_parser = registry_subparsers.add_parser(
+    "add", help="Add a registry to registry store."
+)
 registry_add_parser.add_argument(
     "uri", action="store", type=str, help="Registry URI for target registry."
 )
@@ -257,14 +269,19 @@ add_alias_arg_to_parser(registry_add_parser)
 registry_add_parser.set_defaults(func=registry_add_cmd)
 
 # ethpm registry remove
-registry_remove_parser = registry_subparsers.add_parser("remove", help="remove")
+registry_remove_parser = registry_subparsers.add_parser(
+    "remove", help="Remove a registry from the registry store."
+)
 registry_remove_parser.add_argument(
     "uri_or_alias", type=str, help="Registry URI or alias for registry to remove."
 )
 registry_remove_parser.set_defaults(func=registry_remove_cmd)
 
 # ethpm registry activate
-registry_activate_parser = registry_subparsers.add_parser("activate", help="activate")
+registry_activate_parser = registry_subparsers.add_parser(
+    "activate",
+    help="Activate a registry to be used as the default registry for releasing new packages.",
+)
 registry_activate_parser.add_argument(
     "uri_or_alias",
     action="store",
@@ -311,13 +328,14 @@ def create_basic_manifest_cmd(args: argparse.Namespace) -> None:
 create_parser = ethpm_parser.add_parser(
     "create", help="Create an ethPM manifest from local smart contracts."
 )
-create_subparsers = create_parser.add_subparsers(help="create", dest="create")
+create_subparsers = create_parser.add_subparsers(dest="create")
 
 # ethpm create basic-manifest
 create_basic_manifest_parser = create_subparsers.add_parser(
     "basic-manifest",
     help="Automatically generate a basic manifest for given projects dir. "
-    "The generated manifest will package up all available sources and contract types.",
+    "The generated manifest will package up all available sources and contract types "
+    "available in the solidity compiler output found in given project directory.",
 )
 add_package_name_arg_to_parser(create_basic_manifest_parser)
 add_package_version_arg_to_parser(create_basic_manifest_parser)
@@ -327,14 +345,16 @@ create_basic_manifest_parser.set_defaults(func=create_basic_manifest_cmd)
 # ethpm create solc-input
 create_solc_input_parser = create_subparsers.add_parser(
     "solc-input",
-    help="Generate solidity compiler standard json input for given projects dir.",
+    help="Generate solidity compiler standard json input for given project directory.",
 )
 add_project_dir_arg_to_parser(create_solc_input_parser)
 create_solc_input_parser.set_defaults(func=create_solc_input_cmd)
 
 # ethpm create manifest-wizard
 create_manifest_wizard_parser = create_subparsers.add_parser(
-    "manifest-wizard", help="Start CLI wizard for building custom manifests."
+    "manifest-wizard",
+    help="Start CLI wizard for building custom manifests from the "
+    "solidity compiler output found in given project directory.",
 )
 add_project_dir_arg_to_parser(create_manifest_wizard_parser)
 create_manifest_wizard_parser.set_defaults(func=create_manifest_wizard_cmd)
@@ -368,10 +388,8 @@ def scrape_action(args: argparse.Namespace) -> None:
 
 scrape_parser = ethpm_parser.add_parser(
     "scrape",
-    help=(
-        "Poll for VersionRelease events, scrape emitted IPFS assets "
-        "and write them to local IPFS directory.",
-    ),
+    help="Poll for VersionRelease events, scrape emitted IPFS assets "
+    "and write them to local IPFS directory.",
 )
 scrape_parser.add_argument(
     "--ipfs-dir",
@@ -410,8 +428,7 @@ def install_action(args: argparse.Namespace) -> None:
 
 
 install_parser = ethpm_parser.add_parser(
-    "install",
-    help="Install a target package, by providing its uri, to your ethPM directory.",
+    "install", help="Install a package to a local ethPM directory."
 )
 install_parser.add_argument(
     "uri",
@@ -445,7 +462,7 @@ def uninstall_action(args: argparse.Namespace) -> None:
 
 
 uninstall_parser = ethpm_parser.add_parser(
-    "uninstall", help="Uninstall a package from your ethPM directory."
+    "uninstall", help="Uninstall a package from a local ethPM directory."
 )
 uninstall_parser.add_argument(
     "package",

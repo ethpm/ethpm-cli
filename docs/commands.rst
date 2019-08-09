@@ -1,15 +1,26 @@
 Commands
 ========
 
-A command-line tool to help manage EthPM packages and registries.
+A command-line tool to help manage ethPM packages and registries.
 
 
 .. warning::
 
-   ``EthPM CLI`` is currently in public Alpha:
+   ``ethPM CLI`` is currently in public Alpha:
 
    - It is expected to have bugs and is not meant to be used in production 
    - Things may be ridiculously slow or not work at all
+
+
+ethpm create
+------------
+
+Commands to help generate manifests for local smart contracts.
+
+.. argparse::
+   :ref: ethpm_cli.parser.parser
+   :prog: ethpm
+   :path: create
 
 
 ethpm install
@@ -43,6 +54,28 @@ Uninstall an ethPM package from a local ``_ethpm_packages`` directory.
    :ref: ethpm_cli.parser.parser
    :prog: ethpm
    :path: uninstall
+
+
+ethpm release
+-------------
+
+Release a package on the currently active registry. Requires an active registry set via ``ethpm registry`` and authentication for tx signing set via ``ethpm auth``.
+
+.. argparse::
+   :ref: ethpm_cli.parser.parser
+   :prog: ethpm
+   :path: release
+
+
+ethpm registry
+--------------
+
+Commands to help manage your local registry store.
+
+.. argparse::
+   :ref: ethpm_cli.parser.parser
+   :prog: ethpm
+   :path: registry
 
 
 ethpm auth

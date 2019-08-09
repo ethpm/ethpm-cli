@@ -44,7 +44,7 @@ def generate_solc_input(contracts_dir: Path) -> None:
     )
     cli_logger.info(
         f"Use `solc --standard-json --allow-paths {contracts_dir} "
-        f"--standard-json < {SOLC_INPUT} > {contracts_dir.parent / SOLC_OUTPUT}` "
+        f"< {SOLC_INPUT} > {contracts_dir.parent / SOLC_OUTPUT}` "
         "to generate the Solidity compiler output. "
         "Requires that you have the correct Solidity compiler version installed."
     )

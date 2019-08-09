@@ -41,6 +41,7 @@ def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
             f"instance with latest block number of {latest_block}."
         )
 
+    logger.info("Looking up start block for scraping VersionRelease events...")
     if start_block == 0:
         active_block = get_ethpm_birth_block(
             w3, 0, latest_block, VERSION_RELEASE_TIMESTAMP
