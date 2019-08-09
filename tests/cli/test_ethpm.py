@@ -31,7 +31,7 @@ def test_ethpm_list_with_aliased_package(test_assets_dir):
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect(
-        "owned @ owned-alias==1.0.0 --- "
+        "owned (alias: owned-alias)==1.0.0 --- "
         r"\(ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW\)\r\n"
     )
 

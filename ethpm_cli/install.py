@@ -60,7 +60,7 @@ class InstalledPackageTree(NamedTuple):
     def format_for_display(self) -> str:
         prefix = "- " * self.depth
         if self.path.name != self.package_name:
-            alias = f" @ {self.path.name}"
+            alias = f" (alias: {self.path.name})"
         else:
             alias = ""
         main_info = f"{prefix}{self.package_name}{alias}=={self.package_version}"
