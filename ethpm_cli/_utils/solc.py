@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable
+from typing import Any, Callable, Dict, Iterable, Tuple
 
 from eth_typing import Manifest
 from eth_utils import to_tuple
 from eth_utils.toolz import assoc
 from ethpm.tools import builder as b
 
+from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.constants import SOLC_INPUT, SOLC_OUTPUT
 
@@ -50,11 +51,21 @@ def generate_solc_input(contracts_dir: Path) -> None:
     )
 
 
-def build_sources(
+def build_inline_sources(
     contract_types: Iterable[str], solc_output: Dict[str, Any], contracts_dir: Path
 ) -> Iterable[Callable[..., Manifest]]:
     return (
         b.inline_source(ctype, solc_output, contracts_dir) for ctype in contract_types
+    )
+
+
+def build_pinned_sources(
+    contract_types: Iterable[str], solc_output: Dict[str, Any], contracts_dir: Path
+) -> Iterable[Callable[..., Manifest]]:
+    ipfs_backend = get_ipfs_backend()
+    return (
+        b.pin_source(ctype, solc_output, ipfs_backend, contracts_dir)
+        for ctype in contract_types
     )
 
 
@@ -69,7 +80,7 @@ def create_basic_manifest_from_solc_output(
 ) -> Manifest:
     solc_output = json.loads((project_dir / SOLC_OUTPUT).read_text())["contracts"]
     contract_types = get_contract_types(solc_output)
-    built_sources = build_sources(
+    built_sources = build_inline_sources(
         contract_types, solc_output, project_dir / "contracts"
     )
     built_types = build_contract_types(contract_types, solc_output)
@@ -89,3 +100,14 @@ def get_contract_types(solc_output: Dict[str, Any]) -> Iterable[str]:
     for source in solc_output:
         for ctype in solc_output[source].keys():
             yield ctype
+
+
+@to_tuple
+def get_contract_types_and_sources(
+    solc_output: Dict[str, Any]
+) -> Iterable[Tuple[str, Iterable[Path]]]:
+    for source in solc_output:
+        for ctype, data in solc_output[source].items():
+            metadata = json.loads(data["metadata"])
+            sources = tuple(Path(src) for src in metadata["sources"].keys())
+            yield ctype, sources
