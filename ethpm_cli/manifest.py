@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple
 
 from eth_typing import Manifest
-from eth_utils import is_checksum_address, to_hex, to_int, to_tuple
+from eth_utils import is_checksum_address, to_hex, to_int, to_list, to_tuple
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 from ethpm.tools import builder as b
 from ethpm.uri import create_latest_block_uri
@@ -13,10 +13,13 @@ from web3 import Web3
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import (
     build_contract_types,
-    build_sources,
+    build_inline_sources,
+    build_pinned_sources,
     create_basic_manifest_from_solc_output,
     get_contract_types,
+    get_contract_types_and_sources,
 )
+from ethpm_cli._utils.various import flatten
 from ethpm_cli.config import setup_w3
 from ethpm_cli.constants import SOLC_OUTPUT
 from ethpm_cli.validation import validate_solc_output
@@ -55,8 +58,7 @@ def generate_custom_manifest(project_dir: Path) -> None:
         gen_authors(),
         gen_keywords(),
         gen_links(),
-        *gen_contract_types(solc_output),
-        *gen_sources(solc_output, contracts_dir),
+        *gen_contract_types_and_sources(solc_output, contracts_dir),
         *gen_deployments(solc_output),
         # todo: *gen_build_dependencies(),
         # todo: ipfs pinning support
@@ -66,6 +68,9 @@ def generate_custom_manifest(project_dir: Path) -> None:
         b.write_to_disk(project_dir),
     )
     final_fns = (fn for fn in builder_fns if fn is not None)
+    cli_logger.info(
+        "Building your manifest. This could take a minute if you're pinning assets to IPFS."
+    )
     manifest = b.build({}, *final_fns)
     cli_logger.info(
         f"Manifest successfully created and written to {project_dir}/{manifest['version']}.json."
@@ -81,45 +86,79 @@ def gen_validate_manifest() -> Optional[Callable[..., Manifest]]:
     return None
 
 
-def gen_contract_types(
-    solc_output: Dict[str, Any]
-) -> Iterable[Callable[..., Manifest]]:
-    contract_types = get_contract_types(solc_output)
-    pretty = "\n".join(contract_types)
-    flag = parse_bool_flag(
-        "\n"
-        f"{len(contract_types)} contract types available.\n\n"
-        f"{pretty}. \n\n"
-        "Would you like to include all available contract types?"
-    )
-    if not flag:
-        raise Exception("Custom contract types are not supported yet.")
-    return build_contract_types(contract_types, solc_output)
-
-
-def gen_sources(
+def gen_contract_types_and_sources(
     solc_output: Dict[str, Any], contracts_dir: Path
-) -> Iterable[Callable[..., Manifest]]:
-    available_sources = [
-        str(src.relative_to(contracts_dir)) for src in contracts_dir.glob("**/*.sol")
-    ]
-    contract_types = get_contract_types(solc_output)
-    pretty = "\n".join(sorted(available_sources))
+) -> Tuple[Callable[..., Manifest], ...]:
+    # todo: option to include additional sources not associated with included contract types
+    ctypes_and_sources = get_contract_types_and_sources(solc_output)
+    all_contract_types = [ctype for ctype, _ in ctypes_and_sources]
+    pretty = "".join(format_contract_types_and_sources_for_display(ctypes_and_sources))
     flag = parse_bool_flag(
         "\n"
-        f"{len(available_sources)} sources available.\n\n"
-        f"{pretty}. \n\n"
-        "Would you like to include all available sources?"
+        f"{len(all_contract_types)} contract types available.\n\n"
+        f"{pretty}\n"
+        "Would you like to automatically include all available contract types and their sources?"
     )
-    if not flag:
-        raise Exception("sorry, we dont support specific source selection yet.")
+
+    # get target contract types to include in manifest
+    if flag:
+        target_contract_types = all_contract_types
+    else:
+        while True:
+            raw_included_ctypes = input(
+                "Please list the contract types you would like to include, separated by commas: "
+            )
+            target_contract_types = [
+                ct.strip(" ") for ct in raw_included_ctypes.split(",")
+            ]
+            invalid_contract_types = set(target_contract_types) - set(
+                all_contract_types
+            )
+            if invalid_contract_types:
+                cli_logger.info(
+                    f"Invalid contract type(s) selected: {invalid_contract_types}. "
+                    "Please try again."
+                )
+            else:
+                break
+
+    # get target sources associated with target contract types
     inline_source_flag = parse_bool_flag(
-        "Would you like to automatically inline all sources?"
+        "Would you like to inline source files? If not, sources will "
+        "be automatically pinned to IPFS."
     )
-    if not inline_source_flag:
-        raise Exception("Sorry, we dont support pinning sources yet.")
-    # todo: validate a source for every contract type
-    return build_sources(contract_types, solc_output, contracts_dir)
+    target_sources = set(
+        flatten(
+            [
+                sources
+                for ctype, sources in ctypes_and_sources
+                if ctype in target_contract_types
+            ]
+        )
+    )
+    target_source_names = tuple(src.stem for src in target_sources)
+
+    # generate contract types and sources builder fns for manfiest builder
+    generated_contract_types = build_contract_types(target_contract_types, solc_output)
+    if inline_source_flag:
+        generated_sources = build_inline_sources(
+            target_source_names, solc_output, contracts_dir
+        )
+    else:
+        generated_sources = build_pinned_sources(
+            target_source_names, solc_output, contracts_dir
+        )
+    return ((*generated_contract_types), (*generated_sources))
+
+
+@to_list
+def format_contract_types_and_sources_for_display(
+    ctypes_and_sources: Tuple[str]
+) -> Iterable[str]:
+    for ctype in sorted(ctypes_and_sources):
+        yield f"{ctype[0]}\n"
+        for src in sorted(ctype[1]):
+            yield f"  - {src}\n"
 
 
 def gen_deployments(solc_output: Dict[str, Any]) -> Iterable[Callable[..., Manifest]]:

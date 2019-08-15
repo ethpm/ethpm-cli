@@ -8,7 +8,7 @@ from ethpm_cli.constants import ETHPM_CLI_VERSION, SOLC_INPUT
 
 def test_custom_manifest_builder(tmp_project_dir):
     child = pexpect.spawn(
-        f"ethpm create manifest-wizard --project-dir {tmp_project_dir}"
+        f"ethpm create manifest-wizard --project-dir {tmp_project_dir}", timeout=5
     )
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
@@ -51,23 +51,26 @@ def test_custom_manifest_builder(tmp_project_dir):
     child.expect("3 contract types available.\r\n")
     child.expect("\r\n")
     child.expect("Ownable\r\n")
+    child.expect("  - Ownable.sol\r\n")
     child.expect("PackageRegistry\r\n")
-    child.expect("PackageRegistryInterface. \r\n")
-    child.expect("Would you like to include all available contract types?")
+    child.expect("  - Ownable.sol\r\n")
+    child.expect("  - PackageRegistry.sol\r\n")
+    child.expect("  - PackageRegistryInterface.sol\r\n")
+    child.expect("PackageRegistryInterface\r\n")
+    child.expect("  - PackageRegistryInterface.sol\r\n")
+    child.expect(
+        "Would you like to automatically include all available contract types and their sources?"
+    )
     child.sendline("y")
-    child.expect("3 sources available.\r\n")
-    child.expect("\r\n")
-    child.expect("Ownable.sol\r\n")
-    child.expect("PackageRegistry.sol\r\n")
-    child.expect("PackageRegistryInterface.sol. \r\n")
-    child.expect("Would you like to include all available sources?")
-    child.sendline("y")
-    child.expect("Would you like to automatically inline all sources?")
+    child.expect("Would you like to inline source files?")
     child.sendline("y")
     child.expect("Would you like to add a deployment to your package?")
     child.sendline("n")
     child.expect("Would you like to validate your manifest against the json schema?")
     child.sendline("y")
+    child.expect(
+        "Building your manifest. This could take a minute if you're pinning assets to IPFS."
+    )
     child.expect(
         f"Manifest successfully created and written to {tmp_project_dir}/2.0.0a1.json"
     )
