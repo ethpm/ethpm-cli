@@ -144,7 +144,6 @@ release_parser.add_argument(
     type=str,
     help="Content addressed URI at which the manifest for released package is located.",
 )
-add_ethpm_dir_arg_to_parser(release_parser)
 add_keyfile_password_arg_to_parser(release_parser)
 release_parser.set_defaults(func=release_cmd)
 
