@@ -108,6 +108,10 @@ def get_contract_types_and_sources(
 ) -> Iterable[Tuple[str, Iterable[Path]]]:
     for source in solc_output:
         for ctype, data in solc_output[source].items():
-            metadata = json.loads(data["metadata"])
-            sources = tuple(Path(src) for src in metadata["sources"].keys())
-            yield ctype, sources
+            if data["metadata"]:
+                metadata = json.loads(data["metadata"])
+                sources = tuple(Path(src) for src in metadata["sources"].keys())
+                yield ctype, sources
+            # For Interface contracts w/ empty metadata['sources']
+            else:
+                yield ctype, (Path(source),)
