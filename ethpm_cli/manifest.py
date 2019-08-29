@@ -19,7 +19,6 @@ from ethpm_cli._utils.solc import (
     get_contract_types,
     get_contract_types_and_sources,
 )
-from ethpm_cli._utils.various import flatten
 from ethpm_cli.config import setup_w3
 from ethpm_cli.constants import SOLC_OUTPUT
 from ethpm_cli.validation import validate_solc_output
@@ -122,31 +121,20 @@ def gen_contract_types_and_sources(
             else:
                 break
 
-    # get target sources associated with target contract types
     inline_source_flag = parse_bool_flag(
         "Would you like to inline source files? If not, sources will "
         "be automatically pinned to IPFS."
     )
-    target_sources = set(
-        flatten(
-            [
-                sources
-                for ctype, sources in ctypes_and_sources
-                if ctype in target_contract_types
-            ]
-        )
-    )
-    target_source_names = tuple(src.stem for src in target_sources)
 
-    # generate contract types and sources builder fns for manfiest builder
+    # generate contract types and sources builder fns for manifest builder
     generated_contract_types = build_contract_types(target_contract_types, solc_output)
     if inline_source_flag:
         generated_sources = build_inline_sources(
-            target_source_names, solc_output, contracts_dir
+            target_contract_types, solc_output, contracts_dir
         )
     else:
         generated_sources = build_pinned_sources(
-            target_source_names, solc_output, contracts_dir
+            target_contract_types, solc_output, contracts_dir
         )
     return ((*generated_contract_types), (*generated_sources))
 

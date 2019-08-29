@@ -11,6 +11,7 @@ ethPM Cli supports the following URI schemes.
 
   - ``etherscan://[CONTRACT_ADDRESS]:[CHAIN_ID]``
   - ``CONTRACT_ADDRESS`` and ``CHAIN_ID`` must represent a `Verified Contract <https://etherscan.io/contractsVerified>`_ on Etherscan.
+  - ``CONTRACT_ADDRESS`` **MUST** be a valid, checksummed address.
   - Supported values for ``CHAIN_ID``
 
       ========  ===== 
