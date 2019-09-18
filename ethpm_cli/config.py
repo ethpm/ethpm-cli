@@ -23,7 +23,7 @@ from ethpm_cli.constants import (
     IPFS_CHAIN_DATA,
     KEYFILE_PATH,
 )
-from ethpm_cli.exceptions import ValidationError
+from ethpm_cli.exceptions import ConfigurationError, ValidationError
 from ethpm_cli.validation import validate_ethpm_dir, validate_project_directory
 
 
@@ -80,6 +80,15 @@ class Config:
             self.project_dir = args.project_dir
         else:
             self.project_dir = None
+
+        if "manifest_path" in args and args.manifest_path:
+            if not args.manifest_path.is_file():
+                raise ConfigurationError(
+                    f"Provided manifest path: {args.manifest_path} is not a file."
+                )
+            self.manifest_path = args.manifest_path
+        else:
+            self.manifest_path = None
 
 
 def setup_w3(chain_id: int, private_key: str = None) -> Web3:

@@ -7,12 +7,15 @@ from ethpm_cli.constants import SOLC_OUTPUT
 
 
 @pytest.fixture
-def tmp_project_dir(tmp_path):
+def tmp_project_dir(tmp_path, test_assets_dir):
     tmp_project_dir = tmp_path / "registry"
     tmp_project_dir.mkdir()
     tmp_contracts_dir = tmp_project_dir / "contracts"
     shutil.copytree(ASSETS_DIR / "simple-registry" / "contracts", tmp_contracts_dir)
     shutil.copyfile(
         ASSETS_DIR / "simple-registry" / SOLC_OUTPUT, tmp_project_dir / SOLC_OUTPUT
+    )
+    shutil.copyfile(
+        test_assets_dir / "owned" / "1.0.0.json", tmp_project_dir / "owned.json"
     )
     return tmp_project_dir

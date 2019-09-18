@@ -1,12 +1,11 @@
 import filecmp
 
-from ethpm import ASSETS_DIR
 import pexpect
 
 from ethpm_cli.constants import ETHPM_CLI_VERSION, SOLC_INPUT
 
 
-def test_custom_manifest_builder(tmp_project_dir):
+def test_custom_manifest_builder(tmp_project_dir, test_assets_dir):
     child = pexpect.spawn(
         f"ethpm create manifest-wizard --project-dir {tmp_project_dir}", timeout=5
     )
@@ -75,7 +74,67 @@ def test_custom_manifest_builder(tmp_project_dir):
         f"Manifest successfully created and written to {tmp_project_dir}/2.0.0a1.json"
     )
     assert filecmp.cmp(
-        ASSETS_DIR / "registry" / "2.0.0a1.json", tmp_project_dir / "2.0.0a1.json"
+        test_assets_dir / "registry" / "2.0.0a1.json", tmp_project_dir / "2.0.0a1.json"
+    )
+
+
+def test_manifest_builder_amend(tmp_project_dir, test_assets_dir):
+    child = pexpect.spawn(
+        f"ethpm create manifest-wizard --manifest-path {tmp_project_dir / 'owned.json'}",
+        timeout=5,
+    )
+    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect("\r\n")
+    child.expect("Manifest Wizard\r\n")
+    child.expect("---------------\r\n")
+    child.expect("Amend a local manifest.")
+    child.expect("Valid manifest for <Package owned==1.0.0> found at")
+    child.expect(
+        r"Description found \(Reusable contracts which implement a privileged 'owner' "
+        r"model for authorization.\). Would you like to change it?"
+    )
+    child.sendline("y")
+    child.expect("Enter your new description: ")
+    child.sendline("Amended description.")
+    child.expect(r"License found \(MIT\). Would you like to change it?")
+    child.sendline("y")
+    child.expect("Enter your new license: ")
+    child.sendline("Amended license.")
+    child.expect(
+        r"Authors found \(\['Piper Merriam <pipermerriam@gmail.com>'\]\). "
+        r"Would you like to change them?"
+    )
+    child.sendline("y")
+    child.expect("Enter an author or multiple authors separated by commas: ")
+    child.sendline("amended, authors")
+    child.expect(
+        r"Keywords found \(\['authorization'\]\). Would you like to change them?"
+    )
+    child.sendline("y")
+    child.expect("Enter a keyword or multiple keywords separated by commas: ")
+    child.sendline("amended, keywords")
+    child.expect("Links found ")
+    child.sendline("y")
+    child.expect("Enter a new link for your documentation")
+    child.sendline("amended.documentation.com")
+    child.expect("Enter a new link for your repository")
+    child.sendline("")
+    child.expect("Enter a new link for your website")
+    child.sendline("amended.website.com")
+    child.expect("No deployments found, would you like to add one?")
+    child.sendline("n")
+    child.expect("Would you like to validate your manifest against the json schema?")
+    child.sendline("y")
+    child.expect("Please enter a new filename for your manifest. ")
+    child.sendline("owned")
+    child.expect(
+        "owned.json exists. Please enter a new filename for your manifest's path. "
+    )
+    child.sendline("owned-amended-test")
+    child.expect("Manifest successfully amended and written to ")
+    assert filecmp.cmp(
+        test_assets_dir / "owned" / "1.0.0-amended.json",
+        tmp_project_dir / "owned-amended-test.json",
     )
 
 

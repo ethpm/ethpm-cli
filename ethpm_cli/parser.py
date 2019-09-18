@@ -10,13 +10,17 @@ from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.auth import get_authorized_address
 from ethpm_cli.config import Config, validate_config_has_project_dir_attr
 from ethpm_cli.constants import IPFS_CHAIN_DATA, REGISTRY_STORE
-from ethpm_cli.exceptions import AuthorizationError, ValidationError
+from ethpm_cli.exceptions import AuthorizationError, ConfigurationError, ValidationError
 from ethpm_cli.install import (
     install_package,
     list_installed_packages,
     uninstall_package,
 )
-from ethpm_cli.manifest import generate_basic_manifest, generate_custom_manifest
+from ethpm_cli.manifest import (
+    amend_manifest,
+    generate_basic_manifest,
+    generate_custom_manifest,
+)
 from ethpm_cli.package import Package
 from ethpm_cli.registry import (
     activate_registry,
@@ -284,9 +288,17 @@ def create_solc_input_cmd(args: argparse.Namespace) -> None:
 
 def create_manifest_wizard_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
-    validate_config_has_project_dir_attr(config)
-    validate_solc_output(args.project_dir)
-    generate_custom_manifest(args.project_dir)
+    if config.project_dir and not config.manifest_path:
+        validate_solc_output(args.project_dir)
+        generate_custom_manifest(args.project_dir)
+    elif config.manifest_path and not config.project_dir:
+        amend_manifest(args.manifest_path)
+    else:
+        raise ConfigurationError(
+            "Invalid project directory and/org manifest path args detected. "
+            "Please only provide a project directory (to create a new manifest) "
+            "or a manifest path (to amend a manifest)."
+        )
 
 
 def create_basic_manifest_cmd(args: argparse.Namespace) -> None:
@@ -347,6 +359,13 @@ create_manifest_wizard_parser = create_subparsers.add_parser(
     "manifest-wizard",
     help="Start CLI wizard for building custom manifests from the "
     "solidity compiler output found in given project directory.",
+)
+create_manifest_wizard_parser.add_argument(
+    "--manifest-path",
+    dest="manifest_path",
+    action="store",
+    type=Path,
+    help="Path of target manifest to amend.",
 )
 add_project_dir_arg_to_parser(create_manifest_wizard_parser)
 create_manifest_wizard_parser.set_defaults(func=create_manifest_wizard_cmd)

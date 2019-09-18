@@ -7,6 +7,7 @@ from eth_utils import is_checksum_address, to_hex, to_int, to_list, to_tuple
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 from ethpm.tools import builder as b
 from ethpm.uri import create_latest_block_uri
+from ethpm.validation.manifest import validate_manifest_against_schema
 from ethpm.validation.package import validate_package_name
 from web3 import Web3
 
@@ -61,8 +62,6 @@ def generate_custom_manifest(project_dir: Path) -> None:
         *gen_deployments(solc_output),
         # todo: *gen_build_dependencies(),
         # todo: ipfs pinning support
-        # todo: workflow for adding a single field to existing manifest
-        #   -- aka. extend existing manifest with a single deployment
         gen_validate_manifest(),
         b.write_to_disk(project_dir),
     )
@@ -74,6 +73,171 @@ def generate_custom_manifest(project_dir: Path) -> None:
     cli_logger.info(
         f"Manifest successfully created and written to {project_dir}/{manifest['version']}.json."
     )
+
+
+def amend_manifest(manifest_path: Path) -> None:
+    cli_logger.info("Manifest Wizard")
+    cli_logger.info("---------------")
+    cli_logger.info("Amend a local manifest.")
+    cli_logger.info("")
+
+    manifest = json.loads(manifest_path.read_text())
+    validate_manifest_against_schema(manifest)
+    pkg_repr = f"<Package {manifest['package_name']}=={manifest['version']}>"
+    cli_logger.info(f"Valid manifest for {pkg_repr} found at {manifest_path}.")
+    builder_fns = (
+        amend_description(manifest),
+        amend_license(manifest),
+        amend_authors(manifest),
+        amend_keywords(manifest),
+        amend_links(manifest),
+        *amend_deployments(manifest),
+        gen_validate_manifest(),
+    )
+    final_fns = (fn for fn in builder_fns if fn is not None)
+    amended_manifest = b.build(manifest, *final_fns)
+    while True:
+        new_filename = input("Please enter a new filename for your manifest. ")
+        new_filepath = manifest_path.parent / f"{new_filename}.json"
+        if new_filepath.exists():
+            cli_logger.info(
+                f"{new_filepath} already exists. Please provide a different filename."
+            )
+            continue
+        else:
+            break
+    new_filepath.touch()
+    new_filepath.write_text(
+        json.dumps(amended_manifest, sort_keys=True, separators=(",", ":"))
+    )
+    cli_logger.info(f"Manifest successfully amended and written to {new_filepath}.")
+
+
+def amend_description(manifest: Manifest) -> Optional[Callable[..., Manifest]]:
+    try:
+        description = manifest["meta"]["description"]
+    except KeyError:
+        flag = parse_bool_flag("No description found, would you like to add one?")
+    else:
+        flag = parse_bool_flag(
+            f"Description found ({description}). Would you like to change it?"
+        )
+
+    if flag:
+        new_description = input("Enter your new description: ")
+        return b.description(new_description)
+    return None
+
+
+def amend_license(manifest: Manifest) -> Optional[Callable[..., Manifest]]:
+    try:
+        license = manifest["meta"]["license"]
+    except KeyError:
+        flag = parse_bool_flag("No license found, would you like to add one?")
+    else:
+        flag = parse_bool_flag(
+            f"License found ({license}). Would you like to change it?"
+        )
+
+    if flag:
+        new_license = input("Enter your new license: ")
+        return b.license(new_license)
+    return None
+
+
+def amend_authors(manifest: Manifest) -> Optional[Callable[..., Manifest]]:
+    try:
+        authors = manifest["meta"]["authors"]
+    except KeyError:
+        flag = parse_bool_flag("No authors found, would you like to add any?")
+    else:
+        flag = parse_bool_flag(
+            f"Authors found ({authors}). Would you like to change them?"
+        )
+
+    if flag:
+        new_authors = input("Enter an author or multiple authors separated by commas: ")
+        return b.authors(*[author.strip() for author in new_authors.split(",")])
+    return None
+
+
+def amend_keywords(manifest: Manifest) -> Optional[Callable[..., Manifest]]:
+    try:
+        keywords = manifest["meta"]["keywords"]
+    except KeyError:
+        flag = parse_bool_flag("No keywords found, would you like to add any?")
+    else:
+        flag = parse_bool_flag(
+            f"Keywords found ({keywords}). Would you like to change them?"
+        )
+
+    if flag:
+        new_keywords = input(
+            "Enter a keyword or multiple keywords separated by commas: "
+        )
+        return b.keywords(*[keyword.strip() for keyword in new_keywords.split(",")])
+    return None
+
+
+def amend_links(manifest: Manifest) -> Optional[Callable[..., Manifest]]:
+    try:
+        links = manifest["meta"]["links"]
+    except KeyError:
+        flag = parse_bool_flag("No links found, would you like to add any?")
+    else:
+        flag = parse_bool_flag(f"Links found ({links}). Would you like to change them?")
+
+    if flag:
+        documentation = input(
+            "Enter a new link for your documentation (leave blank to skip): "
+        )
+        repo = input("Enter a new link for your repository (leave blank to skip): ")
+        website = input("Enter a new link for your website (leave blank to skip): ")
+        link_kwargs = {"documentation": documentation, "repo": repo, "website": website}
+        actual_kwargs = {k: v for k, v in link_kwargs.items() if v}
+        return b.links(**actual_kwargs)
+    return None
+
+
+def amend_deployments(manifest: Manifest) -> Iterable[Callable[..., Manifest]]:
+    try:
+        manifest["deployments"]
+    except KeyError:
+        flag = parse_bool_flag("No deployments found, would you like to add one?")
+    else:
+        # todo: support amending existing deployments, and refactor deployment strategy
+        # to support multiple deployments on the same chain
+        cli_logger.info(
+            f"Deployments found, amending existing deployments is not currently supported."
+        )
+        return tuple()
+
+    if flag:
+        deployment_data = amend_single_deployment(manifest)
+        return (b.deployment(**dep) for dep in deployment_data)
+    return tuple()
+
+
+@to_tuple
+def amend_single_deployment(manifest: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
+    chain_id = get_chain_id()
+    w3 = setup_w3(chain_id)
+    block_uri = create_latest_block_uri(w3)
+    address = get_deployment_address()
+    available_contract_types = manifest["contract_types"].keys()
+    contract_type = get_deployment_contract_type(available_contract_types)
+    # todo: support custom contract instance definitions
+    contract_instance = contract_type
+    tx_hash, block_hash = get_deployment_chain_data(w3)
+    deployment_data = {
+        "block_uri": block_uri,
+        "contract_instance": contract_instance,
+        "contract_type": contract_type,
+        "address": address,
+        "transaction": tx_hash,
+        "block": block_hash,
+    }
+    yield {field: value for field, value in deployment_data.items() if value}
 
 
 def gen_validate_manifest() -> Optional[Callable[..., Manifest]]:
@@ -174,7 +338,8 @@ def gen_single_deployment(solc_output: Dict[str, Any]) -> Dict[str, Any]:
     w3 = setup_w3(chain_id)
     block_uri = create_latest_block_uri(w3)
     address = get_deployment_address()
-    contract_type = get_deployment_contract_type(solc_output)
+    available_contract_types = get_contract_types(solc_output)
+    contract_type = get_deployment_contract_type(available_contract_types)
     # todo: support custom contract instance definitions
     contract_instance = contract_type
     tx_hash, block_hash = get_deployment_chain_data(w3)
@@ -217,8 +382,7 @@ def get_deployment_address() -> str:
     return address
 
 
-def get_deployment_contract_type(solc_output: Dict[str, Any]) -> str:
-    available_contract_types = get_contract_types(solc_output)
+def get_deployment_contract_type(available_contract_types: Tuple[str, ...]) -> str:
     question = (
         "What is the contract type of this deployment? \n"
         f"Available types: {available_contract_types}. \n"
@@ -265,7 +429,7 @@ def gen_authors() -> Optional[Callable[..., Manifest]]:
     flag = parse_bool_flag("Would you like to add authors to your package?")
     if flag:
         authors = input("Enter an author, or multiple authors separated by commas: ")
-        return b.authors(*authors.split(","))
+        return b.authors(*[author.strip() for author in authors.split(",")])
     return None
 
 
@@ -273,7 +437,7 @@ def gen_keywords() -> Optional[Callable[..., Manifest]]:
     flag = parse_bool_flag("Would you like to add keywords to your package?")
     if flag:
         keywords = input("Enter a keyword, or multiple keywords separated by commas: ")
-        return b.keywords(*keywords.split(","))
+        return b.keywords(*[keyword.strip() for keyword in keywords.split(",")])
     return None
 
 
