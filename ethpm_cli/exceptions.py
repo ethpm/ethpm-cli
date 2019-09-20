@@ -68,3 +68,11 @@ class ContractNotVerified(BaseEthpmCliError):
     """
 
     pass
+
+
+class ConfigurationError(BaseEthpmCliError):
+    """
+    Raised with invalid CLI args configuration is detected.
+    """
+
+    pass
