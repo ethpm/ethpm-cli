@@ -18,6 +18,7 @@ from ethpm_cli.install import (
 )
 from ethpm_cli.manifest import (
     amend_manifest,
+    examine_manifest,
     generate_basic_manifest,
     generate_custom_manifest,
 )
@@ -512,3 +513,27 @@ list_parser = ethpm_parser.add_parser(
 )
 add_ethpm_dir_arg_to_parser(list_parser)
 list_parser.set_defaults(func=list_action)
+
+
+#
+# ethpm examine
+#
+
+
+def examine_action(args: argparse.Namespace) -> None:
+    config = Config(args)
+    examine_manifest(config.manifest_path)
+
+
+examine_parser = ethpm_parser.add_parser(
+    "examine",
+    help="Examine the contents of the manifest located at the provided manifest path.",
+)
+examine_parser.add_argument(
+    "--manifest-path",
+    dest="manifest_path",
+    action="store",
+    type=Path,
+    help="Path of target manifest to examine.",
+)
+examine_parser.set_defaults(func=examine_action)
