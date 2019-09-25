@@ -18,4 +18,8 @@ def tmp_project_dir(tmp_path, test_assets_dir):
     shutil.copyfile(
         test_assets_dir / "owned" / "1.0.0.json", tmp_project_dir / "owned.json"
     )
+    shutil.copyfile(
+        test_assets_dir / "dai" / "_ethpm_packages" / "dai" / "manifest.json",
+        tmp_project_dir / "dai.json",
+    )
     return tmp_project_dir

@@ -468,3 +468,76 @@ def parse_bool_flag(question: str) -> bool:
         else:
             cli_logger.info(f"Invalid response: {response}.")
             continue
+
+
+def cat_manifest(manifest_path: Path) -> None:
+    raw_manifest = json.loads(manifest_path.read_text())
+    validate_manifest_against_schema(raw_manifest)
+    manifest = ManifestDisplay(raw_manifest)
+    cli_logger.info(f"Package Name: {manifest.package_name}")
+    cli_logger.info(f"Package Version: {manifest.package_version}")
+    cli_logger.info(f"Manifest Version: {manifest.manifest_version}\n")
+    cli_logger.info(f"Sources: \n{''.join(manifest.sources())}")
+    cli_logger.info(f"Contract Types: \n{''.join(manifest.contract_types())}")
+    cli_logger.info(f"Deployments: \n{''.join(manifest.deployments())}")
+    cli_logger.info(f"Build Dependencies: \n{''.join(manifest.build_dependencies())}")
+
+
+class ManifestDisplay:
+    def __init__(self, manifest: Manifest) -> None:
+        self.manifest = manifest
+
+    @property
+    def package_name(self) -> str:
+        return self.manifest["package_name"]
+
+    @property
+    def package_version(self) -> str:
+        return self.manifest["version"]
+
+    @property
+    def manifest_version(self) -> str:
+        return self.manifest["manifest_version"]
+
+    @to_list
+    def sources(self) -> Iterable[str]:
+        if "sources" not in self.manifest:
+            yield "None.\n"
+        else:
+            for src, data in self.manifest["sources"].items():
+                if len(data) < 50:
+                    truncated = data
+                else:
+                    # truncate data if inlined source
+                    truncated = data[:50].replace("\n", " ").replace("\r", " ")
+                yield f"{src}: {truncated}\n"
+
+    @to_list
+    def contract_types(self) -> Iterable[str]:
+        if "contract_types" not in self.manifest:
+            yield "None.\n"
+        else:
+            for ct, data in self.manifest["contract_types"].items():
+                yield f"{ct}:  {list(data.keys())}\n"
+
+    @to_list
+    def deployments(self) -> Iterable[str]:
+        if "deployments" not in self.manifest:
+            yield "None.\n"
+        else:
+            for chain_uri, chain_deps in self.manifest["deployments"].items():
+                yield f"{chain_uri}\n"
+                for alias, data in chain_deps.items():
+                    yield f"- {alias} @ {data['address']} :: {data['contract_type']}\n"
+                    if "transaction" in data:
+                        yield f"  - tx: {data['transaction']}\n"
+                    if "block" in data:
+                        yield f"  - block: {data['block']}\n"
+
+    @to_list
+    def build_dependencies(self) -> Iterable[str]:
+        if "build_dependencies" not in self.manifest:
+            yield "None.\n"
+        else:
+            for pkg_name, uri in self.manifest["build_dependencies"].items():
+                yield f"{pkg_name}: {uri}\n"
