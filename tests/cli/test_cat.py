@@ -3,10 +3,8 @@ import pexpect
 from ethpm_cli.constants import ETHPM_CLI_VERSION
 
 
-def test_examine_owned_manifest(tmp_project_dir):
-    child = pexpect.spawn(
-        f"ethpm examine --manifest-path {tmp_project_dir / 'owned.json'}", timeout=5
-    )
+def test_cat_owned_manifest(tmp_project_dir):
+    child = pexpect.spawn(f"ethpm cat {tmp_project_dir / 'owned.json'}", timeout=5)
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect("Package Name: owned\r\n")
@@ -19,20 +17,18 @@ def test_examine_owned_manifest(tmp_project_dir):
     )
     child.expect("\r\n")
     child.expect("Contract Types: \r\n")
-    child.expect("No contract types found.\r\n")
+    child.expect("None.\r\n")
     child.expect("\r\n")
     child.expect("Deployments: \r\n")
-    child.expect("No deployments found.\r\n")
+    child.expect("None.\r\n")
     child.expect("\r\n")
     child.expect("Build Dependencies: \r\n")
-    child.expect("No build dependencies found.\r\n")
+    child.expect("None.\r\n")
     child.expect("\r\n")
 
 
-def test_examine_dai_manifest(tmp_project_dir):
-    child = pexpect.spawn(
-        f"ethpm examine --manifest-path {tmp_project_dir / 'dai.json'}", timeout=5
-    )
+def test_cat_dai_manifest(tmp_project_dir):
+    child = pexpect.spawn(f"ethpm cat {tmp_project_dir / 'dai.json'}", timeout=5)
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect("Package Name: dai\r\n")
@@ -57,5 +53,5 @@ def test_examine_dai_manifest(tmp_project_dir):
     )
     child.expect("\r\n")
     child.expect("Build Dependencies: \r\n")
-    child.expect("No build dependencies found.\r\n")
+    child.expect("None.\r\n")
     child.expect("\r\n")

@@ -470,7 +470,7 @@ def parse_bool_flag(question: str) -> bool:
             continue
 
 
-def examine_manifest(manifest_path: Path) -> None:
+def cat_manifest(manifest_path: Path) -> None:
     raw_manifest = json.loads(manifest_path.read_text())
     validate_manifest_against_schema(raw_manifest)
     manifest = ManifestDisplay(raw_manifest)
@@ -502,7 +502,7 @@ class ManifestDisplay:
     @to_list
     def sources(self) -> Iterable[str]:
         if "sources" not in self.manifest:
-            yield "No sources found.\n"
+            yield "None.\n"
         else:
             for src, data in self.manifest["sources"].items():
                 if len(data) < 50:
@@ -515,7 +515,7 @@ class ManifestDisplay:
     @to_list
     def contract_types(self) -> Iterable[str]:
         if "contract_types" not in self.manifest:
-            yield "No contract types found.\n"
+            yield "None.\n"
         else:
             for ct, data in self.manifest["contract_types"].items():
                 yield f"{ct}:  {list(data.keys())}\n"
@@ -523,7 +523,7 @@ class ManifestDisplay:
     @to_list
     def deployments(self) -> Iterable[str]:
         if "deployments" not in self.manifest:
-            yield "No deployments found.\n"
+            yield "None.\n"
         else:
             for chain_uri, chain_deps in self.manifest["deployments"].items():
                 yield f"{chain_uri}\n"
@@ -537,7 +537,7 @@ class ManifestDisplay:
     @to_list
     def build_dependencies(self) -> Iterable[str]:
         if "build_dependencies" not in self.manifest:
-            yield "No build dependencies found.\n"
+            yield "None.\n"
         else:
             for pkg_name, uri in self.manifest["build_dependencies"].items():
                 yield f"{pkg_name}: {uri}\n"
