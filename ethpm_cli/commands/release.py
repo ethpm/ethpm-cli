@@ -2,10 +2,10 @@ from eth_typing import URI
 from eth_utils import to_int
 from ethpm.backends.registry import parse_registry_uri
 
+from ethpm_cli.commands.registry import get_active_registry
 from ethpm_cli.config import Config, setup_w3
 from ethpm_cli.constants import REGISTRY_STORE
 from ethpm_cli.exceptions import AuthorizationError
-from ethpm_cli.registry import get_active_registry
 
 
 def release_package(

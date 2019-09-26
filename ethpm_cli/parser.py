@@ -7,23 +7,20 @@ from ethpm.constants import SUPPORTED_CHAIN_IDS
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
-from ethpm_cli.auth import get_authorized_address
-from ethpm_cli.config import Config, validate_config_has_project_dir_attr
-from ethpm_cli.constants import IPFS_CHAIN_DATA, REGISTRY_STORE
-from ethpm_cli.exceptions import AuthorizationError, ConfigurationError, ValidationError
-from ethpm_cli.install import (
+from ethpm_cli.commands.auth import get_authorized_address
+from ethpm_cli.commands.install import (
     install_package,
     list_installed_packages,
     uninstall_package,
 )
-from ethpm_cli.manifest import (
+from ethpm_cli.commands.manifest import (
     amend_manifest,
     cat_manifest,
     generate_basic_manifest,
     generate_custom_manifest,
 )
-from ethpm_cli.package import Package
-from ethpm_cli.registry import (
+from ethpm_cli.commands.package import Package
+from ethpm_cli.commands.registry import (
     activate_registry,
     add_registry,
     deploy_registry,
@@ -31,8 +28,11 @@ from ethpm_cli.registry import (
     list_registries,
     remove_registry,
 )
-from ethpm_cli.release import release_package
-from ethpm_cli.scraper import scrape
+from ethpm_cli.commands.release import release_package
+from ethpm_cli.commands.scraper import scrape
+from ethpm_cli.config import Config, validate_config_has_project_dir_attr
+from ethpm_cli.constants import IPFS_CHAIN_DATA, REGISTRY_STORE
+from ethpm_cli.exceptions import AuthorizationError, ConfigurationError, ValidationError
 from ethpm_cli.validation import (
     validate_chain_data_store,
     validate_install_cli_args,

@@ -70,6 +70,8 @@ def test_custom_manifest_builder(tmp_project_dir, test_assets_dir):
     child.expect(
         "Building your manifest. This could take a minute if you're pinning assets to IPFS."
     )
+    child.expect("Please enter a filename for your manifest.")
+    child.sendline("2.0.0a1")
     child.expect(
         f"Manifest successfully created and written to {tmp_project_dir}/2.0.0a1.json"
     )
@@ -125,13 +127,11 @@ def test_manifest_builder_amend(tmp_project_dir, test_assets_dir):
     child.sendline("n")
     child.expect("Would you like to validate your manifest against the json schema?")
     child.sendline("y")
-    child.expect("Please enter a new filename for your manifest. ")
+    child.expect("Please enter a filename for your manifest. ")
     child.sendline("owned")
-    child.expect(
-        "owned.json exists. Please enter a new filename for your manifest's path. "
-    )
+    child.expect("owned.json already exists. Please provide a different filename.")
     child.sendline("owned-amended-test")
-    child.expect("Manifest successfully amended and written to ")
+    child.expect("Manifest successfully created and written to ")
     assert filecmp.cmp(
         test_assets_dir / "owned" / "1.0.0-amended.json",
         tmp_project_dir / "owned-amended-test.json",

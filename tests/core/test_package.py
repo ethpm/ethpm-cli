@@ -3,7 +3,7 @@ from argparse import Namespace
 import pytest
 
 from ethpm_cli._utils.ipfs import get_ipfs_backend
-from ethpm_cli.package import Package
+from ethpm_cli.commands.package import Package
 
 
 @pytest.fixture

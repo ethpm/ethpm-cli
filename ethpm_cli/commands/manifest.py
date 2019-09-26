@@ -63,16 +63,13 @@ def generate_custom_manifest(project_dir: Path) -> None:
         # todo: *gen_build_dependencies(),
         # todo: ipfs pinning support
         gen_validate_manifest(),
-        b.write_to_disk(project_dir),
     )
     final_fns = (fn for fn in builder_fns if fn is not None)
     cli_logger.info(
         "Building your manifest. This could take a minute if you're pinning assets to IPFS."
     )
     manifest = b.build({}, *final_fns)
-    cli_logger.info(
-        f"Manifest successfully created and written to {project_dir}/{manifest['version']}.json."
-    )
+    write_manifest_to_disk(manifest, project_dir)
 
 
 def amend_manifest(manifest_path: Path) -> None:
@@ -96,21 +93,7 @@ def amend_manifest(manifest_path: Path) -> None:
     )
     final_fns = (fn for fn in builder_fns if fn is not None)
     amended_manifest = b.build(manifest, *final_fns)
-    while True:
-        new_filename = input("Please enter a new filename for your manifest. ")
-        new_filepath = manifest_path.parent / f"{new_filename}.json"
-        if new_filepath.exists():
-            cli_logger.info(
-                f"{new_filepath} already exists. Please provide a different filename."
-            )
-            continue
-        else:
-            break
-    new_filepath.touch()
-    new_filepath.write_text(
-        json.dumps(amended_manifest, sort_keys=True, separators=(",", ":"))
-    )
-    cli_logger.info(f"Manifest successfully amended and written to {new_filepath}.")
+    write_manifest_to_disk(amended_manifest, manifest_path.parent)
 
 
 def amend_description(manifest: Manifest) -> Optional[Callable[..., Manifest]]:
@@ -470,6 +453,22 @@ def parse_bool_flag(question: str) -> bool:
             continue
 
 
+def write_manifest_to_disk(manifest: Manifest, project_dir: Path) -> None:
+    while True:
+        filename = input("Please enter a filename for your manifest. ")
+        filepath = project_dir / f"{filename}.json"
+        if filepath.exists():
+            cli_logger.info(
+                f"{filepath} already exists. Please provide a different filename."
+            )
+            continue
+        else:
+            break
+    filepath.touch()
+    filepath.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")))
+    cli_logger.info(f"Manifest successfully created and written to {filepath}.")
+
+
 def cat_manifest(manifest_path: Path) -> None:
     raw_manifest = json.loads(manifest_path.read_text())
     validate_manifest_against_schema(raw_manifest)
@@ -477,6 +476,7 @@ def cat_manifest(manifest_path: Path) -> None:
     cli_logger.info(f"Package Name: {manifest.package_name}")
     cli_logger.info(f"Package Version: {manifest.package_version}")
     cli_logger.info(f"Manifest Version: {manifest.manifest_version}\n")
+    cli_logger.info(f"Metadata: \n{''.join(manifest.meta())}")
     cli_logger.info(f"Sources: \n{''.join(manifest.sources())}")
     cli_logger.info(f"Contract Types: \n{''.join(manifest.contract_types())}")
     cli_logger.info(f"Deployments: \n{''.join(manifest.deployments())}")
@@ -498,6 +498,23 @@ class ManifestDisplay:
     @property
     def manifest_version(self) -> str:
         return self.manifest["manifest_version"]
+
+    @to_list
+    def meta(self) -> Iterable[str]:
+        if "meta" not in self.manifest:
+            yield "None.\n"
+        else:
+            if "authors" in self.manifest["meta"]:
+                yield f"Authors: {', '.join(self.manifest['meta']['authors'])}\n"
+            if "license" in self.manifest["meta"]:
+                yield f"License: {self.manifest['meta']['license']}\n"
+            if "description" in self.manifest["meta"]:
+                yield f"Description: {self.manifest['meta']['description']}\n"
+            if "keywords" in self.manifest["meta"]:
+                yield f"Keywords: {', '.join(self.manifest['meta']['keywords'])}\n"
+            if "links" in self.manifest["meta"]:
+                for kind, uri in self.manifest["meta"]["links"].items():
+                    yield f"{kind}: {uri}\n"
 
     @to_list
     def sources(self) -> Iterable[str]:

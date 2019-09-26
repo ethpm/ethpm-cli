@@ -16,7 +16,7 @@ from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
-from ethpm_cli.auth import get_authorized_private_key, import_keyfile
+from ethpm_cli.commands.auth import get_authorized_private_key, import_keyfile
 from ethpm_cli.constants import (
     ETHPM_DIR_ENV_VAR,
     ETHPM_PACKAGES_DIR,

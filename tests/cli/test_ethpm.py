@@ -31,7 +31,7 @@ def test_ethpm_list_with_aliased_package(test_assets_dir):
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect(
-        "owned (alias: owned-alias)==1.0.0 --- "
+        r"owned \(alias: owned-alias\)==1.0.0 --- "
         r"\(ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW\)\r\n"
     )
 
@@ -56,7 +56,7 @@ def test_unsupported_command():
     child.expect(
         "ethpm: error: argument command: invalid choice: 'invalid' "
         r"\(choose from 'release', 'auth', 'registry', 'create', 'scrape', "
-        r"'install', 'uninstall', 'list'\)\r\n"
+        r"'install', 'uninstall', 'list', 'cat'\)\r\n"
     )
 
 

@@ -3,7 +3,7 @@ import filecmp
 from eth_utils import is_same_address, to_text
 
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
-from ethpm_cli.auth import (
+from ethpm_cli.commands.auth import (
     get_authorized_address,
     get_authorized_private_key,
     get_keyfile_path,

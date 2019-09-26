@@ -16,7 +16,7 @@ from ethpm.validation.manifest import (
     validate_raw_manifest_format,
 )
 
-from ethpm_cli.etherscan import EtherscanURIBackend
+from ethpm_cli.commands.etherscan import EtherscanURIBackend
 from ethpm_cli.exceptions import UriNotSupportedError
 
 
