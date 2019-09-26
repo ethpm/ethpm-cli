@@ -476,6 +476,7 @@ def cat_manifest(manifest_path: Path) -> None:
     cli_logger.info(f"Package Name: {manifest.package_name}")
     cli_logger.info(f"Package Version: {manifest.package_version}")
     cli_logger.info(f"Manifest Version: {manifest.manifest_version}\n")
+    cli_logger.info(f"Metadata: \n{''.join(manifest.meta())}")
     cli_logger.info(f"Sources: \n{''.join(manifest.sources())}")
     cli_logger.info(f"Contract Types: \n{''.join(manifest.contract_types())}")
     cli_logger.info(f"Deployments: \n{''.join(manifest.deployments())}")
@@ -497,6 +498,23 @@ class ManifestDisplay:
     @property
     def manifest_version(self) -> str:
         return self.manifest["manifest_version"]
+
+    @to_list
+    def meta(self) -> Iterable[str]:
+        if "meta" not in self.manifest:
+            yield "None.\n"
+        else:
+            if "authors" in self.manifest["meta"]:
+                yield f"Authors: {', '.join(self.manifest['meta']['authors'])}\n"
+            if "license" in self.manifest["meta"]:
+                yield f"License: {self.manifest['meta']['license']}\n"
+            if "description" in self.manifest["meta"]:
+                yield f"Description: {self.manifest['meta']['description']}\n"
+            if "keywords" in self.manifest["meta"]:
+                yield f"Keywords: {', '.join(self.manifest['meta']['keywords'])}\n"
+            if "links" in self.manifest["meta"]:
+                for kind, uri in self.manifest["meta"]["links"].items():
+                    yield f"{kind}: {uri}\n"
 
     @to_list
     def sources(self) -> Iterable[str]:
