@@ -63,16 +63,13 @@ def generate_custom_manifest(project_dir: Path) -> None:
         # todo: *gen_build_dependencies(),
         # todo: ipfs pinning support
         gen_validate_manifest(),
-        b.write_to_disk(project_dir),
     )
     final_fns = (fn for fn in builder_fns if fn is not None)
     cli_logger.info(
         "Building your manifest. This could take a minute if you're pinning assets to IPFS."
     )
     manifest = b.build({}, *final_fns)
-    cli_logger.info(
-        f"Manifest successfully created and written to {project_dir}/{manifest['version']}.json."
-    )
+    write_manifest_to_disk(manifest, project_dir)
 
 
 def amend_manifest(manifest_path: Path) -> None:
@@ -96,21 +93,7 @@ def amend_manifest(manifest_path: Path) -> None:
     )
     final_fns = (fn for fn in builder_fns if fn is not None)
     amended_manifest = b.build(manifest, *final_fns)
-    while True:
-        new_filename = input("Please enter a new filename for your manifest. ")
-        new_filepath = manifest_path.parent / f"{new_filename}.json"
-        if new_filepath.exists():
-            cli_logger.info(
-                f"{new_filepath} already exists. Please provide a different filename."
-            )
-            continue
-        else:
-            break
-    new_filepath.touch()
-    new_filepath.write_text(
-        json.dumps(amended_manifest, sort_keys=True, separators=(",", ":"))
-    )
-    cli_logger.info(f"Manifest successfully amended and written to {new_filepath}.")
+    write_manifest_to_disk(amended_manifest, manifest_path.parent)
 
 
 def amend_description(manifest: Manifest) -> Optional[Callable[..., Manifest]]:
@@ -468,6 +451,22 @@ def parse_bool_flag(question: str) -> bool:
         else:
             cli_logger.info(f"Invalid response: {response}.")
             continue
+
+
+def write_manifest_to_disk(manifest: Manifest, project_dir: Path) -> None:
+    while True:
+        filename = input("Please enter a filename for your manifest. ")
+        filepath = project_dir / f"{filename}.json"
+        if filepath.exists():
+            cli_logger.info(
+                f"{filepath} already exists. Please provide a different filename."
+            )
+            continue
+        else:
+            break
+    filepath.touch()
+    filepath.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")))
+    cli_logger.info(f"Manifest successfully created and written to {filepath}.")
 
 
 def cat_manifest(manifest_path: Path) -> None:

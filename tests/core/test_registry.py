@@ -2,14 +2,14 @@ import json
 
 import pytest
 
-from ethpm_cli.constants import REGISTRY_STORE
-from ethpm_cli.exceptions import InstallError
-from ethpm_cli.registry import (
+from ethpm_cli.commands.registry import (
     activate_registry,
     add_registry,
     generate_registry_store_data,
     remove_registry,
 )
+from ethpm_cli.constants import REGISTRY_STORE
+from ethpm_cli.exceptions import InstallError
 
 URI_1 = "erc1319://0x1230000000000000000000000000000000000000:1"
 URI_2 = "erc1319://0xabc0000000000000000000000000000000000000:1"
