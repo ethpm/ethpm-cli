@@ -1,20 +1,30 @@
 from argparse import Namespace
+import copy
 import json
 import logging
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any, Dict, Iterable, NamedTuple, Tuple
+from typing import Any, Dict, Iterable, List, NamedTuple, Tuple
 
-from eth_utils import to_dict, to_text, to_tuple
+from eth_typing import URI
+from eth_utils import to_dict, to_int, to_text, to_tuple
 from eth_utils.toolz import assoc, dissoc
 from ethpm.backends.ipfs import BaseIPFSBackend
+from ethpm.backends.registry import is_valid_registry_uri, parse_registry_uri
 from ethpm.uri import is_ipfs_uri
 
 from ethpm_cli._utils.filesystem import atomic_replace, is_package_installed
-from ethpm_cli.commands.package import Package
+from ethpm_cli._utils.logger import cli_logger
+from ethpm_cli.commands.package import InstalledPackage, Package
+from ethpm_cli.commands.registry import get_active_registry
 from ethpm_cli.config import Config
-from ethpm_cli.constants import ETHPM_PACKAGES_DIR, LOCKFILE_NAME, SRC_DIR_NAME
+from ethpm_cli.constants import (
+    ETHPM_PACKAGES_DIR,
+    LOCKFILE_NAME,
+    REGISTRY_STORE,
+    SRC_DIR_NAME,
+)
 from ethpm_cli.exceptions import InstallError
 from ethpm_cli.validation import validate_parent_directory
 
@@ -119,6 +129,101 @@ def get_package_aliases(package_name: str, config: Config) -> Iterable[Tuple[str
                 yield alias
 
 
+def resolve_pkg_name(pkg_name: str, config: Config) -> InstalledPackage:
+    lockfile_path = config.ethpm_dir / "ethpm.lock"
+    lockfile = json.loads(lockfile_path.read_text())
+    return InstalledPackage(**lockfile[pkg_name])
+
+
+def update_package(args: Namespace, config: Config) -> None:
+    if is_package_installed(args.package, config):
+        installed_pkg = resolve_pkg_name(args.package, config)
+        active_registry = get_active_registry(config.xdg_ethpmcli_root / REGISTRY_STORE)
+        active_registry_uri = parse_registry_uri(active_registry.uri)
+        if is_valid_registry_uri(installed_pkg.install_uri):
+            install_uri = parse_registry_uri(installed_pkg.install_uri)
+            if (
+                install_uri.address != active_registry_uri.address
+                or install_uri.chain_id != active_registry_uri.chain_id  # noqa: W503
+            ):
+                raise InstallError(
+                    f"Active registry: {active_registry.uri} does not match the registry URI used "
+                    f"to install {installed_pkg.resolved_package_name}:{installed_pkg.install_uri}."
+                )
+
+        connected_chain_id = config.w3.eth.chainId
+        if not to_int(text=active_registry_uri.chain_id) == connected_chain_id:
+            raise InstallError(
+                f"Registry URI chain: {active_registry_uri.chain_id} doesn't match "
+                f"connected web3: {connected_chain_id}."
+            )
+
+        config.w3.pm.set_registry(active_registry_uri.address)
+        all_pkg_names = config.w3.pm.get_all_package_names()
+        if installed_pkg.resolved_package_name not in all_pkg_names:
+            raise InstallError(
+                f"{installed_pkg.resolved_package_name} is not available on the active registry "
+                f"{active_registry.uri}. Available packages include: {all_pkg_names}."
+            )
+
+        all_release_data = config.w3.pm.get_all_package_releases(
+            installed_pkg.resolved_package_name
+        )
+        all_versions = [version for version, _ in all_release_data]
+
+        if installed_pkg.resolved_version not in all_versions:
+            raise InstallError(
+                f"{installed_pkg.resolved_package_name}@{installed_pkg.resolved_version} not "
+                f"found on the active registry {active_registry.uri}."
+            )
+
+        on_chain_install_uri = pluck_release_data(
+            all_release_data, installed_pkg.resolved_version
+        )
+        if on_chain_install_uri != installed_pkg.resolved_uri:
+            raise InstallError(
+                f"Install URI found on active registry for {installed_pkg.resolved_package_name}@"
+                f"{installed_pkg.resolved_version}: {on_chain_install_uri} does not match the "
+                f"install URI found in local lockfile: {installed_pkg.resolved_uri}."
+            )
+
+        cli_logger.info(
+            f"{len(all_versions)} versions of {installed_pkg.resolved_package_name} "
+            f"found on the active registry: {all_versions}."
+        )
+        while True:
+            target_version = input("Please enter the version you want to install. ")
+            if target_version == installed_pkg.resolved_version:
+                cli_logger.info(f"Version already installed: {target_version}. ")
+            elif target_version not in all_versions:
+                cli_logger.info(f"Version unavailable: {target_version}. ")
+            else:
+                break
+
+        # Create an updated args/Package for new install
+        updated_args = copy.deepcopy(args)
+        if installed_pkg.resolved_package_name != args.package:
+            updated_args.alias = args.package
+        updated_args.uri = pluck_release_data(all_release_data, target_version)
+        updated_args.package_version = target_version
+        updated_package = Package(updated_args, config.ipfs_backend)
+
+        uninstall_package(args.package, config)
+        install_package(updated_package, config)
+        cli_logger.info(
+            f"{updated_args.package} successfully updated to version "
+            f"{updated_args.package_version}."
+        )
+    else:
+        check_for_aliased_package(args.package, config)
+
+
+def pluck_release_data(all_release_data: List[str], target_version: str) -> URI:
+    for version, uri in all_release_data:
+        if version == target_version:
+            return uri
+
+
 def uninstall_package(package_name: str, config: Config) -> None:
     if is_package_installed(package_name, config):
         tmp_pkg_dir = Path(tempfile.mkdtemp()) / ETHPM_PACKAGES_DIR
@@ -129,7 +234,11 @@ def uninstall_package(package_name: str, config: Config) -> None:
         shutil.rmtree(config.ethpm_dir)
         tmp_pkg_dir.replace(config.ethpm_dir)
         return
+    else:
+        check_for_aliased_package(package_name, config)
 
+
+def check_for_aliased_package(package_name: str, config: Config) -> None:
     aliases = get_package_aliases(package_name, config)
     if aliases:
         raise InstallError(
