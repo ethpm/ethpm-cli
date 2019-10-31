@@ -5,7 +5,7 @@ import pytest
 
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR
 from ethpm_cli.exceptions import InstallError, UriNotSupportedError, ValidationError
-from ethpm_cli.validation import validate_install_cli_args
+from ethpm_cli.validation import validate_install_cli_args, validate_same_registry
 
 
 @pytest.fixture
@@ -85,3 +85,48 @@ def test_validate_install_cli_args_rejects_invalid_relative_paths(
 
     with pytest.raises(InstallError):
         validate_install_cli_args(args)
+
+
+@pytest.mark.parametrize(
+    "left,right",
+    (
+        (
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:1",
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:1",
+        ),
+        (
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:1/dai?version=1.0.0",
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:1",
+        ),
+    ),
+)
+def test_validate_same_registry_validates_matching_registries(left, right):
+    assert validate_same_registry(left, right) is None
+
+
+@pytest.mark.parametrize(
+    "left,right",
+    (
+        # different address
+        (
+            "erc1319://0xA635F17288187daE5b424D343E21FF44a79ce922:1",
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:1",
+        ),
+        (
+            "erc1319://0xA635F17288187daE5b424D343E21FF44a79ce922:1/dai?version=1.0.0",
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:1",
+        ),
+        # different chain ID
+        (
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:3",
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:1",
+        ),
+        (
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:3/dai?version=1.0.0",
+            "erc1319://0x6b5DA3cA4286Baa7fBaf64EEEE1834C7d430B729:1",
+        ),
+    ),
+)
+def test_validate_same_registry_invalidates_nonmatching_registries(left, right):
+    with pytest.raises(ValidationError):
+        validate_same_registry(left, right)

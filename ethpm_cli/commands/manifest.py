@@ -288,7 +288,7 @@ def gen_contract_types_and_sources(
 
 @to_list
 def format_contract_types_and_sources_for_display(
-    ctypes_and_sources: Tuple[str]
+    ctypes_and_sources: Tuple[str],
 ) -> Iterable[str]:
     for ctype in sorted(ctypes_and_sources):
         yield f"{ctype[0]}\n"

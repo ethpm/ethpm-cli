@@ -4,7 +4,8 @@ import os
 from pathlib import Path
 
 from eth_typing import URI
-from ethpm.backends.registry import is_valid_registry_uri
+from eth_utils import is_same_address
+from ethpm.backends.registry import is_valid_registry_uri, parse_registry_uri
 from ethpm.exceptions import EthPMValidationError
 from ethpm.uri import is_ipfs_uri, is_valid_content_addressed_github_uri
 from ethpm.validation.package import validate_package_name
@@ -142,4 +143,16 @@ def validate_chain_data_store(chain_data_path: Path, w3: Web3) -> None:
         raise InstallError(
             f"Chain ID found in EthPM CLI datastore: {chain_data['chain_id']} "
             f"does not match chain ID of provided web3 instance: {w3.eth.chainId}"
+        )
+
+
+def validate_same_registry(left: str, right: str) -> None:
+    left_uri = parse_registry_uri(left)
+    right_uri = parse_registry_uri(right)
+    if (
+        not is_same_address(left_uri.address, right_uri.address)
+        or left_uri.chain_id != right_uri.chain_id  # noqa: W503
+    ):
+        raise ValidationError(
+            f"Registry URI: {left} does not match the registry found on URI: {right}."
         )

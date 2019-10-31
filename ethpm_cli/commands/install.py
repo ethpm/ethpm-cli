@@ -26,7 +26,7 @@ from ethpm_cli.constants import (
     SRC_DIR_NAME,
 )
 from ethpm_cli.exceptions import InstallError
-from ethpm_cli.validation import validate_parent_directory
+from ethpm_cli.validation import validate_parent_directory, validate_same_registry
 
 logger = logging.getLogger("ethpm_cli.install")
 
@@ -129,7 +129,7 @@ def get_package_aliases(package_name: str, config: Config) -> Iterable[Tuple[str
                 yield alias
 
 
-def resolve_pkg_name(pkg_name: str, config: Config) -> InstalledPackage:
+def resolve_pkg_name_or_alias(pkg_name: str, config: Config) -> InstalledPackage:
     lockfile_path = config.ethpm_dir / "ethpm.lock"
     lockfile = json.loads(lockfile_path.read_text())
     return InstalledPackage(**lockfile[pkg_name])
@@ -137,21 +137,13 @@ def resolve_pkg_name(pkg_name: str, config: Config) -> InstalledPackage:
 
 def update_package(args: Namespace, config: Config) -> None:
     if is_package_installed(args.package, config):
-        installed_pkg = resolve_pkg_name(args.package, config)
+        installed_pkg = resolve_pkg_name_or_alias(args.package, config)
         active_registry = get_active_registry(config.xdg_ethpmcli_root / REGISTRY_STORE)
-        active_registry_uri = parse_registry_uri(active_registry.uri)
         if is_valid_registry_uri(installed_pkg.install_uri):
-            install_uri = parse_registry_uri(installed_pkg.install_uri)
-            if (
-                install_uri.address != active_registry_uri.address
-                or install_uri.chain_id != active_registry_uri.chain_id  # noqa: W503
-            ):
-                raise InstallError(
-                    f"Active registry: {active_registry.uri} does not match the registry URI used "
-                    f"to install {installed_pkg.resolved_package_name}:{installed_pkg.install_uri}."
-                )
+            validate_same_registry(installed_pkg.install_uri, active_registry.uri)
 
         connected_chain_id = config.w3.eth.chainId
+        active_registry_uri = parse_registry_uri(active_registry.uri)
         if not to_int(text=active_registry_uri.chain_id) == connected_chain_id:
             raise InstallError(
                 f"Registry URI chain: {active_registry_uri.chain_id} doesn't match "
