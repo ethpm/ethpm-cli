@@ -209,8 +209,7 @@ def amend_single_deployment(manifest: Dict[str, Any]) -> Iterable[Dict[str, Any]
     address = get_deployment_address()
     available_contract_types = manifest["contract_types"].keys()
     contract_type = get_deployment_contract_type(available_contract_types)
-    # todo: support custom contract instance definitions
-    contract_instance = contract_type
+    contract_instance = get_deployment_alias(contract_type)
     tx_hash, block_hash = get_deployment_chain_data(w3)
     deployment_data = {
         "block_uri": block_uri,
@@ -288,7 +287,7 @@ def gen_contract_types_and_sources(
 
 @to_list
 def format_contract_types_and_sources_for_display(
-    ctypes_and_sources: Tuple[str]
+    ctypes_and_sources: Tuple[str],
 ) -> Iterable[str]:
     for ctype in sorted(ctypes_and_sources):
         yield f"{ctype[0]}\n"
@@ -323,8 +322,7 @@ def gen_single_deployment(solc_output: Dict[str, Any]) -> Dict[str, Any]:
     address = get_deployment_address()
     available_contract_types = get_contract_types(solc_output)
     contract_type = get_deployment_contract_type(available_contract_types)
-    # todo: support custom contract instance definitions
-    contract_instance = contract_type
+    contract_instance = get_deployment_alias(contract_type)
     tx_hash, block_hash = get_deployment_chain_data(w3)
     deployment_data = {
         "block_uri": block_uri,
@@ -335,6 +333,18 @@ def gen_single_deployment(solc_output: Dict[str, Any]) -> Dict[str, Any]:
         "block": block_hash,
     }
     return {field: value for field, value in deployment_data.items() if value}
+
+
+def get_deployment_alias(contract_type: str) -> str:
+    flag = parse_bool_flag(
+        "Would you like to alias your deployment? "
+        f"(reference it by a name other than its contract type: {contract_type}). "
+    )
+    if flag:
+        alias = input("Please enter your alias. ")
+        validate_package_name(alias)
+        return alias
+    return contract_type
 
 
 def get_deployment_chain_data(w3: Web3) -> Tuple[Optional[str], Optional[Any]]:
