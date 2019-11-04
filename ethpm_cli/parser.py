@@ -12,6 +12,7 @@ from ethpm_cli.commands.install import (
     install_package,
     list_installed_packages,
     uninstall_package,
+    update_package,
 )
 from ethpm_cli.commands.manifest import (
     amend_manifest,
@@ -471,6 +472,28 @@ install_parser.add_argument(
 add_alias_arg_to_parser(install_parser)
 add_ethpm_dir_arg_to_parser(install_parser)
 install_parser.set_defaults(func=install_action)
+
+#
+# ethpm update
+#
+
+
+def update_action(args: argparse.Namespace) -> None:
+    config = Config(args)
+    update_package(args, config)
+
+
+update_parser = ethpm_parser.add_parser(
+    "update", help="Update a package to a new release available on active registry."
+)
+update_parser.add_argument(
+    "package",
+    action="store",
+    type=str,
+    help="Package name / alias of target package to uninstall.",
+)
+add_ethpm_dir_arg_to_parser(update_parser)
+update_parser.set_defaults(func=update_action)
 
 
 #

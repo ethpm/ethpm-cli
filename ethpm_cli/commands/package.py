@@ -1,7 +1,7 @@
 from argparse import Namespace
 from collections import namedtuple
 import json
-from typing import Any, Dict, Iterable, Tuple  # noqa: F401
+from typing import Any, Dict, Iterable, NamedTuple, Tuple  # noqa: F401
 from urllib import parse
 
 from eth_typing import URI, Address, Manifest  # noqa: F401
@@ -48,6 +48,16 @@ class Package:
         yield "alias", self.alias
         yield "resolved_version", self.manifest["version"]
         yield "resolved_package_name", self.manifest["package_name"]
+
+
+class InstalledPackage(NamedTuple):
+    alias: str
+    install_uri: str
+    registry_address: Address
+    resolved_content_hash: str
+    resolved_package_name: str
+    resolved_version: str
+    resolved_uri: str
 
 
 ResolvedInstallURI = namedtuple(
