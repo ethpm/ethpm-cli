@@ -8,6 +8,7 @@ from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.commands.auth import get_authorized_address
+from ethpm_cli.commands.get import get_manifest
 from ethpm_cli.commands.install import (
     install_package,
     list_installed_packages,
@@ -559,3 +560,40 @@ cat_parser.add_argument(
     help="Path of target manifest to preview.",
 )
 cat_parser.set_defaults(func=cat_action)
+
+
+#
+# ethpm get
+#
+
+
+def get_action(args: argparse.Namespace) -> None:
+    config = Config(args)
+    get_manifest(args, config)
+
+
+get_parser = ethpm_parser.add_parser(
+    "get",
+    help="Preview the contents of a manifest given a manifest URI or registry URI.",
+)
+get_parser.add_argument(
+    "uri",
+    action="store",
+    type=str,
+    help="Content Addressed or Registry URI of manifest to preview.",
+)
+get_group = get_parser.add_mutually_exclusive_group()
+get_group.add_argument(
+    "--output-file",
+    dest="output_file",
+    action="store",
+    type=Path,
+    help="Path target to write resolved manifest.",
+)
+get_group.add_argument(
+    "--pretty",
+    dest="pretty",
+    action="store_true",
+    help="Pretty print the resolved manifest JSON.",
+)
+get_parser.set_defaults(func=get_action, pretty=False)

@@ -482,6 +482,10 @@ def write_manifest_to_disk(manifest: Manifest, project_dir: Path) -> None:
 def cat_manifest(manifest_path: Path) -> None:
     raw_manifest = json.loads(manifest_path.read_text())
     validate_manifest_against_schema(raw_manifest)
+    pretty_print_raw_manifest(raw_manifest)
+
+
+def pretty_print_raw_manifest(raw_manifest) -> None:
     manifest = ManifestDisplay(raw_manifest)
     cli_logger.info(f"Package Name: {manifest.package_name}")
     cli_logger.info(f"Package Version: {manifest.package_version}")
