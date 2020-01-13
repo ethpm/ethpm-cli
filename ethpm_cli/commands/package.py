@@ -93,7 +93,7 @@ def resolve_install_uri(args: Namespace) -> ResolvedInstallURI:
         )
         registry_address = None
     elif registry_backend.can_translate_uri(args.uri):
-        registry_address, _, _, _ = parse_registry_uri(args.uri)
+        registry_address, _, _, _, _ = parse_registry_uri(args.uri)
         manifest_uri = registry_backend.fetch_uri_contents(args.uri)
     else:
         manifest_uri = args.uri

@@ -1,5 +1,8 @@
 import json
 from pathlib import Path
+import shutil
+import subprocess
+import tempfile
 from typing import Any, Callable, Dict, Iterable, Tuple
 
 from eth_typing import Manifest
@@ -10,6 +13,7 @@ from ethpm.tools import builder as b
 from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.constants import SOLC_INPUT, SOLC_OUTPUT
+from ethpm_cli.exceptions import CompilationError
 
 BASE_SOLC_INPUT = {
     "language": "Solidity",
@@ -43,12 +47,50 @@ def generate_solc_input(contracts_dir: Path) -> None:
         contracts_dir.parent,
         SOLC_INPUT,
     )
-    cli_logger.info(
-        f"Use `solc --standard-json --allow-paths /[ABS_PATH_TO]/{contracts_dir} "
-        f"< /[REL_PATH_TO]/{SOLC_INPUT} > /[REL_PATH_TO]/{contracts_dir.parent / SOLC_OUTPUT}` "
-        "to generate the Solidity compiler output. "
-        "Requires that you have the correct Solidity compiler version installed."
+
+
+def compile_contracts(project_dir: Path) -> None:
+    contracts_dir = project_dir / "contracts"
+    contracts = [contract.name for contract in contracts_dir.glob("**/*.sol")]
+    contracts_display = "\n- ".join(contracts)
+    cli_logger.info("Compiling contracts found in %s", contracts_dir)
+    cli_logger.info("%d contracts found: \n- %s", len(contracts), contracts_display)
+
+    tmp_project_dir = Path(tempfile.TemporaryDirectory().name) / "project"
+    shutil.copytree(project_dir, tmp_project_dir)
+    solc_input_path = tmp_project_dir / SOLC_INPUT
+    if not solc_input_path.is_file():
+        cli_logger.info("No solidity compiler input detected...")
+        generate_solc_input(tmp_project_dir / "contracts")
+
+    if not shutil.which("solc"):
+        raise CompilationError(
+            "No solidity compiler detected, please install.\n"
+            "https://solidity.readthedocs.io/en/v0.5.13/installing-solidity.html"
+        )
+    cli_logger.info("Solidity compiler detected, compiling contracts...")
+    std_output = subprocess.check_output(
+        [
+            f"solc --standard-json --allow-paths /private{tempfile.gettempdir()} "
+            f"< {solc_input_path.absolute()}"
+        ],
+        shell=True,
     )
+    compiled_output = json.loads(std_output)
+    errors = [err for err in compiled_output["errors"] if err["severity"] == "error"]
+    warnings = [
+        err for err in compiled_output["errors"] if err["severity"] == "warning"
+    ]
+    if errors:
+        for err in errors:
+            cli_logger.info(err["formattedMessage"])
+        raise CompilationError("Error compiling contracts, detailed output above.")
+
+    if warnings:
+        cli_logger.info(f"{len(warnings)} warnings found in compilation.")
+    (project_dir / SOLC_INPUT).write_text(solc_input_path.read_text())
+    (project_dir / SOLC_OUTPUT).write_text(json.dumps(compiled_output))
+    cli_logger.info("Contracts successfully compiled!\n")
 
 
 def build_inline_sources(

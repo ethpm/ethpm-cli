@@ -5,7 +5,7 @@ from eth_utils import humanize_hash
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 
 from ethpm_cli._utils.logger import cli_logger
-from ethpm_cli._utils.solc import generate_solc_input
+from ethpm_cli._utils.solc import compile_contracts, generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.commands.auth import get_authorized_address
 from ethpm_cli.commands.get import get_manifest
@@ -33,7 +33,7 @@ from ethpm_cli.commands.registry import (
 from ethpm_cli.commands.release import release_package
 from ethpm_cli.commands.scraper import scrape
 from ethpm_cli.config import Config, validate_config_has_project_dir_attr
-from ethpm_cli.constants import IPFS_CHAIN_DATA, REGISTRY_STORE
+from ethpm_cli.constants import IPFS_CHAIN_DATA, REGISTRY_STORE, SOLC_OUTPUT
 from ethpm_cli.exceptions import AuthorizationError, ConfigurationError, ValidationError
 from ethpm_cli.validation import (
     validate_chain_data_store,
@@ -292,7 +292,8 @@ def create_solc_input_cmd(args: argparse.Namespace) -> None:
 def create_manifest_wizard_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     if config.project_dir and not config.manifest_path:
-        validate_solc_output(args.project_dir)
+        if not (config.project_dir / SOLC_OUTPUT).exists():
+            compile_contracts(config.project_dir)
         generate_custom_manifest(args.project_dir)
     elif config.manifest_path and not config.project_dir:
         amend_manifest(args.manifest_path)
