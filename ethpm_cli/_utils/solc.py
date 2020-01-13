@@ -52,6 +52,8 @@ def generate_solc_input(contracts_dir: Path) -> None:
 def compile_contracts(project_dir: Path) -> None:
     contracts_dir = project_dir / "contracts"
     contracts = [contract.name for contract in contracts_dir.glob("**/*.sol")]
+    if len(contracts) == 0:
+        raise CompilationError(f"No Solidity contracts found in {contracts_dir}.")
     contracts_display = "\n- ".join(contracts)
     cli_logger.info("Compiling contracts found in %s", contracts_dir)
     cli_logger.info("%d contracts found: \n- %s", len(contracts), contracts_display)
@@ -77,17 +79,18 @@ def compile_contracts(project_dir: Path) -> None:
         shell=True,
     )
     compiled_output = json.loads(std_output)
-    errors = [err for err in compiled_output["errors"] if err["severity"] == "error"]
-    warnings = [
-        err for err in compiled_output["errors"] if err["severity"] == "warning"
-    ]
-    if errors:
+    if "errors" in compiled_output:
+        errors = [
+            err for err in compiled_output["errors"] if err["severity"] == "error"
+        ]
+        warnings = [
+            err for err in compiled_output["errors"] if err["severity"] == "warning"
+        ]
         for err in errors:
             cli_logger.info(err["formattedMessage"])
         raise CompilationError("Error compiling contracts, detailed output above.")
-
-    if warnings:
-        cli_logger.info(f"{len(warnings)} warnings found in compilation.")
+        if warnings:
+            cli_logger.info(f"{len(warnings)} warnings found in compilation.")
     (project_dir / SOLC_INPUT).write_text(solc_input_path.read_text())
     (project_dir / SOLC_OUTPUT).write_text(json.dumps(compiled_output))
     cli_logger.info("Contracts successfully compiled!\n")

@@ -18,6 +18,13 @@ common: &common
         command: ipfs daemon
         background: true
     - run:
+        name: install solidity compiler
+        command: |
+          SOL_BIN_PATH=$(dirname $(which python))/solc
+          sudo wget "https://github.com/ethereum/solidity/releases/download/v0.5.9/solc-static-linux" -O ${SOL_BIN_PATH}
+          sudo chmod +x ${SOL_BIN_PATH}
+          solc --version
+    - run:
         name: merge pull request base
         command: ./.circleci/merge_pr.sh
     - run:
