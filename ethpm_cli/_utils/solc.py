@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -12,7 +13,7 @@ from ethpm.tools import builder as b
 
 from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli._utils.logger import cli_logger
-from ethpm_cli.constants import SOLC_INPUT, SOLC_OUTPUT
+from ethpm_cli.constants import SOLC_INPUT, SOLC_OUTPUT, SOLC_PATH
 from ethpm_cli.exceptions import CompilationError
 
 BASE_SOLC_INPUT = {
@@ -49,7 +50,7 @@ def generate_solc_input(contracts_dir: Path) -> None:
     )
 
 
-def compile_contracts(project_dir: Path) -> None:
+def validate_contract_directory(project_dir: Path) -> None:
     contracts_dir = project_dir / "contracts"
     contracts = [contract.name for contract in contracts_dir.glob("**/*.sol")]
     if len(contracts) == 0:
@@ -58,27 +59,8 @@ def compile_contracts(project_dir: Path) -> None:
     cli_logger.info("Compiling contracts found in %s", contracts_dir)
     cli_logger.info("%d contracts found: \n- %s", len(contracts), contracts_display)
 
-    tmp_project_dir = Path(tempfile.TemporaryDirectory().name) / "project"
-    shutil.copytree(project_dir, tmp_project_dir)
-    solc_input_path = tmp_project_dir / SOLC_INPUT
-    if not solc_input_path.is_file():
-        cli_logger.info("No solidity compiler input detected...")
-        generate_solc_input(tmp_project_dir / "contracts")
 
-    if not shutil.which("solc"):
-        raise CompilationError(
-            "No solidity compiler detected, please install.\n"
-            "https://solidity.readthedocs.io/en/v0.5.13/installing-solidity.html"
-        )
-    cli_logger.info("Solidity compiler detected, compiling contracts...")
-    std_output = subprocess.check_output(
-        [
-            f"solc --standard-json --allow-paths /private{tempfile.gettempdir()} "
-            f"< {solc_input_path.absolute()}"
-        ],
-        shell=True,
-    )
-    compiled_output = json.loads(std_output)
+def validate_compilation_output(compiled_output: Dict[str, Any]) -> None:
     if "errors" in compiled_output:
         errors = [
             err for err in compiled_output["errors"] if err["severity"] == "error"
@@ -86,14 +68,54 @@ def compile_contracts(project_dir: Path) -> None:
         warnings = [
             err for err in compiled_output["errors"] if err["severity"] == "warning"
         ]
-        for err in errors:
-            cli_logger.info(err["formattedMessage"])
-        raise CompilationError("Error compiling contracts, detailed output above.")
+        if errors:
+            for err in errors:
+                cli_logger.info(err["formattedMessage"])
+            raise CompilationError("Error compiling contracts, detailed output above.")
         if warnings:
             cli_logger.info(f"{len(warnings)} warnings found in compilation.")
-    (project_dir / SOLC_INPUT).write_text(solc_input_path.read_text())
-    (project_dir / SOLC_OUTPUT).write_text(json.dumps(compiled_output))
-    cli_logger.info("Contracts successfully compiled!\n")
+
+
+def find_solidity_compiler() -> str:
+    if SOLC_PATH in os.environ:
+        solc_path = os.environ[SOLC_PATH]
+    else:
+        # ignore b/c optional case is handled on 85
+        solc_path = shutil.which("solc")  # type: ignore
+        if not solc_path:
+            raise CompilationError(
+                "No solidity compiler detected, please install.\n"
+                "https://solidity.readthedocs.io/en/v0.5.13/installing-solidity.html"
+            )
+    cli_logger.info(
+        f"Solidity compiler detected at path {solc_path}, compiling contracts..."
+    )
+    return solc_path
+
+
+def compile_contracts(project_dir: Path) -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_project_dir = Path(tmpdir) / "project"
+        shutil.copytree(project_dir, tmp_project_dir)
+        tmp_solc_input_path = tmp_project_dir / SOLC_INPUT
+
+        validate_contract_directory(project_dir)
+        if not tmp_solc_input_path.is_file():
+            cli_logger.info("No solidity compiler input detected...")
+            generate_solc_input(tmp_project_dir / "contracts")
+
+        solc_path = find_solidity_compiler()
+        std_output = subprocess.check_output(
+            [
+                f"{solc_path} --standard-json --allow-paths /private{tempfile.gettempdir()} "
+                f"< {tmp_solc_input_path.absolute()}"
+            ],
+            shell=True,
+        )
+        compiled_output = json.loads(std_output)
+        (project_dir / SOLC_INPUT).write_text(tmp_solc_input_path.read_text())
+        (project_dir / SOLC_OUTPUT).write_text(json.dumps(compiled_output))
+        cli_logger.info("Contracts successfully compiled!\n")
 
 
 def build_inline_sources(
