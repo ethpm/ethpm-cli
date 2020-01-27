@@ -23,3 +23,12 @@ def tmp_project_dir(tmp_path, test_assets_dir):
         tmp_project_dir / "dai.json",
     )
     return tmp_project_dir
+
+
+@pytest.fixture
+def tmp_owned_dir(tmp_path, test_assets_dir):
+    tmp_owned_dir = tmp_path / "owned"
+    tmp_owned_dir.mkdir()
+    tmp_contracts_dir = tmp_owned_dir / "contracts"
+    shutil.copytree(ASSETS_DIR / "owned" / "contracts", tmp_contracts_dir)
+    return tmp_owned_dir

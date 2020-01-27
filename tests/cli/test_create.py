@@ -158,3 +158,18 @@ def test_create_solc_input(tmp_project_dir):
         "Solidity compiler input successfully created and "
         f"written to {tmp_project_dir}/{SOLC_INPUT}"
     )
+
+
+def test_create_manifest_without_precompiled_assets(tmp_owned_dir):
+    child = pexpect.spawn(f"ethpm create manifest-wizard --project-dir {tmp_owned_dir}")
+    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect("\r\n")
+    child.expect(f"Compiling contracts found in {tmp_owned_dir}")
+    child.expect("1 contracts found:")
+    child.expect("- Owned.sol")
+    child.expect("No solidity compiler input detected...")
+    child.expect("Solidity compiler input successfully created and written to ")
+    child.expect("Solidity compiler detected, compiling contracts...")
+    child.expect("Contracts successfully compiled!")
+    child.expect("Manifest Wizard\r\n")
+    child.expect("---------------\r\n")

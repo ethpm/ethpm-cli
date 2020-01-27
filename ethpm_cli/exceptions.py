@@ -76,3 +76,11 @@ class ConfigurationError(BaseEthpmCliError):
     """
 
     pass
+
+
+class CompilationError(BaseEthpmCliError):
+    """
+    Raised when there is an error compiling contracts.
+    """
+
+    pass
