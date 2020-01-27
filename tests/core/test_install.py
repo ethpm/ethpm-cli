@@ -64,6 +64,18 @@ def test_install_package(args, pkg_name, install_type, config, test_assets_dir):
     assert check_dir_trees_equal(config.ethpm_dir, expected_package)
 
 
+def test_install_package_with_ens_in_registry_uri(config):
+    uri = Namespace(
+        uri="erc1319://ens.snakecharmers.eth:1/ens?version=1.0.0"
+    )
+    pkg = Package(uri, config.ipfs_backend)
+    install_package(pkg, config)
+
+    assert (config.ethpm_dir).is_dir()
+    assert (config.ethpm_dir / 'ens').is_dir()
+    assert (config.ethpm_dir / 'ens' / '_src' / 'ENS.sol').is_file()
+
+
 def test_cannot_install_same_package_twice(config, owned_pkg):
     install_package(owned_pkg, config)
 

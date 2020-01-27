@@ -53,7 +53,7 @@ setup(
         "eth-hash[pysha3]>=0.2.0,<1",
         "ipython>=7.11.1,<8",
         "requests>=2.22.0,<3",
-        "web3[tester]>=5.0.1,<6",
+        "web3[tester]>=5.4.0,<6",
     ],
     setup_requires=['setuptools-markdown'],
     python_requires='>=3.7, <4',
