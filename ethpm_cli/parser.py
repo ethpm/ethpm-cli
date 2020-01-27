@@ -290,7 +290,7 @@ def create_solc_input_cmd(args: argparse.Namespace) -> None:
     generate_solc_input(args.project_dir / "contracts")
 
 
-def create_manifest_wizard_cmd(args: argparse.Namespace) -> None:
+def create_wizard_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     if config.project_dir and not config.manifest_path:
         if not (config.project_dir / SOLC_OUTPUT).exists():
@@ -359,22 +359,21 @@ create_solc_input_parser = create_subparsers.add_parser(
 add_project_dir_arg_to_parser(create_solc_input_parser)
 create_solc_input_parser.set_defaults(func=create_solc_input_cmd)
 
-# ethpm create manifest-wizard
-create_manifest_wizard_parser = create_subparsers.add_parser(
-    "manifest-wizard",
+# ethpm create wizard
+create_wizard_parser = create_subparsers.add_parser(
+    "wizard",
     help="Start CLI wizard for building custom manifests from the "
     "solidity compiler output found in given project directory.",
 )
-create_manifest_wizard_parser.add_argument(
+create_wizard_parser.add_argument(
     "--manifest-path",
     dest="manifest_path",
     action="store",
     type=Path,
     help="Path of target manifest to amend.",
 )
-add_project_dir_arg_to_parser(create_manifest_wizard_parser)
-# todo: update to ethpm create wizard
-create_manifest_wizard_parser.set_defaults(func=create_manifest_wizard_cmd)
+add_project_dir_arg_to_parser(create_wizard_parser)
+create_wizard_parser.set_defaults(func=create_wizard_cmd)
 
 
 #

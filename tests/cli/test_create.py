@@ -7,9 +7,11 @@ from ethpm_cli.constants import ETHPM_CLI_VERSION, SOLC_INPUT
 
 def test_custom_manifest_builder(tmp_project_dir, test_assets_dir):
     child = pexpect.spawn(
-        f"ethpm create manifest-wizard --project-dir {tmp_project_dir}", timeout=5
+        f"ethpm create wizard --project-dir {tmp_project_dir}", timeout=5
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("\r\n")
     child.expect("Manifest Wizard\r\n")
     child.expect("---------------\r\n")
@@ -82,10 +84,12 @@ def test_custom_manifest_builder(tmp_project_dir, test_assets_dir):
 
 def test_manifest_builder_amend(tmp_project_dir, test_assets_dir):
     child = pexpect.spawn(
-        f"ethpm create manifest-wizard --manifest-path {tmp_project_dir / 'owned.json'}",
+        f"ethpm create wizard --manifest-path {tmp_project_dir / 'owned.json'}",
         timeout=5,
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("\r\n")
     child.expect("Manifest Wizard\r\n")
     child.expect("---------------\r\n")
@@ -143,7 +147,9 @@ def test_basic_manifest_builder(tmp_project_dir):
         f"ethpm create basic-manifest --project-dir {tmp_project_dir} "
         "--package-name wallet --package-version 1.0.0"
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("\r\n")
     child.expect(
         f"Manifest successfully created and written to {tmp_project_dir}/1.0.0.json"
@@ -152,7 +158,9 @@ def test_basic_manifest_builder(tmp_project_dir):
 
 def test_create_solc_input(tmp_project_dir):
     child = pexpect.spawn(f"ethpm create solc-input --project-dir {tmp_project_dir}")
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("\r\n")
     child.expect(
         "Solidity compiler input successfully created and "
@@ -161,8 +169,10 @@ def test_create_solc_input(tmp_project_dir):
 
 
 def test_create_manifest_without_precompiled_assets(tmp_owned_dir):
-    child = pexpect.spawn(f"ethpm create manifest-wizard --project-dir {tmp_owned_dir}")
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child = pexpect.spawn(f"ethpm create wizard --project-dir {tmp_owned_dir}")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("\r\n")
     child.expect(f"Compiling contracts found in {tmp_owned_dir}")
     child.expect("1 contracts found:")

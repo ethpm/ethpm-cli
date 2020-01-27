@@ -9,7 +9,9 @@ def test_get_simple_fetch():
     child = pexpect.spawn(
         f"ethpm get ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW"
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("manifest_version")
     child.expect("authors")
     child.expect("license")
@@ -23,7 +25,9 @@ def test_get_pretty_print():
     child = pexpect.spawn(
         f"ethpm get ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW --pretty"
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("\r\n")
     child.expect("Package Name: owned\r\n")
     child.expect("Package Version: 1.0.0\r\n")
@@ -62,7 +66,9 @@ def test_get_write_to_output_file(tmp_project_dir):
         f"ethpm get ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "
         f"--output-file {output_file}"
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("\r\n")
     child.expect(
         f"Manifest sourced from: ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "

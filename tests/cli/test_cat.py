@@ -5,7 +5,9 @@ from ethpm_cli.constants import ETHPM_CLI_VERSION
 
 def test_cat_owned_manifest(tmp_project_dir):
     child = pexpect.spawn(f"ethpm cat {tmp_project_dir / 'owned.json'}", timeout=5)
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("\r\n")
     child.expect("Package Name: owned\r\n")
     child.expect("Package Version: 1.0.0\r\n")
@@ -29,7 +31,9 @@ def test_cat_owned_manifest(tmp_project_dir):
 
 def test_cat_dai_manifest(tmp_project_dir):
     child = pexpect.spawn(f"ethpm cat {tmp_project_dir / 'dai.json'}", timeout=5)
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(
+        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\r\n"
+    )
     child.expect("\r\n")
     child.expect("Package Name: dai\r\n")
     child.expect("Package Version: 1.0.0\r\n")

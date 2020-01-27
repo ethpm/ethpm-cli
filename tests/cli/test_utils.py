@@ -3,7 +3,7 @@ import pexpect
 
 def test_parse_bool_flag(tmp_project_dir):
     child = pexpect.spawn(
-        f"ethpm create manifest-wizard --project-dir {tmp_project_dir}", timeout=5
+        f"ethpm create wizard --project-dir {tmp_project_dir}", timeout=5
     )
     child.expect("Enter your package's name: ")
     child.sendline("wallet")

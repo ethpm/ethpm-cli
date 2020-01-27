@@ -46,7 +46,6 @@ def build_etherscan_manifest(
     w3 = setup_w3(to_int(text=chain_id))
     block_uri = create_latest_block_uri(w3)
     runtime_bytecode = to_hex(w3.eth.getCode(address))
-    print(body)
 
     yield "package_name", package_name
     yield "version", version
@@ -83,8 +82,10 @@ def make_etherscan_request(contract_addr: str, network: str) -> Dict[str, Any]:
 def parse_etherscan_response(
     response: Dict[str, Any], contract_addr: str
 ) -> Dict[str, Any]:
-    unverified_msg = 'Contract source code not verified'
-    unverified_contracts = [res for res in response['result'] if res['ABI'] == unverified_msg]
+    unverified_msg = "Contract source code not verified"
+    unverified_contracts = [
+        res for res in response["result"] if res["ABI"] == unverified_msg
+    ]
     if response["message"] == "NOTOK" or unverified_contracts:
         raise ContractNotVerified(
             f"Contract at {contract_addr} unavailable or has not been verified on Etherscan."
