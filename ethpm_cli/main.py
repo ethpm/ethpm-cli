@@ -1,8 +1,12 @@
 from ethpm_cli._utils.logger import cli_logger
-from ethpm_cli.constants import ETHPM_CLI_VERSION
+from ethpm_cli.constants import (
+    BLUE_STRING,
+    COLOR_RESET,
+    ETHPM_CLI_VERSION,
+    GREEN_STRING,
+)
 from ethpm_cli.parser import parser
 
-COLOR_RESET = "\x1b[0m"
 ETHPM_LOGO = """
        _   _     ____  __  __
    ___| |_| |__ |  _ \|  \/  |
@@ -14,9 +18,10 @@ ETHPM_LOGO = """
 
 
 def main() -> None:
-    cli_logger.info("\033[01;32m" + ETHPM_LOGO + COLOR_RESET)
+    cli_logger.info(f"{BLUE_STRING}{ETHPM_LOGO}{COLOR_RESET}")
     cli_logger.info(
-        f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\n"
+        "A command line tool for the Ethereum Package Manager. "
+        f"{GREEN_STRING}v{ETHPM_CLI_VERSION}{COLOR_RESET}\n"
     )
 
     args = parser.parse_args()

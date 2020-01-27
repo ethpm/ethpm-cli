@@ -20,7 +20,10 @@ from ethpm_cli.commands.package import InstalledPackage, Package
 from ethpm_cli.commands.registry import get_active_registry
 from ethpm_cli.config import Config
 from ethpm_cli.constants import (
+    BLUE_STRING,
+    COLOR_RESET,
     ETHPM_PACKAGES_DIR,
+    GREEN_STRING,
     LOCKFILE_NAME,
     REGISTRY_STORE,
     SRC_DIR_NAME,
@@ -73,7 +76,9 @@ class InstalledPackageTree(NamedTuple):
             alias = f" (alias: {self.path.name})"
         else:
             alias = ""
-        main_info = f"{prefix}{self.package_name}{alias}=={self.package_version}"
+        blue_package_name = f"{BLUE_STRING}{self.package_name}{COLOR_RESET}"
+        green_version = f"{GREEN_STRING}{self.package_version}{COLOR_RESET}"
+        main_info = f"{prefix}{blue_package_name}{alias}=={green_version}"
         hash_info = f"({self.content_hash})"
         if self.children:
             children = "\n" + "\n".join(

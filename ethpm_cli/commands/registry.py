@@ -11,7 +11,7 @@ from ethpm.constants import SUPPORTED_CHAIN_IDS
 from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.config import Config
-from ethpm_cli.constants import REGISTRY_STORE
+from ethpm_cli.constants import BLUE_STRING, COLOR_RESET, GREEN_STRING, REGISTRY_STORE
 from ethpm_cli.exceptions import AmbigiousFileSystem, AuthorizationError, InstallError
 
 
@@ -23,8 +23,9 @@ class StoredRegistry(NamedTuple):
 
     @property
     def format_for_display(self) -> str:
+        color = GREEN_STRING if self.active else BLUE_STRING
         activated = " (active)" if self.active else ""
-        alias = f" --- {self.alias}" if self.alias else ""
+        alias = f" --- {color}{self.alias}{COLOR_RESET}" if self.alias else ""
         return f"{self.uri}{alias}{activated}"
 
 

@@ -21,7 +21,7 @@ from ethpm_cli._utils.solc import (
     get_contract_types_and_sources,
 )
 from ethpm_cli.config import setup_w3
-from ethpm_cli.constants import SOLC_OUTPUT
+from ethpm_cli.constants import BLUE_STRING, COLOR_RESET, SOLC_OUTPUT
 from ethpm_cli.validation import validate_solc_output
 
 
@@ -37,11 +37,9 @@ def generate_basic_manifest(package_name: str, version: str, project_dir: Path) 
 
 
 def generate_custom_manifest(project_dir: Path) -> None:
-    cli_logger.info("Manifest Wizard")
+    cli_logger.info(f"{BLUE_STRING}Manifest Wizard{COLOR_RESET}")
     cli_logger.info("---------------")
     cli_logger.info("Create ethPM manifests for local projects.")
-    cli_logger.info("Project directory must include solc output.")
-    cli_logger.info("Follow the steps in the docs to generate solc output.")
 
     contracts_dir = project_dir / "contracts"
 
