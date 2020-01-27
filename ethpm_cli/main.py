@@ -16,6 +16,8 @@ ETHPM_LOGO = """
 def main() -> None:
     cli_logger.info('\033[01;32m' + ETHPM_LOGO + COLOR_RESET)
     cli_logger.info(f"A command line tool for the Ethereum Package Manager. v{ETHPM_CLI_VERSION}\n")
+    # remove only here for testing
+    cli_logger.info("ethPM CLI v0.1.0a4\n")
 
     args = parser.parse_args()
 

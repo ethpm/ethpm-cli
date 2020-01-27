@@ -373,6 +373,7 @@ create_manifest_wizard_parser.add_argument(
     help="Path of target manifest to amend.",
 )
 add_project_dir_arg_to_parser(create_manifest_wizard_parser)
+# todo: update to ethpm create wizard
 create_manifest_wizard_parser.set_defaults(func=create_manifest_wizard_cmd)
 
 

@@ -169,7 +169,7 @@ def test_create_manifest_without_precompiled_assets(tmp_owned_dir):
     child.expect("- Owned.sol")
     child.expect("No solidity compiler input detected...")
     child.expect("Solidity compiler input successfully created and written to ")
-    child.expect("Solidity compiler detected, compiling contracts...")
+    child.expect("Solidity compiler detected")
     child.expect("Contracts successfully compiled!")
     child.expect("Manifest Wizard\r\n")
     child.expect("---------------\r\n")
