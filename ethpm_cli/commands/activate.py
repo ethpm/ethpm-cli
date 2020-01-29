@@ -3,30 +3,34 @@ import json
 from urllib import parse
 
 from IPython import embed
-from eth_utils import to_dict, to_hex
+from eth_utils import to_dict
 from ethpm import Package as ethpmPackage
+from ethpm._utils.chains import parse_BIP122_uri
 from ethpm.exceptions import InsufficientAssetsError
-from ethpm.uri import check_if_chain_matches_chain_uri
-from web3.auto.infura.goerli import w3 as goerli_w3
-from web3.auto.infura.kovan import w3 as kovan_w3
-from web3.auto.infura.mainnet import w3 as mainnet_w3
-from web3.auto.infura.rinkeby import w3 as rinkeby_w3
-from web3.auto.infura.ropsten import w3 as ropsten_w3
 
 from ethpm_cli._utils.filesystem import is_package_installed
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli.commands.package import Package
-from ethpm_cli.config import Config
+from ethpm_cli.config import Config, setup_w3
 from ethpm_cli.exceptions import InstallError, UriNotSupportedError
 
 SUPPORTED_SCHEMES = ["http", "https", "ipfs", "etherscan", "erc1319"]
 
 SUPPORTED_GENESIS_HASHES = {
-    "0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3": "mainnet",
-    "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d": "ropsten",
-    "0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177": "rinkeby",
-    "0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a": "goerli",
-    "0xa3c565fc15c7478862d50ccd6561e3c06b24cc509bf388941c25ea985ce32cb9": "kovan",
+    "0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3": (
+        "mainnet",
+        1,
+    ),
+    "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d": (
+        "ropsten",
+        3,
+    ),
+    "0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177": (
+        "rinkeby",
+        4,
+    ),
+    "0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a": ("goerli", 5),
+    "0xa3c565fc15c7478862d50ccd6561e3c06b24cc509bf388941c25ea985ce32cb9": ("kovan", 42),
 }
 
 
@@ -60,7 +64,10 @@ def activate_package(args: Namespace, config: Config) -> None:
         )
 
     pkg = ethpmPackage(manifest, config.w3)
-    cli_logger.info(f"Activating package: {pkg.name}")
+    cli_logger.info("\U000026A1" * 3)
+    cli_logger.info(f"Activating package: {pkg.name}@{pkg.version}")
+    cli_logger.info("\U000026A1" * 3)
+    cli_logger.info("\n")
 
     try:
         cli_logger.info(f"Found {len(pkg.contract_types)} contract types.")
@@ -70,25 +77,37 @@ def activate_package(args: Namespace, config: Config) -> None:
         available_factories = {}
 
     if "deployments" in pkg.manifest:
-        available_deployments = generate_deployments(pkg)
+        available_deployments = generate_deployments(pkg, config)
     else:
         cli_logger.info(f"No deployments found.\n")
         available_deployments = {}
 
     # instantiate contract factory variables
     if len(available_factories) > 0:
-        cli_logger.info("Available contract factories: ")
+        cli_logger.info(f"Generated {len(available_factories)} contract factories: ")
         for key, val in available_factories.items():
             cli_logger.info(f"- {key}_factory")
             exec(f"{key}_factory" + "=val")
+    cli_logger.info("\n")
 
     # instantiate contract instance variables
     if len(available_deployments) > 0:
-        cli_logger.info("Available deployments: ")
+        cli_logger.info(f"Generated {len(available_deployments)} deployments: ")
         for key, val in available_deployments.items():
             cli_logger.info(f"- {key}")
             exec(f"{key}" + "=val")
+        if config.private_key:
+            cli_logger.info("\n")
+            cli_logger.info(
+                f"Deployments configured to sign for account: {config.w3.eth.defaultAccount}"
+            )
 
+    cli_logger.info("\n")
+    cli_logger.info(
+        "The API for web3.py contract factories and instances can be found here: "
+        "https://web3py.readthedocs.io/en/stable/contracts.html"
+    )
+    cli_logger.info("\n")
     cli_logger.info("Starting IPython console...\n")
     embed(colors="neutral")
 
@@ -107,20 +126,17 @@ def generate_contract_factories(pkg: ethpmPackage):
 
 
 @to_dict
-def generate_deployments(pkg: ethpmPackage):
-    cli_logger.info(f"Found deployments...")
+def generate_deployments(pkg: ethpmPackage, config):
+    cli_logger.info(f"Found deployments...\n")
     for chain in pkg.manifest["deployments"]:
-        w3, chain_name = get_matching_w3(chain)
+        w3, chain_name = get_matching_w3(chain, config)
         new_pkg = pkg.update_w3(w3)
         for dep in pkg.manifest["deployments"][chain].keys():
             yield f"{chain_name}_{dep}", new_pkg.deployments.get_instance(dep)
 
 
-def get_matching_w3(chain_uri):
-    all_w3s = [mainnet_w3, kovan_w3, ropsten_w3, rinkeby_w3, goerli_w3]
-    for w3 in all_w3s:
-        if check_if_chain_matches_chain_uri(w3, chain_uri):
-            genesis = w3.eth.getBlock(0)
-            chain_name = SUPPORTED_GENESIS_HASHES[to_hex(genesis["hash"])]
-            return w3, chain_name
-    raise InstallError(f"No valid web3 found for deployment on chain: {chain_uri}.")
+def get_matching_w3(chain_uri, config):
+    genesis_hash = parse_BIP122_uri(chain_uri)[0]
+    chain_data = SUPPORTED_GENESIS_HASHES[genesis_hash]
+    web3 = setup_w3(chain_data[1], config.private_key)
+    return web3, chain_data[0]

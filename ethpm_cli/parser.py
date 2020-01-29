@@ -622,4 +622,5 @@ activate_parser.add_argument(
     help="Installed package or URI of package to activate.",
 )
 add_ethpm_dir_arg_to_parser(activate_parser)
+add_keyfile_password_arg_to_parser(activate_parser)
 activate_parser.set_defaults(func=activate_action, pretty=False)
