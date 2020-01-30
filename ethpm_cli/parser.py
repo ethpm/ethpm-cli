@@ -7,6 +7,7 @@ from ethpm.constants import SUPPORTED_CHAIN_IDS
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import compile_contracts, generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
+from ethpm_cli.commands.activate import activate_package
 from ethpm_cli.commands.auth import get_authorized_address
 from ethpm_cli.commands.get import get_manifest
 from ethpm_cli.commands.install import (
@@ -486,13 +487,14 @@ def update_action(args: argparse.Namespace) -> None:
 
 
 update_parser = ethpm_parser.add_parser(
-    "update", help="Update a package to a new release available on active registry."
+    "update",
+    help="Update / revert a package to a different release available on active registry.",
 )
 update_parser.add_argument(
     "package",
     action="store",
     type=str,
-    help="Package name / alias of target package to uninstall.",
+    help="Package name / alias of target package to update.",
 )
 add_ethpm_dir_arg_to_parser(update_parser)
 update_parser.set_defaults(func=update_action)
@@ -598,3 +600,27 @@ get_group.add_argument(
     help="Pretty print the resolved manifest JSON.",
 )
 get_parser.set_defaults(func=get_action, pretty=False)
+
+
+#
+# ethpm activate
+#
+
+
+def activate_action(args: argparse.Namespace) -> None:
+    config = Config(args)
+    activate_package(args, config)
+
+
+activate_parser = ethpm_parser.add_parser(
+    "activate", help="Activate a package and launch in local console.",
+)
+activate_parser.add_argument(
+    "package_or_uri",
+    action="store",
+    type=str,
+    help="Installed package or URI of package to activate.",
+)
+add_ethpm_dir_arg_to_parser(activate_parser)
+add_keyfile_password_arg_to_parser(activate_parser)
+activate_parser.set_defaults(func=activate_action, pretty=False)
