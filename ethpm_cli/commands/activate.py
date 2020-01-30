@@ -3,7 +3,7 @@ import json
 from urllib import parse
 
 from IPython import embed
-from eth_utils import to_dict
+from eth_utils import to_dict, to_tuple
 from ethpm import Package as ethpmPackage
 from ethpm._utils.chains import parse_BIP122_uri
 from ethpm.exceptions import InsufficientAssetsError
@@ -32,6 +32,17 @@ SUPPORTED_GENESIS_HASHES = {
     "0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a": ("goerli", 5),
     "0xa3c565fc15c7478862d50ccd6561e3c06b24cc509bf388941c25ea985ce32cb9": ("kovan", 42),
 }
+
+LIGHTNING_EMOJI = "\U000026A1"
+
+
+def pluralize(count, word):
+    if count > 1:
+        if word[-1:] == "y":
+            return f"{word[:-1]}ies"
+        return f"{word}s"
+    else:
+        return word
 
 
 def activate_package(args: Namespace, config: Config) -> None:
@@ -64,52 +75,109 @@ def activate_package(args: Namespace, config: Config) -> None:
         )
 
     pkg = ethpmPackage(manifest, config.w3)
-    cli_logger.info("\U000026A1" * 3)
-    cli_logger.info(f"Activating package: {pkg.name}@{pkg.version}")
-    cli_logger.info("\U000026A1" * 3)
-    cli_logger.info("\n")
 
-    try:
-        cli_logger.info(f"Found {len(pkg.contract_types)} contract types.")
-        available_factories = generate_contract_factories(pkg)
-    except ValueError:
-        cli_logger.info(f"No contract types found.\n")
-        available_factories = {}
+    activation_banner = (
+        f"{LIGHTNING_EMOJI * 3}\n"
+        f"Activating package: {pkg.name}@{pkg.version}\n"
+        f"{LIGHTNING_EMOJI * 3}\n"
+    )
+    cli_logger.info(activation_banner)
+
+    if "contract_types" in pkg.manifest:
+        num_contract_types = len(pkg.manifest["contract_types"])
+    else:
+        num_contract_types = 0
 
     if "deployments" in pkg.manifest:
-        available_deployments = generate_deployments(pkg, config)
+        num_deployments = sum(
+            len(deps) for _, deps in pkg.manifest["deployments"].items()
+        )
     else:
-        cli_logger.info(f"No deployments found.\n")
-        available_deployments = {}
+        num_deployments = 0
 
-    # instantiate contract factory variables
-    if len(available_factories) > 0:
-        cli_logger.info(f"Generated {len(available_factories)} contract factories: ")
-        for key, val in available_factories.items():
-            cli_logger.info(f"- {key}_factory")
-            exec(f"{key}_factory" + "=val")
-    cli_logger.info("\n")
-
-    # instantiate contract instance variables
-    if len(available_deployments) > 0:
-        cli_logger.info(f"Generated {len(available_deployments)} deployments: ")
-        for key, val in available_deployments.items():
-            cli_logger.info(f"- {key}")
-            exec(f"{key}" + "=val")
-        if config.private_key:
-            cli_logger.info("\n")
-            cli_logger.info(
-                f"Deployments configured to sign for account: {config.w3.eth.defaultAccount}"
+    if num_contract_types > 0:
+        available_factories = generate_contract_factories(pkg)
+        if len(available_factories) > 0:
+            formatted_factories = format_factories_For_display(available_factories)
+            factories_banner = (
+                f"Successfully generated {len(available_factories)} contract "
+                f"{pluralize(len(available_factories), 'factory')} on mainnet from "
+                f"{num_contract_types} detected contract {pluralize(num_contract_types, 'type')}.\n"
+                f"{''.join(formatted_factories)}\n"
+                "To get a contract factory on a different chain, call "
+                "`get_factory(target_factory, target_w3)`\n"
+                "using the available contract fatories and web3 instances.\n\n"
             )
+        else:
+            factories_banner = "\n"
+    else:
+        available_factories = {}
+        factories_banner = "No detected contract types.\n"
 
-    cli_logger.info("\n")
-    cli_logger.info(
-        "The API for web3.py contract factories and instances can be found here: "
-        "https://web3py.readthedocs.io/en/stable/contracts.html"
+    if num_deployments > 0:
+        available_instances = generate_deployments(pkg, config)
+        formatted_instances = format_factories_For_display(available_instances)
+        deployments_banner = (
+            f"Successfully generated {len(available_instances)} contract "
+            f"{pluralize(len(available_instances), 'instance')} from {num_deployments} detected "
+            f"{pluralize(num_deployments, 'deployment')}.\n"
+            f"{''.join(formatted_instances)}\n"
+        )
+    else:
+        available_instances = {}
+        deployments_banner = "No detected deployments.\n"
+
+    if config.private_key:
+        auth_banner = (
+            f"Deployments configured to sign for: {config.w3.eth.defaultAccount}\n"
+        )
+    else:
+        auth_banner = (
+            "Contract instances and web3 instances have not been configured with an account.\n"
+            "Use the --keyfile-password flag to enable automatic signing.\n"
+        )
+
+    available_w3s = get_w3s(config)
+    formatted_w3s = format_factories_For_display(available_w3s)
+    web3_banner = "Available Web3 Instances\n" f"{''.join(formatted_w3s)}\n"
+
+    banner = (
+        f"{factories_banner}{deployments_banner}{web3_banner}{auth_banner}\n"
+        "The API for web3.py contract factories and instances can be found here:\n"
+        "- https://web3py.readthedocs.io/en/stable/contracts.html\n\n"
+        "Starting IPython console... "
     )
-    cli_logger.info("\n")
-    cli_logger.info("Starting IPython console...\n")
-    embed(colors="neutral")
+    helper_fns = {"get_factory": get_factory}
+    embed(
+        user_ns={
+            **available_factories,
+            **available_instances,
+            **available_w3s,
+            **helper_fns,
+        },
+        banner1=banner,
+        colors="neutral",
+    )
+
+
+def get_factory(target_factory, target_w3):
+    return target_w3.eth.contract(
+        abi=target_factory.abi, bytecode=target_factory.bytecode
+    )
+
+
+@to_dict
+def get_w3s(config):
+    all_chain_data = [data for data in SUPPORTED_GENESIS_HASHES.values()]
+    for name, chain_id in all_chain_data:
+        w3 = setup_w3(chain_id, config.private_key)
+        yield f"{name}_w3", w3
+
+
+@to_tuple
+def format_factories_For_display(dictionary):
+    for thing in dictionary.keys():
+        yield f"- {thing}\n"
 
 
 @to_dict
@@ -117,17 +185,16 @@ def generate_contract_factories(pkg: ethpmPackage):
     for ctype in pkg.contract_types:
         try:
             factory = pkg.get_contract_factory(ctype)
-            yield ctype, factory
+            yield f"{ctype}_factory", factory
         except InsufficientAssetsError:
             cli_logger.info(
-                f"Insufficient assets to generate factory for {ctype}. Package must contain the "
-                "abi & deployment bytecode to be able to generate a factory."
+                f"Insufficient assets to generate factory for {ctype} "
+                "(requires ABI & deployment_bytecode)."
             )
 
 
 @to_dict
 def generate_deployments(pkg: ethpmPackage, config):
-    cli_logger.info(f"Found deployments...\n")
     for chain in pkg.manifest["deployments"]:
         w3, chain_name = get_matching_w3(chain, config)
         new_pkg = pkg.update_w3(w3)

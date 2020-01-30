@@ -32,8 +32,8 @@ def test_activate_locally_installed_pkg_without_contract_types(test_assets_dir):
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect("Activating package: owned")
-    child.expect("No contract types found.")
-    child.expect("No deployments found.")
+    child.expect("No detected contract types.")
+    child.expect("No detected deployments.")
     child.close()
 
 
@@ -46,8 +46,8 @@ def test_activate_with_aliased_locally_installed_pkg(test_assets_dir):
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect("Activating package: owned")
-    child.expect("No contract types found.")
-    child.expect("No deployments found.")
+    child.expect("No detected contract types.")
+    child.expect("No detected deployments.")
     child.close()
 
 
@@ -58,19 +58,26 @@ def test_activate_etherscan_uri_with_single_deployment():
     )
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
-    child.expect("Activating package: etherscan")
-    child.expect("Found 1 contract types.")
+    child.expect("Activating package: etherscan@1.0.0")
+    child.expect("Insufficient assets to generate factory for DSToken")
     child.expect(
-        "Insufficient assets to generate factory for DSToken. Package must contain "
-        "the abi & deployment bytecode to be able to generate a factory."
+        "Successfully generated 1 contract instance from 1 detected deployment."
     )
-    child.expect("Found deployments...")
-    child.expect("Available deployments:")
     child.expect("- mainnet_DSToken")
+    child.expect("Available Web3 Instances")
+    child.expect(
+        "Contract instances and web3 instances have not been configured with an account."
+    )
+    child.expect(
+        "The API for web3.py contract factories and instances can be found here:"
+    )
     child.expect("Starting IPython console...")
     # test deployment is available
     child.sendline("mainnet_DSToken")
     child.expect("web3._utils.datatypes.LinkableContract at")
+    # test w3 is available
+    child.sendline("mainnet_w3")
+    child.expect("web3.main.Web3 at")
     child.close()
 
 
@@ -82,13 +89,23 @@ def test_activate_ipfs_uri_with_factories_and_deployments():
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect("Activating package: ethregistrar")
-    child.expect("Found 29 contract types.")
-    child.expect("Found deployments...")
-    child.expect("Available contract factories:")
+    child.expect(
+        "Successfully generated 29 contract factories on mainnet from 29 detected contract types."
+    )
     child.expect("- Address_factory")
     child.expect("- BaseRegistrar_factory")
-    child.expect("Available deployments:")
+    child.expect("To get a contract factory on a different chain,")
+    child.expect(
+        "Successfully generated 1 contract instance from 1 detected deployment."
+    )
     child.expect("- mainnet_BaseRegistrarImplementation")
+    child.expect("Available Web3 Instances")
+    child.expect(
+        "Contract instances and web3 instances have not been configured with an account."
+    )
+    child.expect(
+        "The API for web3.py contract factories and instances can be found here:"
+    )
     child.expect("Starting IPython console...")
     # test contract factory is available
     child.sendline("Address_factory")
@@ -108,14 +125,18 @@ def test_activate_github_uri_with_insufficient_contract_types_and_deployments():
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect("Activating package: dai")
-    child.expect("Found 1 contract types.")
+    child.expect("Insufficient assets to generate factory for DSToken.")
     child.expect(
-        "Insufficient assets to generate factory for DSToken. Package must contain "
-        "the abi & deployment bytecode to be able to generate a factory."
+        "Successfully generated 1 contract instance from 1 detected deployment."
     )
-    child.expect("Found deployments...")
-    child.expect("Available deployments:")
     child.expect("- mainnet_DSToken")
+    child.expect("Available Web3 Instances")
+    child.expect(
+        "Contract instances and web3 instances have not been configured with an account."
+    )
+    child.expect(
+        "The API for web3.py contract factories and instances can be found here:"
+    )
     child.expect("Starting IPython console...")
     # test deployment is available
     child.sendline("mainnet_DSToken")
@@ -131,11 +152,14 @@ def test_activate_registry_uri_with_contract_types_no_deployments():
     child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
     child.expect("\r\n")
     child.expect("Activating package: ens")
-    child.expect("Found 10 contract types.")
-    child.expect("No deployments found.")
-    child.expect("Available contract factories:")
+    child.expect(
+        "Successfully generated 10 contract factories on mainnet from 10 detected contract types."
+    )
     child.expect("- Deed_factory")
     child.expect("- DeedImplementation_factory")
+    child.expect("To get a contract factory on a different chain,")
+    child.expect("No detected deployments.")
+    child.expect("Available Web3 Instances")
     child.expect("Starting IPython console...")
     # test contract factory is available
     child.sendline("Deed_factory")

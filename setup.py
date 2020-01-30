@@ -51,7 +51,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "eth-hash[pysha3]>=0.2.0,<1",
-        "ipython",
+        "ipython>=7.11.1,<8",
         "requests>=2.22.0,<3",
         "web3[tester]>=5.0.1,<6",
     ],
