@@ -16,6 +16,8 @@ from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR
 from ethpm_cli.exceptions import ContractNotVerified
 from ethpm_cli.validation import validate_etherscan_key_available
 
+UNVERIFIED_CONTRACT_MSG = "Contract source code not verified"
+
 
 class EtherscanURIBackend(BaseURIBackend):
     def can_resolve_uri(self, uri: URI) -> bool:
@@ -82,7 +84,10 @@ def make_etherscan_request(contract_addr: str, network: str) -> Dict[str, Any]:
 def parse_etherscan_response(
     response: Dict[str, Any], contract_addr: str
 ) -> Dict[str, Any]:
-    if response["message"] == "NOTOK":
+    unverified_contracts = [
+        res for res in response["result"] if res["ABI"] == UNVERIFIED_CONTRACT_MSG
+    ]
+    if response["message"] == "NOTOK" or unverified_contracts:
         raise ContractNotVerified(
             f"Contract at {contract_addr} unavailable or has not been verified on Etherscan."
         )

@@ -2,20 +2,19 @@ import filecmp
 
 import pexpect
 
-from ethpm_cli.constants import ETHPM_CLI_VERSION, SOLC_INPUT
+from ethpm_cli.constants import SOLC_INPUT
+from ethpm_cli.main import ENTRY_DESCRIPTION
 
 
 def test_custom_manifest_builder(tmp_project_dir, test_assets_dir):
     child = pexpect.spawn(
-        f"ethpm create manifest-wizard --project-dir {tmp_project_dir}", timeout=5
+        f"ethpm create wizard --project-dir {tmp_project_dir}", timeout=5
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect("Manifest Wizard\r\n")
+    child.expect("Manifest Wizard")
     child.expect("---------------\r\n")
     child.expect("Create ethPM manifests for local projects.")
-    child.expect("Project directory must include solc output.")
-    child.expect("Follow the steps in the docs to generate solc output.")
     child.expect("\r\n")
     child.expect("Enter your package's name: ")
     child.sendline("ethpm-registry")
@@ -82,12 +81,12 @@ def test_custom_manifest_builder(tmp_project_dir, test_assets_dir):
 
 def test_manifest_builder_amend(tmp_project_dir, test_assets_dir):
     child = pexpect.spawn(
-        f"ethpm create manifest-wizard --manifest-path {tmp_project_dir / 'owned.json'}",
+        f"ethpm create wizard --manifest-path {tmp_project_dir / 'owned.json'}",
         timeout=5,
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect("Manifest Wizard\r\n")
+    child.expect("Manifest Wizard")
     child.expect("---------------\r\n")
     child.expect("Amend a local manifest.")
     child.expect("Valid manifest for <Package owned==1.0.0> found at")
@@ -143,7 +142,7 @@ def test_basic_manifest_builder(tmp_project_dir):
         f"ethpm create basic-manifest --project-dir {tmp_project_dir} "
         "--package-name wallet --package-version 1.0.0"
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(
         f"Manifest successfully created and written to {tmp_project_dir}/1.0.0.json"
@@ -152,7 +151,7 @@ def test_basic_manifest_builder(tmp_project_dir):
 
 def test_create_solc_input(tmp_project_dir):
     child = pexpect.spawn(f"ethpm create solc-input --project-dir {tmp_project_dir}")
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(
         "Solidity compiler input successfully created and "
@@ -161,15 +160,15 @@ def test_create_solc_input(tmp_project_dir):
 
 
 def test_create_manifest_without_precompiled_assets(tmp_owned_dir):
-    child = pexpect.spawn(f"ethpm create manifest-wizard --project-dir {tmp_owned_dir}")
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child = pexpect.spawn(f"ethpm create wizard --project-dir {tmp_owned_dir}")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(f"Compiling contracts found in {tmp_owned_dir}")
     child.expect("1 contracts found:")
     child.expect("- Owned.sol")
     child.expect("No solidity compiler input detected...")
     child.expect("Solidity compiler input successfully created and written to ")
-    child.expect("Solidity compiler detected, compiling contracts...")
+    child.expect("Solidity compiler detected")
     child.expect("Contracts successfully compiled!")
-    child.expect("Manifest Wizard\r\n")
+    child.expect("Manifest Wizard")
     child.expect("---------------\r\n")

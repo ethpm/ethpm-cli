@@ -2,7 +2,8 @@ import pexpect
 import requests
 
 from ethpm_cli._utils.filesystem import check_dir_trees_equal
-from ethpm_cli.constants import ETHPM_CLI_VERSION, ETHPM_PACKAGES_DIR
+from ethpm_cli.constants import ETHPM_PACKAGES_DIR
+from ethpm_cli.main import ENTRY_DESCRIPTION
 
 
 def test_ethpm_install(tmp_path, test_assets_dir):
@@ -11,7 +12,7 @@ def test_ethpm_install(tmp_path, test_assets_dir):
         "ethpm install ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "
         f"--ethpm-dir {ethpm_dir}"
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(
         "owned package sourced from ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "
@@ -42,7 +43,7 @@ def test_ethpm_install_from_etherscan(tmp_path, test_assets_dir, monkeypatch):
         f"ethpm install {etherscan_uri} --package-name dai --package-version 1.0.0 "
         f"--ethpm-dir {ethpm_dir}"
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(
         f"dai package sourced from {etherscan_uri} installed to {ethpm_dir}.\r\n"
@@ -68,7 +69,7 @@ def test_ethpm_install_etherscan_raises_exception_for_unverified_contract(
         f"ethpm install etherscan://{unverified_contract_addr}:1 --package-name dai "
         f"--package-version 1.0.0 --ethpm-dir {ethpm_dir}"
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(
         f"Contract at {unverified_contract_addr} unavailable or has not "

@@ -12,6 +12,7 @@ from ethpm.validation.package import validate_package_name
 from web3 import Web3
 
 from ethpm_cli._utils.logger import cli_logger
+from ethpm_cli._utils.shellart import bold_blue
 from ethpm_cli._utils.solc import (
     build_contract_types,
     build_inline_sources,
@@ -37,11 +38,9 @@ def generate_basic_manifest(package_name: str, version: str, project_dir: Path) 
 
 
 def generate_custom_manifest(project_dir: Path) -> None:
-    cli_logger.info("Manifest Wizard")
+    cli_logger.info(f"{bold_blue('Manifest Wizard')}")
     cli_logger.info("---------------")
     cli_logger.info("Create ethPM manifests for local projects.")
-    cli_logger.info("Project directory must include solc output.")
-    cli_logger.info("Follow the steps in the docs to generate solc output.")
 
     contracts_dir = project_dir / "contracts"
 
@@ -73,7 +72,7 @@ def generate_custom_manifest(project_dir: Path) -> None:
 
 
 def amend_manifest(manifest_path: Path) -> None:
-    cli_logger.info("Manifest Wizard")
+    cli_logger.info(f"{bold_blue('Manifest Wizard')}")
     cli_logger.info("---------------")
     cli_logger.info("Amend a local manifest.")
     cli_logger.info("")

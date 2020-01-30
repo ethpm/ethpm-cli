@@ -44,7 +44,7 @@ The most comprehensive option for generating a manifest is the manifest wizard. 
 
 .. code-block:: shell
 
-   ethpm create manifest-wizard --project-dir
+   ethpm create wizard --project-dir
 
 Basic Manifest
 ~~~~~~~~~~~~~~

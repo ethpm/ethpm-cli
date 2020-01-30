@@ -3,37 +3,38 @@ import shutil
 import pexpect
 
 from ethpm_cli._utils.filesystem import check_dir_trees_equal
-from ethpm_cli.constants import ETHPM_CLI_VERSION, ETHPM_PACKAGES_DIR
+from ethpm_cli.constants import ETHPM_PACKAGES_DIR
+from ethpm_cli.main import ENTRY_DESCRIPTION
 
 
 def test_ethpm_list(test_assets_dir):
     ethpm_dir = test_assets_dir / "multiple" / ETHPM_PACKAGES_DIR
     child = pexpect.spawn(f"ethpm list --ethpm-dir {ethpm_dir}")
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect(
-        r"owned==1.0.0 --- \(ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW\)\r\n"
-    )
-    child.expect(
-        r"wallet==1.0.0 --- \(ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1\)\r\n"
-    )
-    child.expect(
-        r"- safe-math-lib==1.0.0 --- \(ipfs://QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm\)\r\n"
-    )
-    child.expect(
-        r"- owned==1.0.0 --- \(ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW\)\r\n"
-    )
+    child.expect("owned")
+    child.expect("1.0.0")
+    child.expect("ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW")
+    child.expect("wallet")
+    child.expect("1.0.0")
+    child.expect("ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1")
+    child.expect("safe-math-lib")
+    child.expect("1.0.0")
+    child.expect("ipfs://QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm")
+    child.expect("owned")
+    child.expect("1.0.0")
+    child.expect("ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW")
 
 
 def test_ethpm_list_with_aliased_package(test_assets_dir):
     ethpm_dir = test_assets_dir / "owned" / "ipfs_uri_alias" / ETHPM_PACKAGES_DIR
     child = pexpect.spawn(f"ethpm list --ethpm-dir {ethpm_dir}")
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect(
-        r"owned \(alias: owned-alias\)==1.0.0 --- "
-        r"\(ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW\)\r\n"
-    )
+    child.expect("owned")
+    child.expect("owned-alias")
+    child.expect("1.0.0")
+    child.expect("ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW")
 
 
 def test_ethpm_uninstall(config, test_assets_dir):
@@ -51,12 +52,12 @@ def test_ethpm_uninstall(config, test_assets_dir):
 
 def test_unsupported_command():
     child = pexpect.spawn("ethpm invalid")
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(
         "ethpm: error: argument command: invalid choice: 'invalid' "
         r"\(choose from 'release', 'auth', 'registry', 'create', 'scrape', "
-        r"'install', 'uninstall', 'list', 'cat'\)\r\n"
+        r"'install', 'update', 'uninstall', 'list', 'cat', 'get', 'activate'\)\r\n"
     )
 
 
@@ -78,7 +79,7 @@ def test_ethpm_uninstall_aliased_package(config, test_assets_dir):
         test_assets_dir / "owned" / "ipfs_uri_alias" / ETHPM_PACKAGES_DIR,
     )
     child = pexpect.spawn(f"ethpm uninstall owned --ethpm-dir {test_ethpm_dir}")
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(r"Found owned installed under the alias\(es\): \('owned-alias',\). ")
     child.expect(
