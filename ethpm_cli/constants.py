@@ -4,11 +4,6 @@ import pkg_resources
 
 from ethpm_cli import CLI_ASSETS_DIR
 
-# COLORS FOR TERMINAL OUTPUT
-COLOR_RESET = "\x1b[0m"
-BLUE_STRING = "\033[01;34m"
-GREEN_STRING = "\033[01;92m"
-
 ETHPM_DIR_ENV_VAR = "ETHPM_CLI_PACKAGES_DIR"
 ETHPM_PACKAGES_DIR = "_ethpm_packages"
 IPFS_ASSETS_DIR = "ipfs"

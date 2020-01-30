@@ -16,14 +16,12 @@ from ethpm.uri import is_ipfs_uri
 
 from ethpm_cli._utils.filesystem import atomic_replace, is_package_installed
 from ethpm_cli._utils.logger import cli_logger
+from ethpm_cli._utils.shellart import bold_blue, bold_green, bold_white
 from ethpm_cli.commands.package import InstalledPackage, Package
 from ethpm_cli.commands.registry import get_active_registry
 from ethpm_cli.config import Config
 from ethpm_cli.constants import (
-    BLUE_STRING,
-    COLOR_RESET,
     ETHPM_PACKAGES_DIR,
-    GREEN_STRING,
     LOCKFILE_NAME,
     REGISTRY_STORE,
     SRC_DIR_NAME,
@@ -73,13 +71,14 @@ class InstalledPackageTree(NamedTuple):
     def format_for_display(self) -> str:
         prefix = "- " * self.depth
         if self.path.name != self.package_name:
-            alias = f" (alias: {self.path.name})"
+            alias = f" (alias: {bold_blue(self.path.name)})"
         else:
             alias = ""
-        blue_package_name = f"{BLUE_STRING}{self.package_name}{COLOR_RESET}"
-        green_version = f"{GREEN_STRING}{self.package_version}{COLOR_RESET}"
-        main_info = f"{prefix}{blue_package_name}{alias}=={green_version}"
-        hash_info = f"({self.content_hash})"
+        main_info = (
+            f"{prefix}{bold_blue(self.package_name)}{alias}"
+            f"=={bold_green(self.package_version)}"
+        )
+        hash_info = f"({bold_white(self.content_hash)})"
         if self.children:
             children = "\n" + "\n".join(
                 (child.format_for_display for child in self.children)

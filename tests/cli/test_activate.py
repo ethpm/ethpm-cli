@@ -1,12 +1,12 @@
 import pexpect
 
-from ethpm_cli.constants import ETHPM_CLI_VERSION
+from ethpm_cli.main import ENTRY_DESCRIPTION
 
 
 def test_activate_with_uninstalled_package(test_assets_dir):
     ethpm_dir = test_assets_dir / "owned" / "ipfs_uri" / "_ethpm_packages"
     child = pexpect.spawn(f"ethpm activate invalid --ethpm-dir {ethpm_dir}", timeout=15)
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(f"Package: invalid not installed in ethPM dir: {ethpm_dir}")
     child.close()
@@ -14,7 +14,7 @@ def test_activate_with_uninstalled_package(test_assets_dir):
 
 def test_activate_with_invalid_uri():
     child = pexpect.spawn(f"ethpm activate http://www.google.com", timeout=15)
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(
         f"http://www.google.com is not a supported URI. The only URIs currently supported "
@@ -29,9 +29,11 @@ def test_activate_locally_installed_pkg_without_contract_types(test_assets_dir):
         f"{test_assets_dir / 'owned' / 'ipfs_uri' / '_ethpm_packages'}",
         timeout=15,
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect("Activating package: owned")
+    child.expect("Activating package")
+    child.expect("owned")
+    child.expect("1.0.0")
     child.expect("No detected contract types.")
     child.expect("No detected deployments.")
     child.close()
@@ -43,9 +45,11 @@ def test_activate_with_aliased_locally_installed_pkg(test_assets_dir):
         f"{test_assets_dir / 'owned' / 'ipfs_uri_alias' / '_ethpm_packages'}",
         timeout=15,
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect("Activating package: owned")
+    child.expect("Activating package")
+    child.expect("owned")
+    child.expect("1.0.0")
     child.expect("No detected contract types.")
     child.expect("No detected deployments.")
     child.close()
@@ -56,14 +60,16 @@ def test_activate_etherscan_uri_with_single_deployment():
         f"ethpm activate etherscan://0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359:1",
         timeout=30,
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect("Activating package: etherscan@1.0.0")
+    child.expect("Activating package")
+    child.expect("etherscan")
+    child.expect("1.0.0")
     child.expect("Insufficient assets to generate factory for DSToken")
     child.expect(
         "Successfully generated 1 contract instance from 1 detected deployment."
     )
-    child.expect("- mainnet_DSToken")
+    child.expect("mainnet_DSToken")
     child.expect("Available Web3 Instances")
     child.expect(
         "Contract instances and web3 instances have not been configured with an account."
@@ -86,19 +92,21 @@ def test_activate_ipfs_uri_with_factories_and_deployments():
         f"ethpm activate ipfs://Qmf5uJd3yChPwxYxHqR1KN2CdXt2pfsAfPzQe8gkNutwT3",
         timeout=30,
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect("Activating package: ethregistrar")
+    child.expect("Activating package")
+    child.expect("ethregistrar")
+    child.expect("1.0.1")
     child.expect(
         "Successfully generated 29 contract factories on mainnet from 29 detected contract types."
     )
-    child.expect("- Address_factory")
-    child.expect("- BaseRegistrar_factory")
+    child.expect("Address_factory")
+    child.expect("BaseRegistrar_factory")
     child.expect("To get a contract factory on a different chain,")
     child.expect(
         "Successfully generated 1 contract instance from 1 detected deployment."
     )
-    child.expect("- mainnet_BaseRegistrarImplementation")
+    child.expect("mainnet_BaseRegistrarImplementation")
     child.expect("Available Web3 Instances")
     child.expect(
         "Contract instances and web3 instances have not been configured with an account."
@@ -122,14 +130,16 @@ def test_activate_github_uri_with_insufficient_contract_types_and_deployments():
         "ethpm/ethpm-cli/git/blobs/9fb9a7ec579932d251967c3c6b57f543c1909788",
         timeout=30,
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect("Activating package: dai")
+    child.expect("Activating package")
+    child.expect("dai")
+    child.expect("1.0.0")
     child.expect("Insufficient assets to generate factory for DSToken.")
     child.expect(
         "Successfully generated 1 contract instance from 1 detected deployment."
     )
-    child.expect("- mainnet_DSToken")
+    child.expect("mainnet_DSToken")
     child.expect("Available Web3 Instances")
     child.expect(
         "Contract instances and web3 instances have not been configured with an account."
@@ -149,14 +159,16 @@ def test_activate_registry_uri_with_contract_types_no_deployments():
         f"ethpm activate erc1319://ens.snakecharmers.eth:1/ens?version=1.0.0",
         timeout=30,
     )
-    child.expect(f"ethPM CLI v{ETHPM_CLI_VERSION}\r\n")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
-    child.expect("Activating package: ens")
+    child.expect("Activating package")
+    child.expect("ens")
+    child.expect("1.0.0")
     child.expect(
         "Successfully generated 10 contract factories on mainnet from 10 detected contract types."
     )
-    child.expect("- Deed_factory")
-    child.expect("- DeedImplementation_factory")
+    child.expect("Deed_factory")
+    child.expect("DeedImplementation_factory")
     child.expect("To get a contract factory on a different chain,")
     child.expect("No detected deployments.")
     child.expect("Available Web3 Instances")

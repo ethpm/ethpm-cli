@@ -1,9 +1,11 @@
 import pexpect
 
+from ethpm_cli.main import ENTRY_DESCRIPTION
+
 
 def test_cat_owned_manifest(tmp_project_dir):
     child = pexpect.spawn(f"ethpm cat {tmp_project_dir / 'owned.json'}", timeout=5)
-    child.expect(f"A command line tool for the Ethereum Package Manager.")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect("Package Name: owned\r\n")
     child.expect("Package Version: 1.0.0\r\n")
@@ -27,7 +29,7 @@ def test_cat_owned_manifest(tmp_project_dir):
 
 def test_cat_dai_manifest(tmp_project_dir):
     child = pexpect.spawn(f"ethpm cat {tmp_project_dir / 'dai.json'}", timeout=5)
-    child.expect(f"A command line tool for the Ethereum Package Manager.")
+    child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect("Package Name: dai\r\n")
     child.expect("Package Version: 1.0.0\r\n")
