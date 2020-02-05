@@ -15,7 +15,7 @@ from ethpm_cli.commands.package import Package
 from ethpm_cli.config import Config, setup_w3
 from ethpm_cli.exceptions import InstallError, UriNotSupportedError
 
-SUPPORTED_SCHEMES = ["http", "https", "ipfs", "etherscan", "erc1319"]
+SUPPORTED_SCHEMES = ["http", "https", "ipfs", "etherscan", "erc1319", "ethpm"]
 
 SUPPORTED_GENESIS_HASHES = {
     "0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3": (
