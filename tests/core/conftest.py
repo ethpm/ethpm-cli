@@ -14,6 +14,6 @@ def owned_pkg_data(test_assets_dir):
         "manifest": json.loads(owned_raw_manifest),
         "ipfs_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
         "content_hash": "QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
-        "registry_uri": "erc1319://0x1457890158DECD360e6d4d979edBcDD59c35feeB:1/owned?version=1.0.0",  # noqa: E501
+        "registry_uri": "erc1319://0x1457890158DECD360e6d4d979edBcDD59c35feeB:1/owned@1.0.0",
         "registry_address": "0x1457890158DECD360e6d4d979edBcDD59c35feeB",
     }

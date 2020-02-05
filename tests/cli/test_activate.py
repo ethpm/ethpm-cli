@@ -156,8 +156,7 @@ def test_activate_github_uri_with_insufficient_contract_types_and_deployments():
 
 def test_activate_registry_uri_with_contract_types_no_deployments():
     child = pexpect.spawn(
-        f"ethpm activate erc1319://ens.snakecharmers.eth:1/ens?version=1.0.0",
-        timeout=30,
+        f"ethpm activate erc1319://ens.snakecharmers.eth:1/ens@1.0.0", timeout=30,
     )
     child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
