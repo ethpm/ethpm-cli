@@ -76,22 +76,27 @@ def get_ethpm_birth_block(
     """
     version_release_date = datetime.fromtimestamp(target_timestamp)
     from_date = datetime.fromtimestamp(w3.eth.getBlock(from_block)["timestamp"])
-    delta = version_release_date - from_date
+    to_date = datetime.fromtimestamp(w3.eth.getBlock(to_block)["timestamp"])
 
-    if delta.days <= 0 and from_date < version_release_date:
-        while (
-            w3.eth.getBlock(from_block)["timestamp"] < version_release_date.timestamp()
-        ):
+    delta_start = version_release_date - from_date
+    delta_end = version_release_date - to_date
+
+    if delta_start.days < abs(delta_end.days):
+        closest_block_date = from_date
+        while closest_block_date < version_release_date:
             from_block += 1
+            closest_block_date = datetime.fromtimestamp(
+                w3.eth.getBlock(from_block)["timestamp"]
+            )
         return from_block - 1
-
-    elif from_date < version_release_date:
-        updated_block = int((from_block + to_block) / 2)
-        return get_ethpm_birth_block(w3, updated_block, to_block, target_timestamp)
-
     else:
-        updated_block = from_block - int(to_block - from_block)
-        return get_ethpm_birth_block(w3, updated_block, from_block, target_timestamp)
+        closest_block_date = to_date
+        while version_release_date < closest_block_date:
+            to_block -= 1
+            closest_block_date = datetime.fromtimestamp(
+                w3.eth.getBlock(to_block)["timestamp"]
+            )
+        return to_block + 1
 
 
 def block_range_needs_scraping(
