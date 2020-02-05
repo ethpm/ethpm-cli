@@ -44,7 +44,7 @@ def wallet_pkg(config):
         ),
         (
             Namespace(
-                uri="erc1319://0x1457890158DECD360e6d4d979edBcDD59c35feeB:1/owned?version=1.0.0"
+                uri="erc1319://0x1457890158DECD360e6d4d979edBcDD59c35feeB:1/owned@1.0.0"
             ),
             "owned",
             "registry_uri",
@@ -65,7 +65,7 @@ def test_install_package(args, pkg_name, install_type, config, test_assets_dir):
 
 
 def test_install_package_with_ens_in_registry_uri(config):
-    uri = Namespace(uri="erc1319://ens.snakecharmers.eth:1/ens?version=1.0.0")
+    uri = Namespace(uri="erc1319://ens.snakecharmers.eth:1/ens@1.0.0")
     pkg = Package(uri, config.ipfs_backend)
     install_package(pkg, config)
 
