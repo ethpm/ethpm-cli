@@ -1,9 +1,12 @@
 import argparse
+import json
 from pathlib import Path
 
+from eth_typing import URI
 from eth_utils import humanize_hash
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 
+from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import compile_contracts, generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
@@ -117,13 +120,32 @@ ethpm_parser = parser.add_subparsers(help="CLI commands", dest="command")
 #
 
 
-# todo: extend to pin & release a local manifest
 def release_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
-    release_package(args.package_name, args.package_version, args.manifest_uri, config)
+
+    manifest_uri = args.manifest_uri
+
+    package_name = args.package_name
+    package_version = args.package_version
+
+    if args.manifest_path:
+        manifest_output = json.loads(args.manifest_path.read_text())
+        package_name = manifest_output["package_name"]
+        package_version = manifest_output["version"]
+
+        ipfs_backend = get_ipfs_backend()
+        ipfs_data = ipfs_backend.pin_assets(args.manifest_path)
+
+        manifest_uri = URI(f"ipfs://{ipfs_data[0]['Hash']}")
+
+        cli_logger.info(
+            f"Retrieving manifest info from local file @ {args.manifest_path} "
+        )
+
+    release_package(package_name, package_version, manifest_uri, config)
     active_registry = get_active_registry(config.xdg_ethpmcli_root / REGISTRY_STORE)
     cli_logger.info(
-        f"{args.package_name} v{args.package_version} @ {args.manifest_uri} "
+        f"{package_name} v{package_version} @ {manifest_uri} "
         f"released to registry @ {active_registry.uri}."
     )
 
@@ -151,6 +173,13 @@ release_parser.add_argument(
     action="store",
     type=str,
     help="Content addressed URI at which the manifest for released package is located.",
+)
+release_parser.add_argument(
+    "--manifest-path",
+    dest="manifest_path",
+    action="store",
+    type=Path,
+    help="Local path to target manifest used for release.",
 )
 add_keyfile_password_arg_to_parser(release_parser)
 release_parser.set_defaults(func=release_cmd)
