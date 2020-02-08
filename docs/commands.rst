@@ -12,6 +12,17 @@ A command-line tool to help manage ethPM packages and registries.
    - Things may be ridiculously slow or not work at all
 
 
+ethpm activate
+--------------
+
+Command to help activate packages in your terminal.
+
+.. argparse::
+   :ref: ethpm_cli.parser.parser
+   :prog: ethpm
+   :path: activate
+
+
 ethpm create
 ------------
 
@@ -43,6 +54,17 @@ List all installed ethPM packages in a local ``_ethpm_packages`` directory.
    :ref: ethpm_cli.parser.parser
    :prog: ethpm
    :path: list
+
+
+ethpm update
+------------
+
+Update the version of an installed ethPM package from a local ``_ethpm_packages`` directory. Since ethPM does not enforce semver - this command will look for all available versions of the package on the active registry, and prompt you to choose the version to install.
+
+.. argparse::
+   :ref: ethpm_cli.parser.parser
+   :prog: ethpm
+   :path: update
 
 
 ethpm uninstall
