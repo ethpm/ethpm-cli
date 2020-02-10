@@ -76,34 +76,16 @@ def get_ethpm_birth_block(
     """
     version_release_date = datetime.fromtimestamp(target_timestamp)
 
-    mid_block = int((from_block + to_block) / 2)
-
-    from_date = datetime.fromtimestamp(w3.eth.getBlock(from_block)["timestamp"])
-    to_date = datetime.fromtimestamp(w3.eth.getBlock(to_block)["timestamp"])
-    mid_date = datetime.fromtimestamp(w3.eth.getBlock(mid_block)["timestamp"])
-
-    delta_start = version_release_date - from_date
-    delta_end = version_release_date - to_date
-    delta_mid = version_release_date - mid_date
-
-    min_delta = min(delta_mid.days, delta_start.days, abs(delta_end.days))
-
-    if min_delta == abs(delta_end.days):
-        while to_date < version_release_date:
-            to_block -= 1
-            to_date = datetime.fromtimestamp(w3.eth.getBlock(to_block)["timestamp"])
-        return to_block + 1
-
-    elif min_delta == delta_mid.days:
-        while mid_date < version_release_date:
-            mid_block += 1
-            mid_date = datetime.fromtimestamp(w3.eth.getBlock(mid_block)["timestamp"])
-        return mid_block - 1
-    else:
-        while version_release_date < mid_date:
-            mid_block -= 1
-            mid_date = datetime.fromtimestamp(w3.eth.getBlock(mid_block)["timestamp"])
-        return mid_block + 1
+    while from_block < to_block:
+        mid = (from_block + to_block) // 2
+        target = datetime.fromtimestamp(w3.eth.getBlock(mid)["timestamp"])
+        if target > version_release_date:
+            to_block = mid
+        elif target < version_release_date:
+            from_block = mid + 1
+        else:
+            return mid - 1
+    return -1
 
 
 def block_range_needs_scraping(

@@ -166,6 +166,8 @@ def test_get_ethpm_birth_block(w3, interval):
     time_travel(w3, interval)
     actual = get_ethpm_birth_block(w3, 0, w3.eth.blockNumber, latest_block.timestamp)
     assert actual == latest_block.number - 1
+    # Not found
+    assert get_ethpm_birth_block(w3, 0, 0, latest_block.timestamp) == -1
 
 
 def time_travel(w3, hours):
