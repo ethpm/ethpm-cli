@@ -139,7 +139,7 @@ def test_manifest_builder_amend(tmp_project_dir, test_assets_dir):
 
 def test_basic_manifest_builder(tmp_project_dir):
     child = pexpect.spawn(
-        f"ethpm create basic-manifest --project-dir {tmp_project_dir} "
+        f"ethpm create basic --project-dir {tmp_project_dir} "
         "--package-name wallet --package-version 1.0.0"
     )
     child.expect(ENTRY_DESCRIPTION)
