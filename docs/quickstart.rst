@@ -50,7 +50,7 @@ Test that your keyfile has been properly stored.
    ethpm auth
    > Keyfile stored for address: 0x123abc....................
 
-You can now use your keyfile's password as the flag ``--keyfile-password`` for any ethPM command, and it will be used to automatically sign any transactions.
+You can now use your keyfile's password with the flag ``--keyfile-password`` for any ethPM command, and it will be used to automatically sign any transactions.
 
 
 Activate
@@ -72,7 +72,7 @@ To instantly interact with any verified contract on Etherscan, use an `Etherscan
 
 .. code-block:: bash
 
-   ethpm activate etherscan://0x123c0ntractaddr3ss890:1
+   ethpm activate etherscan://0x123v3r1f13dc0ntractaddr3ss890:1
 
 
 Install
@@ -109,7 +109,7 @@ If you have the Solidity compiler installed on your machine, the best way to get
     - xxx.sol
     - yyy.sol
 
-Pass in a path to your project directory under the ``--project-dir`` flag. The wizard will attempt to compile these contracts using the available ``solc`` on your machine. Then it will prompt you for package details.
+Pass in a path to your project directory under the ``--project-dir`` flag. The wizard will attempt to compile these contracts using the available ``solc`` on your machine. The available ``solc`` version on your machine must be sufficient for compiling the project contracts. After compiliation, the CLI will start the manifest wizard for complete package details.
 
 .. code-block:: bash
 
@@ -124,7 +124,6 @@ ethPM packages are recorded on-chain using package registries. There is no centr
 .. code-block:: bash
 
    ethpm registry list
-
 
 .. code-block:: bash
 
