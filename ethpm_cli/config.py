@@ -16,7 +16,7 @@ from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.ipfs import get_ipfs_backend
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
-from ethpm_cli.commands.auth import get_authorized_private_key, import_keyfile
+from ethpm_cli.commands.auth import get_authorized_private_key
 from ethpm_cli.constants import (
     ETHPM_DIR_ENV_VAR,
     ETHPM_PACKAGES_DIR,
@@ -63,16 +63,14 @@ class Config:
         else:
             chain_id = 1
 
-        if "keyfile_path" in args and args.keyfile_path:
-            import_keyfile(args.keyfile_path)
-
+        # setup auth
         if "keyfile_password" in args and args.keyfile_password:
             self.private_key = get_authorized_private_key(args.keyfile_password)
         self.w3 = setup_w3(chain_id, self.private_key)
 
         # Setup xdg ethpm dir
         self.xdg_ethpmcli_root = get_xdg_ethpmcli_root()
-        setup_xdg_ethpm_dir(self.xdg_ethpmcli_root, self.w3)
+        validate_xdg_ethpm_dir(self.xdg_ethpmcli_root, self.w3)
 
         # Setup projects dir
         if "project_dir" in args and args.project_dir:
@@ -114,7 +112,7 @@ def setup_w3(chain_id: int, private_key: str = None) -> Web3:
     return w3
 
 
-def setup_xdg_ethpm_dir(xdg_ethpmcli_root: Path, w3: Web3) -> None:
+def validate_xdg_ethpm_dir(xdg_ethpmcli_root: Path, w3: Web3) -> None:
     if not xdg_ethpmcli_root.is_dir():
         initialize_xdg_ethpm_dir(xdg_ethpmcli_root, w3)
 

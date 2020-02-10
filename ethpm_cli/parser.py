@@ -8,7 +8,12 @@ from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import compile_contracts, generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.commands.activate import activate_package
-from ethpm_cli.commands.auth import get_authorized_address
+from ethpm_cli.commands.auth import (
+    get_authorized_address,
+    init_keyfile,
+    link_keyfile,
+    unlink_keyfile,
+)
 from ethpm_cli.commands.get import get_manifest
 from ethpm_cli.commands.install import (
     install_package,
@@ -118,7 +123,7 @@ ethpm_parser = parser.add_subparsers(help="CLI commands", dest="command")
 
 
 # todo: extend to pin & release a local manifest
-def release_cmd(args: argparse.Namespace) -> None:
+def release_action(args: argparse.Namespace) -> None:
     config = Config(args)
     release_package(args.package_name, args.package_version, args.manifest_uri, config)
     active_registry = get_active_registry(config.xdg_ethpmcli_root / REGISTRY_STORE)
@@ -153,7 +158,7 @@ release_parser.add_argument(
     help="Content addressed URI at which the manifest for released package is located.",
 )
 add_keyfile_password_arg_to_parser(release_parser)
-release_parser.set_defaults(func=release_cmd)
+release_parser.set_defaults(func=release_action)
 
 
 #
@@ -165,19 +170,58 @@ def auth_action(args: argparse.Namespace) -> None:
     Config(args)
     try:
         authorized_address = get_authorized_address()
-        cli_logger.info(f"Keyfile stored for address: 0x{authorized_address}.")
+        cli_logger.info(f"Keyfile stored for address: {authorized_address}.")
     except AuthorizationError:
         cli_logger.info(
-            "No valid keyfile found. Use `ethpm auth --keyfile-path <path_to_keyfile>` "
-            "to set your keyfile for use with ethPM CLI."
+            "No valid keyfile found. "
+            "If you already have a keyfile, use `ethpm auth link --keyfile-path [path_to_keyfile]` "
+            "to set your keyfile for use with ethPM CLI. \n"
+            "To generate an encrypted keyfile, use `ethpm auth init`"
         )
+
+
+def auth_link_action(args: argparse.Namespace) -> None:
+    Config(args)
+    if "keyfile_path" not in args or not args.keyfile_path:
+        cli_logger.info("Invalid --keyfile-path flag")
+    else:
+        link_keyfile(args.keyfile_path)
+
+
+def auth_unlink_action(args: argparse.Namespace) -> None:
+    Config(args)
+    unlink_keyfile()
+
+
+def auth_init_action(args: argparse.Namespace) -> None:
+    Config(args)
+    init_keyfile()
 
 
 auth_parser = ethpm_parser.add_parser(
     "auth", help="Authorization for automatically signing txs."
 )
-add_keyfile_path_arg_to_parser(auth_parser)
 auth_parser.set_defaults(func=auth_action)
+auth_subparsers = auth_parser.add_subparsers(dest="auth")
+
+# ethpm auth link
+auth_link_parser = auth_subparsers.add_parser(
+    "link", help="Link an encrypted keyfile.",
+)
+add_keyfile_path_arg_to_parser(auth_link_parser)
+auth_link_parser.set_defaults(func=auth_link_action)
+
+# ethpm auth unlink
+auth_unlink_parser = auth_subparsers.add_parser(
+    "unlink", help="Delete the encrypted keyfile used for private key auth.",
+)
+auth_unlink_parser.set_defaults(func=auth_unlink_action)
+
+# ethpm auth init
+auth_init_parser = auth_subparsers.add_parser(
+    "init", help="Initialize and save an encrypted keyfile for private key auth.",
+)
+auth_init_parser.set_defaults(func=auth_init_action)
 
 
 #
@@ -185,12 +229,12 @@ auth_parser.set_defaults(func=auth_action)
 #
 
 
-def registry_list_cmd(args: argparse.Namespace) -> None:
+def registry_list_action(args: argparse.Namespace) -> None:
     config = Config(args)
     list_registries(config)
 
 
-def registry_add_cmd(args: argparse.Namespace) -> None:
+def registry_add_action(args: argparse.Namespace) -> None:
     config = Config(args)
     add_registry(args.uri, args.alias, config)
     if args.alias:
@@ -202,13 +246,13 @@ def registry_add_cmd(args: argparse.Namespace) -> None:
     cli_logger.info(log_msg)
 
 
-def registry_activate_cmd(args: argparse.Namespace) -> None:
+def registry_activate_action(args: argparse.Namespace) -> None:
     config = Config(args)
     activate_registry(args.uri_or_alias, config)
     cli_logger.info(f"Registry @ {args.uri_or_alias} activated.")
 
 
-def registry_deploy_cmd(args: argparse.Namespace) -> None:
+def registry_deploy_action(args: argparse.Namespace) -> None:
     config = Config(args)
     registry_address = deploy_registry(config, args.alias)
     chain_name = SUPPORTED_CHAIN_IDS[config.w3.eth.chainId]
@@ -221,7 +265,7 @@ def registry_deploy_cmd(args: argparse.Namespace) -> None:
     )
 
 
-def registry_remove_cmd(args: argparse.Namespace) -> None:
+def registry_remove_action(args: argparse.Namespace) -> None:
     config = Config(args)
     remove_registry(args.uri_or_alias, config)
     cli_logger.info(f"Registry: {args.uri_or_alias} removed from registry store.")
@@ -238,13 +282,13 @@ registry_deploy_parser = registry_subparsers.add_parser(
 add_alias_arg_to_parser(registry_deploy_parser)
 add_chain_id_arg_to_parser(registry_deploy_parser)
 add_keyfile_password_arg_to_parser(registry_deploy_parser)
-registry_deploy_parser.set_defaults(func=registry_deploy_cmd)
+registry_deploy_parser.set_defaults(func=registry_deploy_action)
 
 # ethpm registry list
 registry_list_parser = registry_subparsers.add_parser(
     "list", help="List all of the available registries in registry store."
 )
-registry_list_parser.set_defaults(func=registry_list_cmd)
+registry_list_parser.set_defaults(func=registry_list_action)
 
 # ethpm registry add
 registry_add_parser = registry_subparsers.add_parser(
@@ -254,7 +298,7 @@ registry_add_parser.add_argument(
     "uri", action="store", type=str, help="Registry URI for target registry."
 )
 add_alias_arg_to_parser(registry_add_parser)
-registry_add_parser.set_defaults(func=registry_add_cmd)
+registry_add_parser.set_defaults(func=registry_add_action)
 
 # ethpm registry remove
 registry_remove_parser = registry_subparsers.add_parser(
@@ -263,7 +307,7 @@ registry_remove_parser = registry_subparsers.add_parser(
 registry_remove_parser.add_argument(
     "uri_or_alias", type=str, help="Registry URI or alias for registry to remove."
 )
-registry_remove_parser.set_defaults(func=registry_remove_cmd)
+registry_remove_parser.set_defaults(func=registry_remove_action)
 
 # ethpm registry activate
 registry_activate_parser = registry_subparsers.add_parser(
@@ -276,7 +320,7 @@ registry_activate_parser.add_argument(
     type=str,
     help="Registry URI or alias for target registry.",
 )
-registry_activate_parser.set_defaults(func=registry_activate_cmd)
+registry_activate_parser.set_defaults(func=registry_activate_action)
 
 
 #
@@ -284,13 +328,13 @@ registry_activate_parser.set_defaults(func=registry_activate_cmd)
 #
 
 
-def create_solc_input_cmd(args: argparse.Namespace) -> None:
+def create_solc_input_action(args: argparse.Namespace) -> None:
     config = Config(args)
     validate_config_has_project_dir_attr(config)
     generate_solc_input(args.project_dir / "contracts")
 
 
-def create_wizard_cmd(args: argparse.Namespace) -> None:
+def create_wizard_action(args: argparse.Namespace) -> None:
     config = Config(args)
     if config.project_dir and not config.manifest_path:
         if not (config.project_dir / SOLC_OUTPUT).exists():
@@ -357,7 +401,7 @@ create_solc_input_parser = create_subparsers.add_parser(
     help="Generate solidity compiler standard json input for given project directory.",
 )
 add_project_dir_arg_to_parser(create_solc_input_parser)
-create_solc_input_parser.set_defaults(func=create_solc_input_cmd)
+create_solc_input_parser.set_defaults(func=create_solc_input_action)
 
 # ethpm create wizard
 create_wizard_parser = create_subparsers.add_parser(
@@ -373,7 +417,7 @@ create_wizard_parser.add_argument(
     help="Path of target manifest to amend.",
 )
 add_project_dir_arg_to_parser(create_wizard_parser)
-create_wizard_parser.set_defaults(func=create_wizard_cmd)
+create_wizard_parser.set_defaults(func=create_wizard_action)
 
 
 #

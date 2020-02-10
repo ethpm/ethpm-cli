@@ -11,6 +11,7 @@ from ethpm.validation.manifest import validate_manifest_against_schema
 from ethpm.validation.package import validate_package_name
 from web3 import Web3
 
+from ethpm_cli._utils.input import parse_bool_flag
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.shellart import bold_blue
 from ethpm_cli._utils.solc import (
@@ -448,18 +449,6 @@ def gen_links() -> Optional[Callable[..., Manifest]]:
         actual_kwargs = {k: v for k, v in link_kwargs.items() if v}
         return b.links(**actual_kwargs)
     return None
-
-
-def parse_bool_flag(question: str) -> bool:
-    while True:
-        response = input(f"{question} (y/n) ")
-        if response.lower() == "y":
-            return True
-        elif response.lower() == "n":
-            return False
-        else:
-            cli_logger.info(f"Invalid response: {response}.")
-            continue
 
 
 def write_manifest_to_disk(manifest: Manifest, project_dir: Path) -> None:
