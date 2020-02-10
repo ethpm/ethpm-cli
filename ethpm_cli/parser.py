@@ -306,7 +306,7 @@ def create_wizard_cmd(args: argparse.Namespace) -> None:
         )
 
 
-def create_basic_manifest_cmd(args: argparse.Namespace) -> None:
+def create_basic_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
     validate_config_has_project_dir_attr(config)
     validate_solc_output(args.project_dir)
@@ -327,29 +327,29 @@ create_parser = ethpm_parser.add_parser(
 )
 create_subparsers = create_parser.add_subparsers(dest="create")
 
-# ethpm create basic-manifest
-create_basic_manifest_parser = create_subparsers.add_parser(
-    "basic-manifest",
+# ethpm create basic
+create_basic_parser = create_subparsers.add_parser(
+    "basic",
     help="Automatically generate a basic manifest for given projects dir. "
     "The generated manifest will package up all available sources and contract types "
     "available in the solidity compiler output found in given project directory.",
 )
-create_basic_manifest_parser.add_argument(
+create_basic_parser.add_argument(
     "--package-name",
     dest="package_name",
     action="store",
     type=str,
-    help="Package name for generating manifest with `basic-manifest` command.",
+    help="Package name for generating manifest with `basic` command.",
 )
-create_basic_manifest_parser.add_argument(
+create_basic_parser.add_argument(
     "--package-version",
     dest="package_version",
     action="store",
     type=str,
-    help="Package version for generating manifest with `basic-manifest` command.",
+    help="Package version for generating manifest with `basic` command.",
 )
-add_project_dir_arg_to_parser(create_basic_manifest_parser)
-create_basic_manifest_parser.set_defaults(func=create_basic_manifest_cmd)
+add_project_dir_arg_to_parser(create_basic_parser)
+create_basic_parser.set_defaults(func=create_basic_cmd)
 
 # ethpm create solc-input
 create_solc_input_parser = create_subparsers.add_parser(
