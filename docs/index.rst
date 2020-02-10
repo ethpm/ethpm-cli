@@ -11,9 +11,10 @@ Contents
 .. toctree::
     :maxdepth: 3
 
+    quickstart
     commands
-    create
     installation
+    create
     disk
     uris
     releases
