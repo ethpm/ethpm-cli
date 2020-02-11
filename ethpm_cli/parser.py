@@ -1,12 +1,11 @@
 import argparse
-import json
 from pathlib import Path
+from typing import Union
 
-from eth_typing import URI
 from eth_utils import humanize_hash
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 
-from ethpm_cli._utils.ipfs import get_ipfs_backend
+from ethpm_cli._utils.ipfs import pin_local_manifest
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.solc import compile_contracts, generate_solc_input
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
@@ -111,6 +110,34 @@ def add_alias_arg_to_parser(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_manifest_path_to_parser(
+    parser: Union[argparse.ArgumentParser, argparse._MutuallyExclusiveGroup],
+    help_msg: str,
+) -> None:
+    parser.add_argument(
+        "--manifest-path",
+        dest="manifest_path",
+        action="store",
+        type=Path,
+        help=help_msg,
+    )
+
+
+def add_package_name_and_package_version_to_parser(
+    parser: argparse.ArgumentParser, name_msg: str, version_msg: str,
+) -> None:
+    parser.add_argument(
+        "--package-name", dest="package_name", action="store", type=str, help=name_msg
+    )
+    parser.add_argument(
+        "--package-version",
+        dest="package_version",
+        action="store",
+        type=str,
+        help=version_msg,
+    )
+
+
 parser = argparse.ArgumentParser(description="ethpm-cli")
 ethpm_parser = parser.add_subparsers(help="CLI commands", dest="command")
 
@@ -129,15 +156,9 @@ def release_cmd(args: argparse.Namespace) -> None:
     package_version = args.package_version
 
     if args.manifest_path:
-        manifest_output = json.loads(args.manifest_path.read_text())
-        package_name = manifest_output["package_name"]
-        package_version = manifest_output["version"]
-
-        ipfs_backend = get_ipfs_backend()
-        ipfs_data = ipfs_backend.pin_assets(args.manifest_path)
-
-        manifest_uri = URI(f"ipfs://{ipfs_data[0]['Hash']}")
-
+        (package_name, package_version, manifest_uri) = pin_local_manifest(
+            args.manifest_path
+        )
         cli_logger.info(
             f"Retrieving manifest info from local file @ {args.manifest_path} "
         )
@@ -154,32 +175,20 @@ release_parser = ethpm_parser.add_parser(
     "release", help="Release a package on the active registry."
 )
 release_parser.add_argument(
-    "--package-name",
-    dest="package_name",
-    action="store",
-    type=str,
-    help="Package name of package you want to release. Must match `package_name` in manifest.",
-)
-release_parser.add_argument(
-    "--package-version",
-    dest="package_version",
-    action="store",
-    type=str,
-    help="Version of package you want to release. Must match the `version` field in manifest.",
-)
-release_parser.add_argument(
     "--manifest-uri",
     dest="manifest_uri",
     action="store",
     type=str,
     help="Content addressed URI at which the manifest for released package is located.",
 )
-release_parser.add_argument(
-    "--manifest-path",
-    dest="manifest_path",
-    action="store",
-    type=Path,
-    help="Local path to target manifest used for release.",
+release_group = release_parser.add_mutually_exclusive_group()
+add_manifest_path_to_parser(
+    release_group, "Local path to target manifest used for release.",
+)
+add_package_name_and_package_version_to_parser(
+    release_parser,
+    "Package name of package you want to release. Must match `package_name` in manifest.",
+    "Version of package you want to release. Must match the `version` field in manifest.",
 )
 add_keyfile_password_arg_to_parser(release_parser)
 release_parser.set_defaults(func=release_cmd)
@@ -363,19 +372,10 @@ create_basic_parser = create_subparsers.add_parser(
     "The generated manifest will package up all available sources and contract types "
     "available in the solidity compiler output found in given project directory.",
 )
-create_basic_parser.add_argument(
-    "--package-name",
-    dest="package_name",
-    action="store",
-    type=str,
-    help="Package name for generating manifest with `basic` command.",
-)
-create_basic_parser.add_argument(
-    "--package-version",
-    dest="package_version",
-    action="store",
-    type=str,
-    help="Package version for generating manifest with `basic` command.",
+add_package_name_and_package_version_to_parser(
+    create_basic_parser,
+    "Package name for generating manifest with `basic-manifest` command.",
+    "Package version for generating manifest with `basic-manifest` command.",
 )
 add_project_dir_arg_to_parser(create_basic_parser)
 create_basic_parser.set_defaults(func=create_basic_cmd)
@@ -394,12 +394,8 @@ create_wizard_parser = create_subparsers.add_parser(
     help="Start CLI wizard for building custom manifests from the "
     "solidity compiler output found in given project directory.",
 )
-create_wizard_parser.add_argument(
-    "--manifest-path",
-    dest="manifest_path",
-    action="store",
-    type=Path,
-    help="Path of target manifest to amend.",
+add_manifest_path_to_parser(
+    create_wizard_parser, "Path of target manifest to amend.",
 )
 add_project_dir_arg_to_parser(create_wizard_parser)
 create_wizard_parser.set_defaults(func=create_wizard_cmd)
@@ -482,24 +478,15 @@ install_parser.add_argument(
     help="IPFS / Github / Etherscan / Registry URI of target package.",
 )
 install_parser.add_argument(
-    "--package-name",
-    dest="package_name",
-    action="store",
-    type=str,
-    help="Package name to use when installing a package from etherscan URIs.",
-)
-install_parser.add_argument(
-    "--package-version",
-    dest="package_version",
-    action="store",
-    type=str,
-    help="Package version to use when installing a package from etherscan URIs.",
-)
-install_parser.add_argument(
     "--local-ipfs",
     dest="local_ipfs",
     action="store_true",
     help="Flag to use locally running IPFS node rather than defualting to Infura.",
+)
+add_package_name_and_package_version_to_parser(
+    install_parser,
+    "Package name to use when installing a package from etherscan URIs.",
+    "Package version to use when installing a package from etherscan URIs.",
 )
 add_alias_arg_to_parser(install_parser)
 add_ethpm_dir_arg_to_parser(install_parser)
