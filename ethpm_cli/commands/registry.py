@@ -18,8 +18,8 @@ from ethpm_cli.exceptions import AmbigiousFileSystem, AuthorizationError, Instal
 
 class StoredRegistry(NamedTuple):
     uri: URI
+    alias: str
     active: bool = False
-    alias: Optional[str] = None
     ens: Optional[str] = None
 
     @property
@@ -59,7 +59,7 @@ def list_registries(config: Config) -> None:
         )
     registry_store = json.loads((config.xdg_ethpmcli_root / REGISTRY_STORE).read_text())
     installed_registries = [
-        StoredRegistry(reg, data["active"], data["alias"], data["ens"])
+        StoredRegistry(reg, data["alias"], data["active"], data["ens"])
         for reg, data in registry_store.items()
     ]
     for registry in installed_registries:
@@ -138,7 +138,7 @@ def resolve_uri_and_alias(
 def get_all_registries(store_path: Path) -> Iterable[StoredRegistry]:
     store_data = json.loads(store_path.read_text())
     for registry_uri, data in store_data.items():
-        yield StoredRegistry(registry_uri, data["active"], data["alias"], data["ens"])
+        yield StoredRegistry(registry_uri, data["alias"], data["active"], data["ens"])
 
 
 def get_active_registry(store_path: Path) -> StoredRegistry:

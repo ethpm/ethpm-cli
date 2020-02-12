@@ -3,7 +3,6 @@ import tempfile
 from typing import Any, Dict
 
 import eth_keyfile
-from eth_typing import Address
 from eth_utils import to_bytes
 
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
@@ -44,7 +43,7 @@ def validate_keyfile(keyfile_path: Path) -> None:
         )
 
 
-def get_authorized_address() -> Address:
+def get_authorized_address() -> str:
     """
     Returns the address associated with stored keyfile. No password required.
     """

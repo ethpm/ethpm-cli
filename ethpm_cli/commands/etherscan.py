@@ -71,7 +71,7 @@ def make_etherscan_request(contract_addr: str, network: str) -> Dict[str, Any]:
     etherscan_req_uri = f"https://api{network}.etherscan.io/api"
     response = requests.get(  # type: ignore
         etherscan_req_uri,
-        params=[
+        params=[  # type: ignore
             ("module", "contract"),
             ("action", "getsourcecode"),
             ("address", contract_addr),

@@ -484,7 +484,7 @@ def cat_manifest(manifest_path: Path) -> None:
     pretty_print_raw_manifest(raw_manifest)
 
 
-def pretty_print_raw_manifest(raw_manifest) -> None:
+def pretty_print_raw_manifest(raw_manifest: Manifest) -> None:
     manifest = ManifestDisplay(raw_manifest)
     cli_logger.info(f"Package Name: {manifest.package_name}")
     cli_logger.info(f"Package Version: {manifest.package_version}")
