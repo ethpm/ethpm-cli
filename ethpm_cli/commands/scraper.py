@@ -85,7 +85,11 @@ def get_ethpm_birth_block(
             from_block = mid + 1
         else:
             return mid - 1
-    return -1
+
+    raise BlockNotFoundError(
+        f"Cannot find closest block to timestamp: {target_timestamp} "
+        f"in range given {from_block} - {to_block}."
+    )
 
 
 def block_range_needs_scraping(
