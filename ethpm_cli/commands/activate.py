@@ -1,12 +1,16 @@
 from argparse import Namespace
 import json
+from typing import Any, Dict, Iterable, Tuple
 from urllib import parse
 
 from IPython import embed
+from eth_typing import URI
 from eth_utils import to_dict, to_tuple
 from ethpm import Package as ethpmPackage
 from ethpm._utils.chains import parse_BIP122_uri
 from ethpm.exceptions import InsufficientAssetsError
+from web3 import Web3
+from web3.contract import Contract
 
 from ethpm_cli._utils.filesystem import is_package_installed
 from ethpm_cli._utils.logger import cli_logger
@@ -38,7 +42,7 @@ LIGHTNING_EMOJI = "\U000026A1"
 PACKAGE_EMOJI = "\U0001F4E6"
 
 
-def pluralize(count, word):
+def pluralize(count: int, word: str) -> str:
     if count > 1:
         if word[-1:] == "y":
             return f"{word[:-1]}ies"
@@ -60,8 +64,8 @@ def activate_package(args: Namespace, config: Config) -> None:
             args.package_name = "etherscan"  # for etherscan URIs
             args.package_version = "1.0.0"  # for etherscan URIs
             args.uri = args.package_or_uri
-            pkg = Package(args, config.ipfs_backend)
-            manifest = pkg.manifest
+            cli_pkg = Package(args, config.ipfs_backend)
+            manifest = cli_pkg.manifest
         except UriNotSupportedError:
             raise UriNotSupportedError(
                 f"{args.package_or_uri} is not a supported URI. The only URIs currently supported "
@@ -162,14 +166,14 @@ def activate_package(args: Namespace, config: Config) -> None:
     )
 
 
-def get_factory(target_factory, target_w3):
+def get_factory(target_factory: Contract, target_w3: Web3) -> Contract:
     return target_w3.eth.contract(
         abi=target_factory.abi, bytecode=target_factory.bytecode
     )
 
 
 @to_dict
-def get_w3s(config):
+def get_w3s(config: Config) -> Iterable[Tuple[str, Web3]]:
     all_chain_data = [data for data in SUPPORTED_GENESIS_HASHES.values()]
     for name, chain_id in all_chain_data:
         w3 = setup_w3(chain_id, config.private_key)
@@ -177,13 +181,13 @@ def get_w3s(config):
 
 
 @to_tuple
-def list_keys_for_display(dictionary):
+def list_keys_for_display(dictionary: Dict[str, Any]) -> Iterable[str]:
     for key in dictionary.keys():
         yield f"- {bold_white(key)}\n"
 
 
 @to_dict
-def generate_contract_factories(pkg: ethpmPackage):
+def generate_contract_factories(pkg: ethpmPackage) -> Iterable[Tuple[str, Contract]]:
     for ctype in pkg.contract_types:
         try:
             factory = pkg.get_contract_factory(ctype)
@@ -196,7 +200,9 @@ def generate_contract_factories(pkg: ethpmPackage):
 
 
 @to_dict
-def generate_deployments(pkg: ethpmPackage, config):
+def generate_deployments(
+    pkg: ethpmPackage, config: Config
+) -> Iterable[Tuple[str, Contract]]:
     for chain in pkg.manifest["deployments"]:
         w3, chain_name = get_matching_w3(chain, config)
         new_pkg = pkg.update_w3(w3)
@@ -204,7 +210,7 @@ def generate_deployments(pkg: ethpmPackage, config):
             yield f"{chain_name}_{dep}", new_pkg.deployments.get_instance(dep)
 
 
-def get_matching_w3(chain_uri, config):
+def get_matching_w3(chain_uri: URI, config: Config) -> Tuple[Web3, str]:
     genesis_hash = parse_BIP122_uri(chain_uri)[0]
     chain_data = SUPPORTED_GENESIS_HASHES[genesis_hash]
     web3 = setup_w3(chain_data[1], config.private_key)
