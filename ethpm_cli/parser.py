@@ -123,18 +123,21 @@ def add_manifest_path_to_parser(
     )
 
 
-def add_package_name_and_package_version_to_parser(
-    parser: argparse.ArgumentParser, name_msg: str, version_msg: str,
-) -> None:
+def add_package_name_to_parser(parser: argparse.ArgumentParser, help_msg: str,) -> None:
     parser.add_argument(
-        "--package-name", dest="package_name", action="store", type=str, help=name_msg
+        "--package-name", dest="package_name", action="store", type=str, help=help_msg
     )
+
+
+def add_package_version_to_parser(
+    parser: argparse.ArgumentParser, help_msg: str,
+) -> None:
     parser.add_argument(
         "--package-version",
         dest="package_version",
         action="store",
         type=str,
-        help=version_msg,
+        help=help_msg,
     )
 
 
@@ -159,19 +162,17 @@ def release_cmd(args: argparse.Namespace) -> None:
         )
 
         release_package(package_name, package_version, manifest_uri, config)
-        cli_logger.info(
-            f"{package_name} v{package_version} @ {manifest_uri} "
-        )
+        cli_logger.info(f"{package_name} v{package_version} @ {manifest_uri} ")
     else:
-        release_package(args.package_name, args.package_version, args.manifest_uri, config)
+        release_package(
+            args.package_name, args.package_version, args.manifest_uri, config
+        )
         cli_logger.info(
             f"{args.package_name} v{args.package_version} @ {args.manifest_uri} "
         )
 
     active_registry = get_active_registry(config.xdg_ethpmcli_root / REGISTRY_STORE)
-    cli_logger.info(
-        f"released to registry @ {active_registry.uri}."
-    )
+    cli_logger.info(f"released to registry @ {active_registry.uri}.")
 
 
 release_parser = ethpm_parser.add_parser(
@@ -188,9 +189,12 @@ release_group = release_parser.add_mutually_exclusive_group()
 add_manifest_path_to_parser(
     release_group, "Local path to target manifest used for release.",
 )
-add_package_name_and_package_version_to_parser(
+add_package_name_to_parser(
     release_parser,
     "Package name of package you want to release. Must match `package_name` in manifest.",
+)
+add_package_version_to_parser(
+    release_parser,
     "Version of package you want to release. Must match the `version` field in manifest.",
 )
 add_keyfile_password_arg_to_parser(release_parser)
@@ -375,9 +379,12 @@ create_basic_parser = create_subparsers.add_parser(
     "The generated manifest will package up all available sources and contract types "
     "available in the solidity compiler output found in given project directory.",
 )
-add_package_name_and_package_version_to_parser(
+add_package_name_to_parser(
     create_basic_parser,
     "Package name for generating manifest with `basic-manifest` command.",
+)
+add_package_version_to_parser(
+    create_basic_parser,
     "Package version for generating manifest with `basic-manifest` command.",
 )
 add_project_dir_arg_to_parser(create_basic_parser)
@@ -486,9 +493,12 @@ install_parser.add_argument(
     action="store_true",
     help="Flag to use locally running IPFS node rather than defualting to Infura.",
 )
-add_package_name_and_package_version_to_parser(
+add_package_name_to_parser(
     install_parser,
     "Package name to use when installing a package from etherscan URIs.",
+)
+add_package_version_to_parser(
+    install_parser,
     "Package version to use when installing a package from etherscan URIs.",
 )
 add_alias_arg_to_parser(install_parser)
