@@ -42,7 +42,7 @@ extras_require['dev'] = (
 setup(
     name='ethpm-cli',
     # *IMPORTANT*: Don't manually change the version here. Use `make bump`, as described in readme
-    version='0.1.0-alpha.4',
+    version='0.2.0',
     description="""ethpm-cli: CLI for EthPM""",
     long_description_markdown_filename='README.md',
     author='The Ethereum Foundation',
