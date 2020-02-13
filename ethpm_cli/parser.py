@@ -150,11 +150,6 @@ ethpm_parser = parser.add_subparsers(help="CLI commands", dest="command")
 def release_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
 
-    manifest_uri = args.manifest_uri
-
-    package_name = args.package_name
-    package_version = args.package_version
-
     if args.manifest_path:
         (package_name, package_version, manifest_uri) = pin_local_manifest(
             args.manifest_path
@@ -163,10 +158,18 @@ def release_cmd(args: argparse.Namespace) -> None:
             f"Retrieving manifest info from local file @ {args.manifest_path} "
         )
 
-    release_package(package_name, package_version, manifest_uri, config)
+        release_package(package_name, package_version, manifest_uri, config)
+        cli_logger.info(
+            f"{package_name} v{package_version} @ {manifest_uri} "
+        )
+    else:
+        release_package(args.package_name, args.package_version, args.manifest_uri, config)
+        cli_logger.info(
+            f"{args.package_name} v{args.package_version} @ {args.manifest_uri} "
+        )
+
     active_registry = get_active_registry(config.xdg_ethpmcli_root / REGISTRY_STORE)
     cli_logger.info(
-        f"{package_name} v{package_version} @ {manifest_uri} "
         f"released to registry @ {active_registry.uri}."
     )
 
