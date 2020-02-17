@@ -75,23 +75,21 @@ def get_ethpm_birth_block(
     Returns the closest block found before the target_timestamp
     """
     version_release_date = datetime.fromtimestamp(target_timestamp)
-    from_date = datetime.fromtimestamp(w3.eth.getBlock(from_block)["timestamp"])
-    delta = version_release_date - from_date
 
-    if delta.days <= 0 and from_date < version_release_date:
-        while (
-            w3.eth.getBlock(from_block)["timestamp"] < version_release_date.timestamp()
-        ):
-            from_block += 1
-        return from_block - 1
+    while from_block < to_block:
+        mid = (from_block + to_block) // 2
+        target = datetime.fromtimestamp(w3.eth.getBlock(mid)["timestamp"])
+        if target > version_release_date:
+            to_block = mid
+        elif target < version_release_date:
+            from_block = mid + 1
+        else:
+            return mid - 1
 
-    elif from_date < version_release_date:
-        updated_block = int((from_block + to_block) / 2)
-        return get_ethpm_birth_block(w3, updated_block, to_block, target_timestamp)
-
-    else:
-        updated_block = from_block - int(to_block - from_block)
-        return get_ethpm_birth_block(w3, updated_block, from_block, target_timestamp)
+    raise BlockNotFoundError(
+        f"Cannot find closest block to timestamp: {target_timestamp} "
+        f"in range given {from_block} - {to_block}."
+    )
 
 
 def block_range_needs_scraping(

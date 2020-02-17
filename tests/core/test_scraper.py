@@ -10,6 +10,7 @@ from ethpm_cli import CLI_ASSETS_DIR
 from ethpm_cli._utils.filesystem import check_dir_trees_equal
 from ethpm_cli._utils.xdg import get_xdg_ethpmcli_root
 from ethpm_cli.commands.scraper import get_ethpm_birth_block, scrape
+from ethpm_cli.exceptions import BlockNotFoundError
 
 
 @pytest.fixture
@@ -166,6 +167,19 @@ def test_get_ethpm_birth_block(w3, interval):
     time_travel(w3, interval)
     actual = get_ethpm_birth_block(w3, 0, w3.eth.blockNumber, latest_block.timestamp)
     assert actual == latest_block.number - 1
+
+
+def test_get_ethpm_birth_block_equal_blocks_raises_exception(w3):
+    latest_block = w3.eth.getBlock("latest")
+    with pytest.raises(BlockNotFoundError):
+        get_ethpm_birth_block(w3, 0, w3.eth.blockNumber, latest_block.timestamp)
+
+
+def test_get_ethpm_birth_block_invalid_range_raises_exception(w3):
+    latest_block = w3.eth.getBlock("latest")
+    with pytest.raises(BlockNotFoundError):
+        time_travel(w3, 1)
+        get_ethpm_birth_block(w3, w3.eth.blockNumber, 0, latest_block.timestamp)
 
 
 def time_travel(w3, hours):
