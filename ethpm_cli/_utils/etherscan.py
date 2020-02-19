@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Tuple
 from urllib import parse
 
 from eth_utils import is_checksum_address
@@ -20,10 +20,10 @@ def is_etherscan_uri(value: Any) -> bool:
     if parsed.scheme != "etherscan" or not parsed.netloc:
         return False
 
-    if ":" not in parsed.netloc:
+    if parsed.path:
         return False
 
-    address, chain_id = parsed.netloc.split(":")
+    address, chain_id = parse_etherscan_uri(value)
     if not is_checksum_address(address):
         return False
 
@@ -31,6 +31,15 @@ def is_etherscan_uri(value: Any) -> bool:
         return False
 
     return True
+
+
+def parse_etherscan_uri(uri: str) -> Tuple[str, str]:
+    parsed = parse.urlparse(uri)
+    if ":" in parsed.netloc:
+        address, _, chain_id = parsed.netloc.partition(":")
+    else:
+        address, chain_id = (parsed.netloc, "1")
+    return address, chain_id
 
 
 def get_etherscan_network(chain_id: str) -> str:

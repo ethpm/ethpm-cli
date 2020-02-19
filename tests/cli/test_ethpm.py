@@ -9,7 +9,7 @@ from ethpm_cli.main import ENTRY_DESCRIPTION
 
 def test_ethpm_list(test_assets_dir):
     ethpm_dir = test_assets_dir / "multiple" / ETHPM_PACKAGES_DIR
-    child = pexpect.spawn(f"ethpm list --ethpm-dir {ethpm_dir}")
+    child = pexpect.spawn(f"ethpm list --ethpm-dir {ethpm_dir}", timeout=30)
     child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect("owned")
