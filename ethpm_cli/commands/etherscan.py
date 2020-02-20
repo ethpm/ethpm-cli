@@ -1,7 +1,6 @@
 import json
 import os
 from typing import Any, Dict, Iterable, Tuple
-from urllib import parse
 
 from eth_typing import URI
 from eth_utils import to_dict, to_hex, to_int
@@ -10,7 +9,11 @@ from ethpm.tools import builder
 from ethpm.uri import create_latest_block_uri
 import requests
 
-from ethpm_cli._utils.etherscan import get_etherscan_network, is_etherscan_uri
+from ethpm_cli._utils.etherscan import (
+    get_etherscan_network,
+    is_etherscan_uri,
+    parse_etherscan_uri,
+)
 from ethpm_cli.config import get_ipfs_backend, setup_w3
 from ethpm_cli.constants import ETHERSCAN_KEY_ENV_VAR
 from ethpm_cli.exceptions import ContractNotVerified
@@ -41,7 +44,7 @@ class EtherscanURIBackend(BaseURIBackend):
 def build_etherscan_manifest(
     uri: URI, package_name: str, version: str
 ) -> Iterable[Tuple[str, Any]]:
-    address, chain_id = parse.urlparse(uri).netloc.split(":")
+    address, chain_id = parse_etherscan_uri(uri)
     network = get_etherscan_network(chain_id)
     body = make_etherscan_request(address, network)
     contract_type = body["ContractName"]

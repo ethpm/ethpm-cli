@@ -118,10 +118,6 @@ def test_activate_ipfs_uri_with_factories_and_deployments():
     # test contract factory is available
     child.sendline("Address_factory")
     child.expect("web3._utils.datatypes.LinkableContract")
-    # test deployment is available
-    child.sendline("mainnet_BaseRegistrarImplementation")
-    child.expect("web3._utils.datatypes.LinkableContract at")
-    child.close()
 
 
 def test_activate_github_uri_with_insufficient_contract_types_and_deployments():
