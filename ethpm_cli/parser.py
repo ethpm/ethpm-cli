@@ -141,6 +141,12 @@ def add_package_version_to_parser(
     )
 
 
+def add_uri_to_parser(parser: argparse.ArgumentParser, help_msg: str,) -> None:
+    parser.add_argument(
+        "uri", action="store", type=str, help=help_msg,
+    )
+
+
 parser = argparse.ArgumentParser(description="ethpm-cli")
 ethpm_parser = parser.add_subparsers(help="CLI commands", dest="command")
 
@@ -272,6 +278,12 @@ def registry_remove_cmd(args: argparse.Namespace) -> None:
     cli_logger.info(f"Registry: {args.uri_or_alias} removed from registry store.")
 
 
+def registry_explore_cmd(args: argparse.Namespace) -> None:
+    # config = Config(args)
+    # explore_registry(args.uri)
+    return None
+
+
 registry_parser = ethpm_parser.add_parser("registry", help="Manage the registry store.")
 registry_subparsers = registry_parser.add_subparsers(dest="registry")
 
@@ -323,6 +335,13 @@ registry_activate_parser.add_argument(
 )
 registry_activate_parser.set_defaults(func=registry_activate_cmd)
 
+# ethpm registry explore
+registry_explore_parser = registry_subparsers.add_parser(
+    "explore", help="Explore a registry's list of released packages and manifest uris.",
+)
+add_uri_to_parser(
+    registry_explore_parser, "Registry URI of target package.",
+)
 
 #
 # ethpm create
@@ -482,12 +501,6 @@ install_parser = ethpm_parser.add_parser(
     "install", help="Install a package to a local ethPM directory."
 )
 install_parser.add_argument(
-    "uri",
-    action="store",
-    type=str,
-    help="IPFS / Github / Etherscan / Registry URI of target package.",
-)
-install_parser.add_argument(
     "--local-ipfs",
     dest="local_ipfs",
     action="store_true",
@@ -503,6 +516,9 @@ add_package_version_to_parser(
 )
 add_alias_arg_to_parser(install_parser)
 add_ethpm_dir_arg_to_parser(install_parser)
+add_uri_to_parser(
+    install_parser, "IPFS / Github / Etherscan / Registry URI of target package."
+)
 install_parser.set_defaults(func=install_action)
 
 #
