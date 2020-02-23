@@ -5,11 +5,12 @@ import pytest
 from ethpm_cli.commands.registry import (
     activate_registry,
     add_registry,
+    explore_registry,
     generate_registry_store_data,
     remove_registry,
 )
 from ethpm_cli.constants import REGISTRY_STORE
-from ethpm_cli.exceptions import InstallError
+from ethpm_cli.exceptions import InstallError, UriNotSupportedError
 
 URI_1 = "erc1319://0x1230000000000000000000000000000000000000:1"
 URI_2 = "erc1319://0xabc0000000000000000000000000000000000000:1"
@@ -141,3 +142,8 @@ def test_unable_to_activate_nonexistent_aliased_registry(config):
     add_registry(URI_1, "mine", config)
     with pytest.raises(InstallError):
         activate_registry("other", config)
+
+
+def test_explore_uri_invalid_raises_error(config):
+    with pytest.raises(UriNotSupportedError):
+        explore_registry("test://foo:1", config)

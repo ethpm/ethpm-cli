@@ -67,3 +67,10 @@ def test_ethpm_registry_commands():
     child_four.expect(r"\(active\)")
     child_four.expect("erc1319://0xabc0000000000000000000000000000000000000:3")
     child_four.expect("yours")
+
+    # test registry explore
+    child_five = pexpect.spawn(
+        f"ethpm registry explore erc1319://0x16763EaE3709e47eE6140507Ff84A61c23B0098A:1"
+    )
+    child_five.expect(ENTRY_DESCRIPTION)
+    child_five.expect("\r\n")

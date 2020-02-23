@@ -29,6 +29,7 @@ from ethpm_cli.commands.registry import (
     activate_registry,
     add_registry,
     deploy_registry,
+    explore_registry,
     get_active_registry,
     list_registries,
     remove_registry,
@@ -279,9 +280,9 @@ def registry_remove_cmd(args: argparse.Namespace) -> None:
 
 
 def registry_explore_cmd(args: argparse.Namespace) -> None:
-    # config = Config(args)
-    # explore_registry(args.uri)
-    return None
+    config = Config(args)
+    cli_logger.info(f"Looking for packages @ {args.uri}: \n")
+    explore_registry(args.uri, config)
 
 
 registry_parser = ethpm_parser.add_parser("registry", help="Manage the registry store.")
@@ -307,8 +308,8 @@ registry_list_parser.set_defaults(func=registry_list_cmd)
 registry_add_parser = registry_subparsers.add_parser(
     "add", help="Add a registry to registry store."
 )
-registry_add_parser.add_argument(
-    "uri", action="store", type=str, help="Registry URI for target registry."
+add_uri_to_parser(
+    registry_add_parser, "Registry URI for target registry.",
 )
 add_alias_arg_to_parser(registry_add_parser)
 registry_add_parser.set_defaults(func=registry_add_cmd)
@@ -340,8 +341,9 @@ registry_explore_parser = registry_subparsers.add_parser(
     "explore", help="Explore a registry's list of released packages and manifest uris.",
 )
 add_uri_to_parser(
-    registry_explore_parser, "Registry URI of target package.",
+    registry_explore_parser, "Registry URI for target registry.",
 )
+registry_explore_parser.set_defaults(func=registry_explore_cmd)
 
 #
 # ethpm create
