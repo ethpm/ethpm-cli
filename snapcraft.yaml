@@ -1,0 +1,31 @@
+name: ethpm
+version: git
+summary: ethPM CLI
+description: |
+  ethPM CLI is a command-line tool to manage interacting with the ethPM ecosystem.
+base: core18
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: devmode # use 'strict' once you have the right plugs and slots
+
+parts:
+  ethpm:
+    source: .
+    plugin: python
+    python-version: python3
+    after: [python]
+    stage:
+      - -usr/bin/python3
+  python:
+    source: https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tar.xz
+    plugin: autotools
+    configflags:
+      - --prefix=/usr
+    stage-packages:
+      - libgdbm5
+    stage:
+      - -usr/lib/python3.7/test
+
+apps:
+  ethpm:
+    command: bin/ethpm
