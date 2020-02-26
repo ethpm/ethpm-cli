@@ -124,7 +124,7 @@ def add_manifest_path_to_parser(
     )
 
 
-def add_package_name_to_parser(parser: argparse.ArgumentParser, help_msg: str,) -> None:
+def add_package_name_to_parser(parser: argparse.ArgumentParser, help_msg: str) -> None:
     parser.add_argument(
         "--package-name", dest="package_name", action="store", type=str, help=help_msg
     )
@@ -145,6 +145,12 @@ def add_package_version_to_parser(
 def add_uri_to_parser(parser: argparse.ArgumentParser, help_msg: str) -> None:
     parser.add_argument(
         "uri", action="store", type=str, help=help_msg,
+    )
+
+
+def add_uri_or_alias_to_parser(parser: argparse.ArgumentParser, help_msg: str) -> None:
+    parser.add_argument(
+        "uri_or_alias", action="store", type=str, help=help_msg,
     )
 
 
@@ -318,8 +324,8 @@ registry_add_parser.set_defaults(func=registry_add_cmd)
 registry_remove_parser = registry_subparsers.add_parser(
     "remove", help="Remove a registry from the registry store."
 )
-registry_remove_parser.add_argument(
-    "uri_or_alias", type=str, help="Registry URI or alias for registry to remove."
+add_uri_or_alias_to_parser(
+    registry_remove_parser, "Registry URI or alias for registry to remove."
 )
 registry_remove_parser.set_defaults(func=registry_remove_cmd)
 
@@ -328,11 +334,8 @@ registry_activate_parser = registry_subparsers.add_parser(
     "activate",
     help="Activate a registry to be used as the default registry for releasing new packages.",
 )
-registry_activate_parser.add_argument(
-    "uri_or_alias",
-    action="store",
-    type=str,
-    help="Registry URI or alias for target registry.",
+add_uri_or_alias_to_parser(
+    registry_activate_parser, "Registry URI or alias for target registry."
 )
 registry_activate_parser.set_defaults(func=registry_activate_cmd)
 
