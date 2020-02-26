@@ -114,21 +114,15 @@ def activate_registry(uri_or_alias: str, config: Config) -> None:
 
 def explore_registry(uri: str, config: Config) -> None:
     if is_valid_registry_uri(URI(uri)):
-        (
-            address,
-            chain_id,
-            pkg_name,
-            pkg_version,
-            namespaced_asset,
-            ens,
-        ) = parse_registry_uri(uri)
-        config.w3.enable_unstable_package_management_api()
-        config.w3.pm.set_registry(address)
+        parsed_registry_uri = parse_registry_uri(uri)
+        config.w3.pm.set_registry(parsed_registry_uri.address)
         package_names = config.w3.pm.get_all_package_names()
         display_packages(package_names, config)
 
     else:
-        raise UriNotSupportedError("Cannot resolve both an alias and registry uri.")
+        raise UriNotSupportedError(
+            f"Invalid URI: {uri}, unable to explore. Registry URI definition can be found at https://docs.ethpm.com/uris#registry-uris."  # noqa: E501
+        )
 
 
 def resolve_uri_or_alias(uri_or_alias: str, store_path: Path) -> StoredRegistry:
@@ -232,13 +226,10 @@ def generate_registry_store_data(
 def display_packages(all_package_names: Iterable[str], config: Config) -> None:
     for package_name in all_package_names:
         all_releases = config.w3.pm.get_all_package_releases(package_name)
-        cli_logger.info(f"Retrieving releases for {bold_blue(package_name)}: \n")
-        for release in all_releases:
-            (version, manifest_uri) = release
+        cli_logger.info(f"Retrieving all releases for {bold_blue(package_name)}: \n")
+        for version, manifest_uri in all_releases:
             cli_logger.info(f"{bold_green(version)} --- ({bold_white(manifest_uri)})")
         cli_logger.info(
-            f"Total: {config.w3.pm.get_release_count(package_name)}\n"
+            f"Total releases: {config.w3.pm.get_release_count(package_name)}\n"
         )
-    cli_logger.info(
-        f"Packages in the registry: {config.w3.pm.get_package_count()}\n"
-    )
+    cli_logger.info(f"Packages in the registry: {config.w3.pm.get_package_count()}\n")

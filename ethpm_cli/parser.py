@@ -142,7 +142,7 @@ def add_package_version_to_parser(
     )
 
 
-def add_uri_to_parser(parser: argparse.ArgumentParser, help_msg: str,) -> None:
+def add_uri_to_parser(parser: argparse.ArgumentParser, help_msg: str) -> None:
     parser.add_argument(
         "uri", action="store", type=str, help=help_msg,
     )
