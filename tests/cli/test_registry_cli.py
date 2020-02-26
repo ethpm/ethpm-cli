@@ -1,8 +1,7 @@
 import pexpect
 
+from ethpm_cli._utils.shellart import bold_blue, bold_green, bold_white
 from ethpm_cli.main import ENTRY_DESCRIPTION
-
-# from ethpm_cli._utils.shellart import bold_blue, bold_green, bold_white
 
 
 def test_ethpm_registry_commands():
@@ -70,9 +69,6 @@ def test_ethpm_registry_commands():
     child_four.expect("erc1319://0xabc0000000000000000000000000000000000000:3")
     child_four.expect("yours")
 
-
-def test_ethpm_registry_explore():
-    # first_package_name = bold_blue("augurreputation-rep")
     # test registry explore
     child_five = pexpect.spawn(
         f"ethpm registry explore erc1319://0x16763EaE3709e47eE6140507Ff84A61c23B0098A:1",
@@ -83,7 +79,31 @@ def test_ethpm_registry_explore():
     child_five.expect(
         f"Looking for packages @ erc1319://0x16763EaE3709e47eE6140507Ff84A61c23B0098A:1: "  # noqa: 501
     )
+    child_five.expect("\r\n\r\n")
+    child_five.expect_exact(
+        f"Retrieving all releases for {bold_blue('augurreputation-rep')}: "
+    )
+    child_five.expect("\r\n\r\n")
+    child_five.expect_exact(
+        f"{bold_green('1.0.0')} --- ({bold_white('ipfs://QmXsunnsZWYRfCN1YyfJJoFLeRxZrSBhQC9b2HeXvYHrAH')})"  # noqa: 501
+    )
     child_five.expect("\r\n")
-    # child_five.expect(f"Retrieving all releases for {first_package_name}: ")
-    # child_five.expect("\r\n")
-    # child_five.expect(f"1.0.0. --- (ipfs://QmXsunnsZWYRfCN1YyfJJoFLeRxZrSBhQC9b2HeXvYHrAH)")
+    child_five.expect(f"Total releases: 1")
+    child_five.expect("\r\n\r\n")
+    child_five.expect_exact(f"Retrieving all releases for {bold_blue('dai-dai')}: ")
+    child_five.expect("\r\n\r\n")
+    child_five.expect_exact(
+        f"{bold_green('1.0.0')} --- ({bold_white('ipfs://QmTFxJbaJvpgASxxdqFPSvYr1XLWgXR9fv241jLXsELiXP')})"  # noqa: 501
+    )
+    child_five.expect("\r\n")
+    child_five.expect(f"Total releases: 1")
+    child_five.expect("\r\n\r\n")
+    child_five.expect_exact(
+        f"Retrieving all releases for {bold_blue('bitfinexleo-leo')}: "
+    )
+    child_five.expect("\r\n\r\n")
+    child_five.expect_exact(
+        f"{bold_green('1.0.0')} --- ({bold_white('ipfs://QmS2JVar9KqSdDahRtHaFcm9qYkbCsjXLhTcPRq4zafffo')})"  # noqa: 501
+    )
+    child_five.expect("\r\n")
+    child_five.expect(f"Total releases: 1")
