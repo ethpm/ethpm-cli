@@ -287,8 +287,8 @@ def registry_remove_cmd(args: argparse.Namespace) -> None:
 
 def registry_explore_cmd(args: argparse.Namespace) -> None:
     config = Config(args)
-    cli_logger.info(f"Looking for packages @ {args.uri}: \n")
-    explore_registry(args.uri, config)
+    cli_logger.info(f"Looking for packages @ {args.uri_or_alias}: \n")
+    explore_registry(args.uri_or_alias, config)
 
 
 registry_parser = ethpm_parser.add_parser("registry", help="Manage the registry store.")
@@ -343,7 +343,7 @@ registry_activate_parser.set_defaults(func=registry_activate_cmd)
 registry_explore_parser = registry_subparsers.add_parser(
     "explore", help="Explore a registry's list of released packages and manifest uris.",
 )
-add_uri_to_parser(
+add_uri_or_alias_to_parser(
     registry_explore_parser, "Registry URI for target registry.",
 )
 registry_explore_parser.set_defaults(func=registry_explore_cmd)
