@@ -7,6 +7,7 @@ from ethpm_cli.commands.registry import (
     add_registry,
     generate_registry_store_data,
     remove_registry,
+    resolve_uri_or_alias,
 )
 from ethpm_cli.constants import REGISTRY_STORE
 from ethpm_cli.exceptions import InstallError
@@ -141,3 +142,50 @@ def test_unable_to_activate_nonexistent_aliased_registry(config):
     add_registry(URI_1, "mine", config)
     with pytest.raises(InstallError):
         activate_registry("other", config)
+
+
+@pytest.mark.parametrize(
+    "uri,alias,valid,expected",
+    (
+        (
+            URI_1,
+            "home",
+            True,
+            {
+                "uri": "erc1319://0x1230000000000000000000000000000000000000:1",
+                "alias": "home",
+            },
+        ),
+        (
+            URI_2,
+            "owned",
+            True,
+            {
+                "uri": "erc1319://0xabc0000000000000000000000000000000000000:1",
+                "alias": "owned",
+            },
+        ),
+        (
+            URI_1,
+            "fake",
+            False,
+            {
+                "uri": "erc1319://0x1230000000000000000000000000000000000000:1",
+                "alias": "fake",
+            },
+        ),
+    ),
+)
+def test_resolve_uri_or_alias_raises_error(config, uri, alias, valid, expected):
+    store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
+    add_registry(uri, alias, config)
+    if valid:
+        registry = resolve_uri_or_alias(alias, store_path)
+        assert registry.alias == expected["alias"]
+        registry = resolve_uri_or_alias(uri, store_path)
+        assert registry.uri == expected["uri"]
+    else:
+        with pytest.raises(InstallError):
+            resolve_uri_or_alias("other", store_path)
+        with pytest.raises(InstallError):
+            resolve_uri_or_alias(URI_2, store_path)
