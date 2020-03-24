@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple
+from typing import Any, Dict, Iterable, NamedTuple, Optional, Tuple
 
 from eth_typing import URI
 from eth_utils import to_dict, to_int, to_text, to_tuple
@@ -232,7 +232,7 @@ def update_package(args: Namespace, config: Config) -> None:
 
 
 def pluck_release_data(
-    all_release_data: List[str], target_version: str
+    all_release_data: Tuple[Tuple[str, str], ...], target_version: str
 ) -> Optional[URI]:
     for version, uri in all_release_data:
         if version == target_version:

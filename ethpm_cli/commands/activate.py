@@ -1,6 +1,6 @@
 from argparse import Namespace
 import json
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, Tuple, Type
 from urllib import parse
 
 from IPython import embed
@@ -158,15 +158,16 @@ def activate_package(args: Namespace, config: Config) -> None:
         user_ns={
             **available_factories,
             **available_instances,
-            **available_w3s,
-            **helper_fns,
+            # ignore b/c conflicting types w/in dict values
+            **available_w3s,  # type: ignore
+            **helper_fns,  # type: ignore
         },
         banner1=banner,
         colors="neutral",
     )
 
 
-def get_factory(target_factory: Contract, target_w3: Web3) -> Contract:
+def get_factory(target_factory: Contract, target_w3: Web3) -> Type[Contract]:
     return target_w3.eth.contract(
         abi=target_factory.abi, bytecode=target_factory.bytecode
     )

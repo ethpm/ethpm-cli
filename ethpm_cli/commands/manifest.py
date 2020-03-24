@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple
 
-from eth_typing import Manifest
+from eth_typing import HexStr, Manifest
 from eth_utils import is_checksum_address, to_hex, to_int, to_list, to_tuple
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 from ethpm.tools import builder as b
@@ -350,9 +350,9 @@ def get_deployment_chain_data(w3: Web3) -> Tuple[Optional[str], Optional[Any]]:
     # todo: deployment_bytecode, runtime_bytecode, compiler
     flag = parse_bool_flag("Do you have a tx hash for your deployment?")
     if flag:
-        tx_hash = input("Please enter your tx hash. ")
+        tx_hash = HexStr(input("Please enter your tx hash. "))
         tx = w3.eth.getTransaction(tx_hash)
-        return tx_hash, to_hex(tx.blockHash)
+        return tx_hash, to_hex(tx["blockHash"])
     return (None, None)
 
 
