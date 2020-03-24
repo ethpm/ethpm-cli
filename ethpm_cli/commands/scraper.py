@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Set, Tuple  # noqa: F401
 
-from eth_typing import URI, Address
+from eth_typing import URI, Address, BlockNumber
 from eth_utils import to_dict, to_list
 from eth_utils.toolz import assoc
 from ethpm._utils.ipfs import extract_ipfs_path_from_uri, is_ipfs_uri
@@ -25,7 +25,7 @@ VERSION_RELEASE_TIMESTAMP = 1_552_564_800  # March 14, 2019
 BATCH_SIZE = 5000
 
 
-def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
+def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> BlockNumber:
     """
     Scrapes VersionRelease event data starting from start_block.
 
@@ -33,7 +33,7 @@ def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
     Otherwise the scraping begins from the ethpm birth block.
     """
     chain_data_path = ethpm_dir / "chain_data.json"
-    latest_block = w3.eth.blockNumber
+    latest_block = BlockNumber(w3.eth.blockNumber)
 
     if start_block >= latest_block:
         raise BlockNotFoundError(
@@ -52,7 +52,7 @@ def scrape(w3: Web3, ethpm_dir: Path, start_block: int = 0) -> int:
     logger.info("Scraping from block %d.", active_block)
     for from_block in range(active_block, latest_block, BATCH_SIZE):
         if (from_block + BATCH_SIZE) > latest_block:
-            to_block = latest_block
+            to_block = int(latest_block)
         else:
             to_block = from_block + BATCH_SIZE
 
@@ -77,7 +77,7 @@ def get_ethpm_birth_block(
     version_release_date = datetime.fromtimestamp(target_timestamp)
 
     while from_block < to_block:
-        mid = (from_block + to_block) // 2
+        mid = BlockNumber((from_block + to_block) // 2)
         target = datetime.fromtimestamp(w3.eth.getBlock(mid)["timestamp"])
         if target > version_release_date:
             to_block = mid

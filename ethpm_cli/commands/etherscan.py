@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, Iterable, Tuple
 from urllib import parse
 
-from eth_typing import URI
+from eth_typing import URI, ChecksumAddress, HexAddress, HexStr
 from eth_utils import to_dict, to_hex, to_int
 from ethpm.backends.base import BaseURIBackend
 from ethpm.tools import builder
@@ -47,7 +47,9 @@ def build_etherscan_manifest(
     contract_type = body["ContractName"]
     w3 = setup_w3(to_int(text=chain_id))
     block_uri = create_latest_block_uri(w3)
-    runtime_bytecode = to_hex(w3.eth.getCode(address))
+    runtime_bytecode = to_hex(
+        w3.eth.getCode(ChecksumAddress(HexAddress(HexStr(address))))
+    )
 
     yield "package_name", package_name
     yield "version", version

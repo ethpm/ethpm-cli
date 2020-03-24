@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 from typing import Union
 
+from eth_typing import Hash32
 from eth_utils import humanize_hash
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 
@@ -424,7 +425,7 @@ def scrape_action(args: argparse.Namespace) -> None:
     cli_logger.info("Loading IPFS scraper...")
     start_block = args.start_block if args.start_block else 0
     last_scraped_block = scrape(config.w3, xdg_ethpmcli_root, start_block)
-    last_scraped_block_hash = config.w3.eth.getBlock(last_scraped_block)["hash"]
+    last_scraped_block_hash = Hash32(config.w3.eth.getBlock(last_scraped_block)["hash"])
     cli_logger.info(
         "All blocks scraped up to # %d: %s.",
         last_scraped_block,

@@ -106,7 +106,8 @@ def setup_w3(chain_id: int, private_key: str = None) -> Web3:
         owner_address = Account.from_key(private_key).address
         signing_middleware = construct_sign_and_send_raw_middleware(private_key)
         w3.middleware_onion.add(signing_middleware)
-        w3.eth.defaultAccount = to_checksum_address(owner_address)
+        # ignore b/c defaultAccount inits as Empty
+        w3.eth.defaultAccount = to_checksum_address(owner_address)  # type: ignore
         cli_logger.debug(
             "In-flight tx signing has been enabled for address: {owner_address}."
         )
