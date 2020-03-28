@@ -145,12 +145,11 @@ def test_unable_to_activate_nonexistent_aliased_registry(config):
 
 
 @pytest.mark.parametrize(
-    "uri,alias,valid,expected",
+    "uri,alias,expected",
     (
         (
             URI_1,
             "home",
-            True,
             {
                 "uri": "erc1319://0x1230000000000000000000000000000000000000:1",
                 "alias": "home",
@@ -159,33 +158,29 @@ def test_unable_to_activate_nonexistent_aliased_registry(config):
         (
             URI_2,
             "owned",
-            True,
             {
                 "uri": "erc1319://0xabc0000000000000000000000000000000000000:1",
                 "alias": "owned",
             },
         ),
-        (
-            URI_1,
-            "fake",
-            False,
-            {
-                "uri": "erc1319://0x1230000000000000000000000000000000000000:1",
-                "alias": "fake",
-            },
-        ),
     ),
 )
-def test_resolve_uri_or_alias_raises_error(config, uri, alias, valid, expected):
+def test_resolve_uri_or_alias(config, uri, alias, expected):
     store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
     add_registry(uri, alias, config)
-    if valid:
-        registry = resolve_uri_or_alias(alias, store_path)
-        assert registry.alias == expected["alias"]
-        registry = resolve_uri_or_alias(uri, store_path)
-        assert registry.uri == expected["uri"]
-    else:
-        with pytest.raises(InstallError):
-            resolve_uri_or_alias("other", store_path)
-        with pytest.raises(InstallError):
-            resolve_uri_or_alias(URI_2, store_path)
+    registry = resolve_uri_or_alias(alias, store_path)
+    assert registry.alias == expected["alias"]
+    registry = resolve_uri_or_alias(uri, store_path)
+    assert registry.uri == expected["uri"]
+
+
+@pytest.mark.parametrize(
+    "uri,alias", ((URI_1, "home",), (URI_2, "owned",),),
+)
+def test_resolve_uri_or_alias_raises_install_error(config, uri, alias):
+    store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
+    add_registry(uri, alias, config)
+    with pytest.raises(InstallError):
+        resolve_uri_or_alias("other", store_path)
+    with pytest.raises(InstallError):
+        resolve_uri_or_alias("foo://", store_path)

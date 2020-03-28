@@ -7,6 +7,7 @@ from eth_utils import to_tuple
 from eth_utils.toolz import assoc, assoc_in, dissoc
 from ethpm.backends.registry import is_valid_registry_uri, parse_registry_uri
 from ethpm.constants import SUPPORTED_CHAIN_IDS
+from web3 import Web3
 
 from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.logger import cli_logger
@@ -117,7 +118,7 @@ def explore_registry(uri_or_alias: str, config: Config) -> None:
         parsed_registry_uri = parse_registry_uri(registry.uri)
         config.w3.pm.set_registry(parsed_registry_uri.address)
     package_names = config.w3.pm.get_all_package_names()
-    display_packages(package_names, config)
+    display_packages(package_names, config.w3)
 
 
 def resolve_uri_or_alias(uri_or_alias: str, store_path: Path) -> StoredRegistry:
@@ -218,13 +219,12 @@ def generate_registry_store_data(
     }
 
 
-def display_packages(all_package_names: Iterable[str], config: Config) -> None:
+def display_packages(all_package_names: Iterable[str], w3: Web3) -> None:
+    cli_logger.info(f"Packages in the registry: {w3.pm.get_package_count()}\n")
     for package_name in all_package_names:
-        all_releases = config.w3.pm.get_all_package_releases(package_name)
         cli_logger.info(f"Retrieving all releases for {bold_blue(package_name)}: \n")
+        all_releases = w3.pm.get_all_package_releases(package_name)
         for version, manifest_uri in all_releases:
             cli_logger.info(f"{bold_green(version)} --- ({bold_white(manifest_uri)})")
-        cli_logger.info(
-            f"Total releases: {config.w3.pm.get_release_count(package_name)}\n"
-        )
-    cli_logger.info(f"Packages in the registry: {config.w3.pm.get_package_count()}\n")
+
+        cli_logger.info(f"Total releases: {len(all_releases)}\n")
