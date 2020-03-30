@@ -21,9 +21,6 @@ def test_ethpm_list(test_assets_dir):
     child.expect("safe-math-lib")
     child.expect("1.0.0")
     child.expect("ipfs://QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm")
-    child.expect("owned")
-    child.expect("1.0.0")
-    child.expect("ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW")
 
 
 def test_ethpm_list_with_aliased_package(test_assets_dir):
