@@ -30,6 +30,7 @@ from ethpm_cli.commands.registry import (
     activate_registry,
     add_registry,
     deploy_registry,
+    explore_registry,
     get_active_registry,
     list_registries,
     remove_registry,
@@ -124,7 +125,7 @@ def add_manifest_path_to_parser(
     )
 
 
-def add_package_name_to_parser(parser: argparse.ArgumentParser, help_msg: str,) -> None:
+def add_package_name_to_parser(parser: argparse.ArgumentParser, help_msg: str) -> None:
     parser.add_argument(
         "--package-name", dest="package_name", action="store", type=str, help=help_msg
     )
@@ -139,6 +140,18 @@ def add_package_version_to_parser(
         action="store",
         type=str,
         help=help_msg,
+    )
+
+
+def add_uri_to_parser(parser: argparse.ArgumentParser, help_msg: str) -> None:
+    parser.add_argument(
+        "uri", action="store", type=str, help=help_msg,
+    )
+
+
+def add_uri_or_alias_to_parser(parser: argparse.ArgumentParser, help_msg: str) -> None:
+    parser.add_argument(
+        "uri_or_alias", action="store", type=str, help=help_msg,
     )
 
 
@@ -273,6 +286,12 @@ def registry_remove_cmd(args: argparse.Namespace) -> None:
     cli_logger.info(f"Registry: {args.uri_or_alias} removed from registry store.")
 
 
+def registry_explore_cmd(args: argparse.Namespace) -> None:
+    config = Config(args)
+    cli_logger.info(f"Looking for packages @ {args.uri_or_alias}: \n")
+    explore_registry(args.uri_or_alias, config)
+
+
 registry_parser = ethpm_parser.add_parser("registry", help="Manage the registry store.")
 registry_subparsers = registry_parser.add_subparsers(dest="registry")
 
@@ -296,8 +315,8 @@ registry_list_parser.set_defaults(func=registry_list_cmd)
 registry_add_parser = registry_subparsers.add_parser(
     "add", help="Add a registry to registry store."
 )
-registry_add_parser.add_argument(
-    "uri", action="store", type=str, help="Registry URI for target registry."
+add_uri_to_parser(
+    registry_add_parser, "Registry URI for target registry.",
 )
 add_alias_arg_to_parser(registry_add_parser)
 registry_add_parser.set_defaults(func=registry_add_cmd)
@@ -306,8 +325,8 @@ registry_add_parser.set_defaults(func=registry_add_cmd)
 registry_remove_parser = registry_subparsers.add_parser(
     "remove", help="Remove a registry from the registry store."
 )
-registry_remove_parser.add_argument(
-    "uri_or_alias", type=str, help="Registry URI or alias for registry to remove."
+add_uri_or_alias_to_parser(
+    registry_remove_parser, "Registry URI or alias for registry to remove."
 )
 registry_remove_parser.set_defaults(func=registry_remove_cmd)
 
@@ -316,14 +335,19 @@ registry_activate_parser = registry_subparsers.add_parser(
     "activate",
     help="Activate a registry to be used as the default registry for releasing new packages.",
 )
-registry_activate_parser.add_argument(
-    "uri_or_alias",
-    action="store",
-    type=str,
-    help="Registry URI or alias for target registry.",
+add_uri_or_alias_to_parser(
+    registry_activate_parser, "Registry URI or alias for target registry."
 )
 registry_activate_parser.set_defaults(func=registry_activate_cmd)
 
+# ethpm registry explore
+registry_explore_parser = registry_subparsers.add_parser(
+    "explore", help="Explore a registry's list of released packages and manifest uris.",
+)
+add_uri_or_alias_to_parser(
+    registry_explore_parser, "Registry URI for target registry.",
+)
+registry_explore_parser.set_defaults(func=registry_explore_cmd)
 
 #
 # ethpm create
@@ -483,12 +507,6 @@ install_parser = ethpm_parser.add_parser(
     "install", help="Install a package to a local ethPM directory."
 )
 install_parser.add_argument(
-    "uri",
-    action="store",
-    type=str,
-    help="IPFS / Github / Etherscan / Registry URI of target package.",
-)
-install_parser.add_argument(
     "--local-ipfs",
     dest="local_ipfs",
     action="store_true",
@@ -504,6 +522,9 @@ add_package_version_to_parser(
 )
 add_alias_arg_to_parser(install_parser)
 add_ethpm_dir_arg_to_parser(install_parser)
+add_uri_to_parser(
+    install_parser, "IPFS / Github / Etherscan / Registry URI of target package."
+)
 install_parser.set_defaults(func=install_action)
 
 #

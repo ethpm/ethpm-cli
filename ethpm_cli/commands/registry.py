@@ -7,6 +7,7 @@ from eth_utils import to_tuple
 from eth_utils.toolz import assoc, assoc_in, dissoc
 from ethpm.backends.registry import is_valid_registry_uri, parse_registry_uri
 from ethpm.constants import SUPPORTED_CHAIN_IDS
+from web3 import Web3
 
 from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.logger import cli_logger
@@ -107,6 +108,19 @@ def activate_registry(uri_or_alias: str, config: Config) -> None:
         write_store_data_to_disk(activated_store_data, store_path)
 
 
+def explore_registry(uri_or_alias: str, config: Config) -> None:
+    if is_valid_registry_uri(uri_or_alias):
+        parsed_registry_uri = parse_registry_uri(uri_or_alias)
+        config.w3.pm.set_registry(parsed_registry_uri.address)
+    else:
+        store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
+        registry = resolve_uri_and_alias(None, uri_or_alias, store_path)
+        parsed_registry_uri = parse_registry_uri(registry.uri)
+        config.w3.pm.set_registry(parsed_registry_uri.address)
+    package_names = config.w3.pm.get_all_package_names()
+    display_packages(package_names, config.w3)
+
+
 def resolve_uri_or_alias(uri_or_alias: str, store_path: Path) -> StoredRegistry:
     if is_valid_registry_uri(uri_or_alias):
         return resolve_uri_and_alias(URI(uri_or_alias), None, store_path)
@@ -203,3 +217,14 @@ def generate_registry_store_data(
         "alias": alias,
         "active": activate,
     }
+
+
+def display_packages(all_package_names: Iterable[str], w3: Web3) -> None:
+    cli_logger.info(f"Packages in the registry: {w3.pm.get_package_count()}\n")
+    for package_name in all_package_names:
+        cli_logger.info(f"Retrieving all releases for {bold_blue(package_name)}: \n")
+        all_releases = w3.pm.get_all_package_releases(package_name)
+        for version, manifest_uri in all_releases:
+            cli_logger.info(f"{bold_green(version)} --- ({bold_white(manifest_uri)})")
+
+        cli_logger.info(f"Total releases: {len(all_releases)}\n")
