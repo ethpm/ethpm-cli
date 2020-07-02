@@ -192,17 +192,19 @@ def pluck_ipfs_uris_from_manifest(uri: URI) -> Iterable[List[Any]]:
     manifest_contents = json.loads(resolve_uri_contents(uri))
     yield pluck_ipfs_uris(manifest_contents)
 
-    if "build_dependencies" in manifest_contents:
-        for dependency_uri in manifest_contents["build_dependencies"].values():
+    if "buildDependencies" in manifest_contents:
+        for dependency_uri in manifest_contents["buildDependencies"].values():
             yield pluck_ipfs_uris_from_manifest(dependency_uri)
 
 
 @to_list
 def pluck_ipfs_uris(manifest: Dict[str, Any]) -> Iterable[List[str]]:
+    print(manifest)
     if "sources" in manifest:
-        for source in manifest["sources"].values():
-            if is_ipfs_uri(source):
-                yield source
+        for source_object in manifest["sources"].values():
+            for url in source_object["urls"]:
+                if is_ipfs_uri(url):
+                    yield url
 
     if "meta" in manifest:
         if "links" in manifest["meta"]:
@@ -210,8 +212,8 @@ def pluck_ipfs_uris(manifest: Dict[str, Any]) -> Iterable[List[str]]:
                 if is_ipfs_uri(link):
                     yield link
 
-    if "build_dependencies" in manifest:
-        for source in manifest["build_dependencies"].values():
+    if "buildDependencies" in manifest:
+        for source in manifest["buildDependencies"].values():
             if is_ipfs_uri(source):
                 yield source
 

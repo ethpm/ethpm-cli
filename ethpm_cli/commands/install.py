@@ -35,7 +35,7 @@ logger = logging.getLogger("ethpm_cli.install")
 def install_package(package: Package, config: Config) -> None:
     if is_package_installed(package.alias, config):
         raise InstallError(
-            f"Installation conflict: Package: '{package.manifest['package_name']}' "
+            f"Installation conflict: Package: '{package.manifest['name']}' "
             f"aliased to '{package.alias}' already installed on the filesystem at "
             f"{config.ethpm_dir / package.alias}. Try installing this package with "
             "a different alias."
@@ -61,7 +61,7 @@ class InstalledPackageTree(NamedTuple):
 
     @property
     def package_name(self) -> str:
-        return self.manifest["package_name"]
+        return self.manifest["name"]
 
     @property
     def package_version(self) -> str:
@@ -298,12 +298,14 @@ def write_sources_to_disk(
 def resolve_sources(
     package: Package, ipfs_backend: BaseIPFSBackend
 ) -> Iterable[Tuple[str, str]]:
-    for path, source in package.manifest["sources"].items():
-        if is_ipfs_uri(source):
-            contents = to_text(ipfs_backend.fetch_uri_contents(source)).rstrip("\n")
+    for path, source_object in package.manifest["sources"].items():
+        # for inlined sources
+        if "contents" in source_object:
+            contents = source_object["contents"]
         else:
-            # for inlined sources
-            contents = source
+            for uri in source_object["urls"]:
+                if is_ipfs_uri(uri):
+                    contents = to_text(ipfs_backend.fetch_uri_contents(uri)).rstrip("\n")
         yield path, contents
 
 
@@ -325,10 +327,10 @@ def write_docs_to_disk(
 def write_build_deps_to_disk(
     package: Package, package_dir: Path, ipfs_backend: BaseIPFSBackend
 ) -> None:
-    if "build_dependencies" in package.manifest:
+    if "buildDependencies" in package.manifest:
         child_ethpm_dir = package_dir / ETHPM_PACKAGES_DIR
         child_ethpm_dir.mkdir()
-        for name, uri in package.manifest["build_dependencies"].items():
+        for name, uri in package.manifest["buildDependencies"].items():
             dep_package = Package(Namespace(uri=uri, alias=""), ipfs_backend)
             tmp_dep_dir = child_ethpm_dir / name
             tmp_dep_dir.mkdir()

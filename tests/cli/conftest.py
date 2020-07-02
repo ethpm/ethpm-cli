@@ -1,6 +1,6 @@
 import shutil
 
-from ethpm import ASSETS_DIR
+from ethpm import ASSETS_DIR, ETHPM_SPEC_DIR
 import pytest
 
 from ethpm_cli.constants import SOLC_OUTPUT
@@ -16,7 +16,7 @@ def tmp_project_dir(tmp_path, test_assets_dir):
         ASSETS_DIR / "simple-registry" / SOLC_OUTPUT, tmp_project_dir / SOLC_OUTPUT
     )
     shutil.copyfile(
-        test_assets_dir / "owned" / "1.0.0.json", tmp_project_dir / "owned.json"
+        ETHPM_SPEC_DIR / "examples" / "owned" / "1.0.0.json", tmp_project_dir / "owned.json"
     )
     shutil.copyfile(
         test_assets_dir / "dai" / "_ethpm_packages" / "dai" / "manifest.json",
@@ -30,5 +30,5 @@ def tmp_owned_dir(tmp_path, test_assets_dir):
     tmp_owned_dir = tmp_path / "owned"
     tmp_owned_dir.mkdir()
     tmp_contracts_dir = tmp_owned_dir / "contracts"
-    shutil.copytree(ASSETS_DIR / "owned" / "contracts", tmp_contracts_dir)
+    shutil.copytree(ETHPM_SPEC_DIR / "examples" / "owned" / "contracts", tmp_contracts_dir)
     return tmp_owned_dir

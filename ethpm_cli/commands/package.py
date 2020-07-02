@@ -36,7 +36,7 @@ class Package:
         if "alias" in args and args.alias:
             self.alias = args.alias
         else:
-            self.alias = self.manifest["package_name"]
+            self.alias = self.manifest["name"]
         self.install_uri = args.uri
 
     @to_dict
@@ -47,7 +47,7 @@ class Package:
         yield "registry_address", self.registry_address
         yield "alias", self.alias
         yield "resolved_version", self.manifest["version"]
-        yield "resolved_package_name", self.manifest["package_name"]
+        yield "resolved_package_name", self.manifest["name"]
 
 
 class InstalledPackage(NamedTuple):

@@ -10,7 +10,7 @@ from ethpm.validation.manifest import validate_manifest_against_schema
 def pin_local_manifest(manifest_path: Path) -> Tuple[str, str, URI]:
     manifest_output = json.loads(manifest_path.read_text())
     validate_manifest_against_schema(manifest_output)
-    package_name = manifest_output["package_name"]
+    package_name = manifest_output["name"]
     package_version = manifest_output["version"]
 
     ipfs_backend = get_ipfs_backend()

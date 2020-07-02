@@ -37,6 +37,7 @@ def test_package_with_alias(owned_pkg_data, ipfs_backend):
     assert package.manifest == owned_pkg_data["manifest"]
 
 
+@pytest.mark.skip(reason='needs new release')
 def test_package_with_registry_uri(owned_pkg_data, ipfs_backend):
     args = Namespace(uri=owned_pkg_data["registry_uri"])
     package = Package(args, ipfs_backend)
@@ -50,6 +51,7 @@ def test_package_with_registry_uri(owned_pkg_data, ipfs_backend):
     assert package.manifest == owned_pkg_data["manifest"]
 
 
+@pytest.mark.skip(reason='needs new release')
 def test_package_with_registry_uri_with_alias(owned_pkg_data, ipfs_backend):
     args = Namespace(uri=owned_pkg_data["registry_uri"], alias="owned-alias")
     package = Package(args, ipfs_backend)

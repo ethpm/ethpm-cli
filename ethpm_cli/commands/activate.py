@@ -89,8 +89,8 @@ def activate_package(args: Namespace, config: Config) -> None:
     )
     cli_logger.info(activation_banner)
 
-    if "contract_types" in pkg.manifest:
-        num_contract_types = len(pkg.manifest["contract_types"])
+    if "contractTypes" in pkg.manifest:
+        num_contract_types = len(pkg.manifest["contractTypes"])
     else:
         num_contract_types = 0
 
@@ -196,7 +196,7 @@ def generate_contract_factories(pkg: ethpmPackage) -> Iterable[Tuple[str, Contra
         except InsufficientAssetsError:
             cli_logger.info(
                 f"Insufficient assets to generate factory for {ctype} "
-                "(requires ABI & deployment_bytecode)."
+                "(requires ABI & deploymentBytecode)."
             )
 
 

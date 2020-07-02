@@ -27,6 +27,7 @@ BASE_SOLC_INPUT = {
                     "evm.deployedBytecode",
                     "metadata",
                     "devdoc",
+                    "userdoc",
                 ]
             }
         }
@@ -154,7 +155,7 @@ def create_basic_manifest_from_solc_output(
     return b.build(
         {},
         b.package_name(package_name),
-        b.manifest_version("2"),
+        b.manifest_version("ethpm/3"),
         b.version(version),
         *built_sources,
         *built_types,
@@ -177,6 +178,7 @@ def get_contract_types_and_sources(
         for ctype, data in solc_output[source].items():
             if data["metadata"]:
                 metadata = json.loads(data["metadata"])
+                # broken
                 sources = tuple(Path(src) for src in metadata["sources"].keys())
                 yield ctype, sources
             # For Interface contracts w/ empty metadata['sources']

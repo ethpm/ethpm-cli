@@ -87,6 +87,7 @@ def test_activate_etherscan_uri_with_single_deployment():
     child.close()
 
 
+@pytest.mark.skip(reason="needs new package")
 def test_activate_ipfs_uri_with_factories_and_deployments():
     child = pexpect.spawn(
         "ethpm activate ipfs://Qmf5uJd3yChPwxYxHqR1KN2CdXt2pfsAfPzQe8gkNutwT3",
@@ -124,6 +125,7 @@ def test_activate_ipfs_uri_with_factories_and_deployments():
     child.close()
 
 
+@pytest.mark.skip(reason="needs new package")
 def test_activate_github_uri_with_insufficient_contract_types_and_deployments():
     child = pexpect.spawn(
         "ethpm activate https://api.github.com/repos/"
@@ -154,6 +156,7 @@ def test_activate_github_uri_with_insufficient_contract_types_and_deployments():
     child.close()
 
 
+@pytest.mark.skip(reason="needs new package")
 def test_activate_registry_uri_with_contract_types_no_deployments():
     child = pexpect.spawn(
         "ethpm activate erc1319://ens.snakecharmers.eth:1/ens@1.0.0", timeout=30,

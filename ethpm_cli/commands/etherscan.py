@@ -51,19 +51,19 @@ def build_etherscan_manifest(
         w3.eth.getCode(ChecksumAddress(HexAddress(HexStr(address))))
     )
 
-    yield "package_name", package_name
+    yield "name", package_name
     yield "version", version
-    yield "manifest_version", "2"
-    yield "sources", {f"./{contract_type}.sol": body["SourceCode"]}
-    yield "contract_types", {
+    yield "manifest", "ethpm/3"
+    yield "sources", {f"./{contract_type}.sol": {"content": body["SourceCode"], "installPath": f"./{contract_type}.sol", "type": "solidity"}}
+    yield "contractTypes", {
         contract_type: {
             "abi": json.loads(body["ABI"]),
-            "runtime_bytecode": {"bytecode": runtime_bytecode},
-            "compiler": generate_compiler_info(body),
+            "runtimeBytecode": {"bytecode": runtime_bytecode},
         }
     }
+    yield "compilers", [generate_compiler_info(body)]
     yield "deployments", {
-        block_uri: {contract_type: {"contract_type": contract_type, "address": address}}
+        block_uri: {contract_type: {"contractType": contract_type, "address": address}}
     }
 
 

@@ -79,7 +79,7 @@ def amend_manifest(manifest_path: Path) -> None:
 
     manifest = json.loads(manifest_path.read_text())
     validate_manifest_against_schema(manifest)
-    pkg_repr = f"<Package {manifest['package_name']}=={manifest['version']}>"
+    pkg_repr = f"<Package {manifest['name']}=={manifest['version']}>"
     cli_logger.info(f"Valid manifest for {pkg_repr} found at {manifest_path}.")
     builder_fns = (
         amend_description(manifest),
@@ -206,10 +206,11 @@ def amend_single_deployment(manifest: Dict[str, Any]) -> Iterable[Dict[str, Any]
     w3 = setup_w3(chain_id)
     block_uri = create_latest_block_uri(w3)
     address = get_deployment_address()
-    available_contract_types = manifest["contract_types"].keys()
+    available_contract_types = manifest["contractTypes"].keys()
     contract_type = get_deployment_contract_type(available_contract_types)
     contract_instance = get_deployment_alias(contract_type)
     tx_hash, block_hash = get_deployment_chain_data(w3)
+    # broken?
     deployment_data = {
         "block_uri": block_uri,
         "contract_instance": contract_instance,
@@ -323,6 +324,7 @@ def gen_single_deployment(solc_output: Dict[str, Any]) -> Dict[str, Any]:
     contract_type = get_deployment_contract_type(available_contract_types)
     contract_instance = get_deployment_alias(contract_type)
     tx_hash, block_hash = get_deployment_chain_data(w3)
+    # broken?
     deployment_data = {
         "block_uri": block_uri,
         "contract_instance": contract_instance,
@@ -398,7 +400,7 @@ def gen_version() -> Callable[..., Manifest]:
 
 
 def gen_manifest_version() -> Callable[..., Manifest]:
-    return b.manifest_version("2")
+    return b.manifest_version("ethpm/3")
 
 
 def gen_description() -> Optional[Callable[..., Manifest]]:
@@ -502,7 +504,7 @@ class ManifestDisplay:
 
     @property
     def package_name(self) -> str:
-        return self.manifest["package_name"]
+        return self.manifest["name"]
 
     @property
     def package_version(self) -> str:
@@ -510,7 +512,7 @@ class ManifestDisplay:
 
     @property
     def manifest_version(self) -> str:
-        return self.manifest["manifest_version"]
+        return self.manifest["manifest"]
 
     @to_list
     def meta(self) -> Iterable[str]:
@@ -534,6 +536,7 @@ class ManifestDisplay:
         if "sources" not in self.manifest:
             yield "None.\n"
         else:
+            # broken
             for src, data in self.manifest["sources"].items():
                 if len(data) < 50:
                     truncated = data
@@ -544,10 +547,10 @@ class ManifestDisplay:
 
     @to_list
     def contract_types(self) -> Iterable[str]:
-        if "contract_types" not in self.manifest:
+        if "contractTypes" not in self.manifest:
             yield "None.\n"
         else:
-            for ct, data in self.manifest["contract_types"].items():
+            for ct, data in self.manifest["contractTypes"].items():
                 yield f"{ct}:  {list(data.keys())}\n"
 
     @to_list
@@ -558,7 +561,7 @@ class ManifestDisplay:
             for chain_uri, chain_deps in self.manifest["deployments"].items():
                 yield f"{chain_uri}\n"
                 for alias, data in chain_deps.items():
-                    yield f"- {alias} @ {data['address']} :: {data['contract_type']}\n"
+                    yield f"- {alias} @ {data['address']} :: {data['contractType']}\n"
                     if "transaction" in data:
                         yield f"  - tx: {data['transaction']}\n"
                     if "block" in data:
@@ -566,8 +569,8 @@ class ManifestDisplay:
 
     @to_list
     def build_dependencies(self) -> Iterable[str]:
-        if "build_dependencies" not in self.manifest:
+        if "buildDependencies" not in self.manifest:
             yield "None.\n"
         else:
-            for pkg_name, uri in self.manifest["build_dependencies"].items():
+            for pkg_name, uri in self.manifest["buildDependencies"].items():
                 yield f"{pkg_name}: {uri}\n"
