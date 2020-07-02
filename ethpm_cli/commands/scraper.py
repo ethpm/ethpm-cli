@@ -132,7 +132,8 @@ def blocks_to_ranges(blocks_list: List[int]) -> Iterable[Dict[str, str]]:
 def get_scraped_blocks(chain_data_path: Path) -> List[int]:
     scraped_blocks = json.loads(chain_data_path.read_text())["scraped_blocks"]
     scraped_ranges = [
-        list(range(int(rnge["min"]), int(rnge["max"]) + 1)) for rnge in scraped_blocks
+        list(range(int(blocks["min"]), int(blocks["max"]) + 1))
+        for blocks in scraped_blocks
     ]
     return flatten(scraped_ranges)
 
@@ -199,7 +200,6 @@ def pluck_ipfs_uris_from_manifest(uri: URI) -> Iterable[List[Any]]:
 
 @to_list
 def pluck_ipfs_uris(manifest: Dict[str, Any]) -> Iterable[List[str]]:
-    print(manifest)
     if "sources" in manifest:
         for source_object in manifest["sources"].values():
             for url in source_object["urls"]:

@@ -9,12 +9,10 @@ def test_cat_owned_manifest(tmp_project_dir):
     child.expect("\r\n")
     child.expect("Package Name: owned\r\n")
     child.expect("Package Version: 1.0.0\r\n")
-    child.expect("Manifest Version: 2\r\n")
+    child.expect("Manifest Version: ethpm/3\r\n")
     child.expect("\r\n")
     child.expect("Sources: \r\n")
-    child.expect(
-        "./contracts/Owned.sol: ipfs://Qme4otpS88NV8yQi8TfTP89EsQC5bko3F5N1yhRoi6c\r\n"
-    )
+    child.expect("Owned.sol: ipfs://QmU8QUSt56ZoBDJgjjXvAZEPro9LmK1m2gjVG5Q4s9x29W\r\n")
     child.expect("\r\n")
     child.expect("Contract Types: \r\n")
     child.expect("None.\r\n")
@@ -33,7 +31,7 @@ def test_cat_dai_manifest(tmp_project_dir):
     child.expect("\r\n")
     child.expect("Package Name: dai\r\n")
     child.expect("Package Version: 1.0.0\r\n")
-    child.expect("Manifest Version: 2\r\n")
+    child.expect("Manifest Version: ethpm/3\r\n")
     child.expect("\r\n")
     child.expect("Sources: \r\n")
     child.expect(r"./DSToken.sol: pragma solidity \^0.4.13;    ////// lib/ds-math/src")

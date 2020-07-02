@@ -87,19 +87,18 @@ def test_activate_etherscan_uri_with_single_deployment():
     child.close()
 
 
-@pytest.mark.skip(reason="needs new package")
 def test_activate_ipfs_uri_with_factories_and_deployments():
     child = pexpect.spawn(
-        "ethpm activate ipfs://Qmf5uJd3yChPwxYxHqR1KN2CdXt2pfsAfPzQe8gkNutwT3",
+        "ethpm activate ipfs://QmYraovUprvG69Ti8budkvTMq1avdZ8CaGPeVX3Z6JUE7K",
         timeout=30,
     )
     child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect("Activating package")
     child.expect("ethregistrar")
-    child.expect("1.0.1")
+    child.expect("3.0.0")
     child.expect(
-        "Successfully generated 29 contract factories on mainnet from 29 detected contract types."
+        "Successfully generated 31 contract factories on mainnet from 31 detected contract types."
     )
     child.expect("Address_factory")
     child.expect("BaseRegistrar_factory")
@@ -119,17 +118,13 @@ def test_activate_ipfs_uri_with_factories_and_deployments():
     # test contract factory is available
     child.sendline("Address_factory")
     child.expect("web3._utils.datatypes.LinkableContract")
-    # test deployment is available
-    child.sendline("mainnet_BaseRegistrarImplementation")
-    child.expect("web3._utils.datatypes.LinkableContract at")
     child.close()
 
 
-@pytest.mark.skip(reason="needs new package")
 def test_activate_github_uri_with_insufficient_contract_types_and_deployments():
     child = pexpect.spawn(
         "ethpm activate https://api.github.com/repos/"
-        "ethpm/ethpm-cli/git/blobs/9fb9a7ec579932d251967c3c6b57f543c1909788",
+        "ethpm/ethpm-cli/git/blobs/282c2e293836c9c58ab72b97ac5f9a44a4caf029",
         timeout=30,
     )
     child.expect(ENTRY_DESCRIPTION)
@@ -156,10 +151,10 @@ def test_activate_github_uri_with_insufficient_contract_types_and_deployments():
     child.close()
 
 
-@pytest.mark.skip(reason="needs new package")
 def test_activate_registry_uri_with_contract_types_no_deployments():
     child = pexpect.spawn(
-        "ethpm activate erc1319://ens.snakecharmers.eth:1/ens@1.0.0", timeout=30,
+        "ethpm activate erc1319://0x3F0ED4f69f21ca9d8748c860Ecd0aB6da44BA75a:1/ens@1.0.0",
+        timeout=30,
     )
     child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")

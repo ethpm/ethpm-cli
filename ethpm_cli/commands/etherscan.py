@@ -54,7 +54,14 @@ def build_etherscan_manifest(
     yield "name", package_name
     yield "version", version
     yield "manifest", "ethpm/3"
-    yield "sources", {f"./{contract_type}.sol": {"content": body["SourceCode"], "installPath": f"./{contract_type}.sol", "type": "solidity"}}
+    source_object = {
+        f"./{contract_type}.sol": {
+            "content": body["SourceCode"],
+            "installPath": f"./{contract_type}.sol",
+            "type": "solidity",
+        }
+    }
+    yield "sources", source_object
     yield "contractTypes", {
         contract_type: {
             "abi": json.loads(body["ABI"]),

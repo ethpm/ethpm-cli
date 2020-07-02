@@ -283,7 +283,11 @@ def write_package_installation_files(
 def write_sources_to_disk(
     package: Package, package_dir: Path, ipfs_backend: BaseIPFSBackend
 ) -> None:
-    sources = resolve_sources(package, ipfs_backend)
+    try:
+        sources = resolve_sources(package, ipfs_backend)
+    except KeyError:
+        return
+
     for path, source_contents in sources.items():
         target_file = package_dir / SRC_DIR_NAME / path
         target_dir = target_file.parent
@@ -300,13 +304,16 @@ def resolve_sources(
 ) -> Iterable[Tuple[str, str]]:
     for path, source_object in package.manifest["sources"].items():
         # for inlined sources
-        if "contents" in source_object:
-            contents = source_object["contents"]
+        if "content" in source_object:
+            yield path, source_object["content"]
         else:
-            for uri in source_object["urls"]:
-                if is_ipfs_uri(uri):
-                    contents = to_text(ipfs_backend.fetch_uri_contents(uri)).rstrip("\n")
-        yield path, contents
+            ipfs_uri = next(
+                (uri for uri in source_object["urls"] if is_ipfs_uri(uri)), None
+            )
+            if not ipfs_uri:
+                raise InstallError("Manifest is missing a content-addressed uri.")
+            contents = to_text(ipfs_backend.fetch_uri_contents(ipfs_uri)).rstrip("\n")
+            yield path, contents
 
 
 def write_docs_to_disk(

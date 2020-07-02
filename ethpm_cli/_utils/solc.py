@@ -178,7 +178,6 @@ def get_contract_types_and_sources(
         for ctype, data in solc_output[source].items():
             if data["metadata"]:
                 metadata = json.loads(data["metadata"])
-                # broken
                 sources = tuple(Path(src) for src in metadata["sources"].keys())
                 yield ctype, sources
             # For Interface contracts w/ empty metadata['sources']

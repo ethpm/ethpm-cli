@@ -13,9 +13,9 @@ from ethpm_cli.commands.package import Package
 from ethpm_cli.constants import ETHPM_PACKAGES_DIR
 from ethpm_cli.exceptions import InstallError
 
-
 OWNED_MANIFEST_IPFS_URI = "ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR"
 WALLET_MANIFEST_IPFS_URI = "ipfs://QmRALeFkttSr6DLmPiNtAqLcMJYXu4BK3SjZGVgW8VASnm"
+
 
 @pytest.fixture
 def owned_pkg(config):
@@ -32,32 +32,20 @@ def wallet_pkg(config):
 @pytest.mark.parametrize(
     "args,pkg_name,install_type",
     (
+        (Namespace(uri=OWNED_MANIFEST_IPFS_URI), "owned", "ipfs_uri",),
         (
-            Namespace(uri=OWNED_MANIFEST_IPFS_URI),
-            "owned",
-            "ipfs_uri",
-        ),
-        (
-            Namespace(
-                uri=OWNED_MANIFEST_IPFS_URI,
-                alias="owned-alias",
-            ),
+            Namespace(uri=OWNED_MANIFEST_IPFS_URI, alias="owned-alias",),
             "owned",
             "ipfs_uri_alias",
         ),
-        # needs release
-        # (
-            # Namespace(
-                # uri="erc1319://0x1457890158DECD360e6d4d979edBcDD59c35feeB:1/owned@1.0.0"
-            # ),
-            # "owned",
-            # "registry_uri",
-        # ),
         (
-            Namespace(uri=WALLET_MANIFEST_IPFS_URI),
-            "wallet",
-            "ipfs_uri",
+            Namespace(
+                uri="erc1319://0x3F0ED4f69f21ca9d8748c860Ecd0aB6da44BA75a:1/owned@1.0.0"
+            ),
+            "owned",
+            "registry_uri",
         ),
+        (Namespace(uri=WALLET_MANIFEST_IPFS_URI), "wallet", "ipfs_uri",),
     ),
 )
 def test_install_package(args, pkg_name, install_type, config, test_assets_dir):
@@ -68,9 +56,10 @@ def test_install_package(args, pkg_name, install_type, config, test_assets_dir):
     assert check_dir_trees_equal(config.ethpm_dir, expected_package)
 
 
-@pytest.mark.skip(reason='needs new release')
 def test_install_package_with_ens_in_registry_uri(config):
-    uri = Namespace(uri="erc1319://ens.snakecharmers.eth:1/ens@1.0.0")
+    uri = Namespace(
+        uri="erc1319://0x3F0ED4f69f21ca9d8748c860Ecd0aB6da44BA75a:1/ens@1.0.0"
+    )
     pkg = Package(uri, config.ipfs_backend)
     install_package(pkg, config)
 
@@ -88,10 +77,7 @@ def test_cannot_install_same_package_twice(config, owned_pkg):
 
 def test_can_install_same_package_twice_if_aliased(config, owned_pkg, test_assets_dir):
     aliased_pkg = Package(
-        Namespace(
-            uri=OWNED_MANIFEST_IPFS_URI,
-            alias="owned-alias",
-        ),
+        Namespace(uri=OWNED_MANIFEST_IPFS_URI, alias="owned-alias",),
         config.ipfs_backend,
     )
     install_package(owned_pkg, config)
@@ -151,18 +137,15 @@ def test_list(config, owned_pkg, wallet_pkg, caplog):
     with caplog.at_level(logging.INFO):
         list_installed_packages(config)
         assert (
-            f"owned==1.0.0 --- ({OWNED_MANIFEST_IPFS_URI})\n"
-            in caplog.text
+            f"owned==1.0.0 --- ({OWNED_MANIFEST_IPFS_URI})\n" in caplog.text
         )  # noqa: E501
         assert (
-            f"wallet==1.0.0 --- ({WALLET_MANIFEST_IPFS_URI})\n"
-            in caplog.text
+            f"wallet==1.0.0 --- ({WALLET_MANIFEST_IPFS_URI})\n" in caplog.text
         )  # noqa: E501
         assert (
             "- safe-math-lib==1.0.0 --- (ipfs://QmWnPsiS3Xb8GvCDEBFnnKs8Yk4HaAX6rCqJAaQXGbCoPk)\n"
             in caplog.text
         )  # noqa: E501
         assert (
-            f"- owned==1.0.0 --- ({OWNED_MANIFEST_IPFS_URI})\n"
-            in caplog.text
+            f"- owned==1.0.0 --- ({OWNED_MANIFEST_IPFS_URI})\n" in caplog.text
         )  # noqa: E501

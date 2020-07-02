@@ -6,7 +6,7 @@ from eth_typing import HexStr, Manifest
 from eth_utils import is_checksum_address, to_hex, to_int, to_list, to_tuple
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 from ethpm.tools import builder as b
-from ethpm.uri import create_latest_block_uri
+from ethpm.uri import create_latest_block_uri, is_ipfs_uri
 from ethpm.validation.manifest import validate_manifest_against_schema
 from ethpm.validation.package import validate_package_name
 from web3 import Web3
@@ -210,7 +210,6 @@ def amend_single_deployment(manifest: Dict[str, Any]) -> Iterable[Dict[str, Any]
     contract_type = get_deployment_contract_type(available_contract_types)
     contract_instance = get_deployment_alias(contract_type)
     tx_hash, block_hash = get_deployment_chain_data(w3)
-    # broken?
     deployment_data = {
         "block_uri": block_uri,
         "contract_instance": contract_instance,
@@ -324,7 +323,6 @@ def gen_single_deployment(solc_output: Dict[str, Any]) -> Dict[str, Any]:
     contract_type = get_deployment_contract_type(available_contract_types)
     contract_instance = get_deployment_alias(contract_type)
     tx_hash, block_hash = get_deployment_chain_data(w3)
-    # broken?
     deployment_data = {
         "block_uri": block_uri,
         "contract_instance": contract_instance,
@@ -349,7 +347,7 @@ def get_deployment_alias(contract_type: str) -> str:
 
 
 def get_deployment_chain_data(w3: Web3) -> Tuple[Optional[str], Optional[Any]]:
-    # todo: deployment_bytecode, runtime_bytecode, compiler
+    # todo: runtimeBytecode, compiler
     flag = parse_bool_flag("Do you have a tx hash for your deployment?")
     if flag:
         tx_hash = HexStr(input("Please enter your tx hash. "))
@@ -536,14 +534,22 @@ class ManifestDisplay:
         if "sources" not in self.manifest:
             yield "None.\n"
         else:
-            # broken
-            for src, data in self.manifest["sources"].items():
-                if len(data) < 50:
-                    truncated = data
+            for source_id, source_object in self.manifest["sources"].items():
+                # truncate data if inlined source
+                if "content" in source_object:
+                    truncated = (
+                        source_object["content"][:50]
+                        .replace("\n", " ")
+                        .replace("\r", " ")
+                    )
+                    yield f"{source_id}: {truncated}\n"
                 else:
-                    # truncate data if inlined source
-                    truncated = data[:50].replace("\n", " ").replace("\r", " ")
-                yield f"{src}: {truncated}\n"
+                    all_urls = source_object["urls"]
+                    ipfs_url = next((url for url in all_urls if is_ipfs_uri(url)), None)
+                    if not ipfs_url:
+                        yield f"{source_id}: {source_object['urls'][0]}\n"
+                    else:
+                        yield f"{source_id}: {ipfs_url}\n"
 
     @to_list
     def contract_types(self) -> Iterable[str]:
