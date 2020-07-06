@@ -13,11 +13,11 @@ def test_activate_with_uninstalled_package(test_assets_dir):
 
 
 def test_activate_with_invalid_uri():
-    child = pexpect.spawn(f"ethpm activate http://www.google.com", timeout=15)
+    child = pexpect.spawn("ethpm activate http://www.google.com", timeout=15)
     child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(
-        f"http://www.google.com is not a supported URI. The only URIs currently supported "
+        "http://www.google.com is not a supported URI. The only URIs currently supported "
         "are Registry, Github Blob, Etherscan and IPFS"
     )
     child.close()
@@ -57,7 +57,7 @@ def test_activate_with_aliased_locally_installed_pkg(test_assets_dir):
 
 def test_activate_etherscan_uri_with_single_deployment():
     child = pexpect.spawn(
-        f"ethpm activate etherscan://0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359:1",
+        "ethpm activate etherscan://0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359:1",
         timeout=30,
     )
     child.expect(ENTRY_DESCRIPTION)
@@ -89,7 +89,7 @@ def test_activate_etherscan_uri_with_single_deployment():
 
 def test_activate_ipfs_uri_with_factories_and_deployments():
     child = pexpect.spawn(
-        f"ethpm activate ipfs://Qmf5uJd3yChPwxYxHqR1KN2CdXt2pfsAfPzQe8gkNutwT3",
+        "ethpm activate ipfs://Qmf5uJd3yChPwxYxHqR1KN2CdXt2pfsAfPzQe8gkNutwT3",
         timeout=30,
     )
     child.expect(ENTRY_DESCRIPTION)
@@ -156,7 +156,7 @@ def test_activate_github_uri_with_insufficient_contract_types_and_deployments():
 
 def test_activate_registry_uri_with_contract_types_no_deployments():
     child = pexpect.spawn(
-        f"ethpm activate erc1319://ens.snakecharmers.eth:1/ens@1.0.0", timeout=30,
+        "ethpm activate erc1319://ens.snakecharmers.eth:1/ens@1.0.0", timeout=30,
     )
     child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
