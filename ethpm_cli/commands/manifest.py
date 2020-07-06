@@ -190,7 +190,7 @@ def amend_deployments(manifest: Manifest) -> Iterable[Callable[..., Manifest]]:
         # todo: support amending existing deployments, and refactor deployment strategy
         # to support multiple deployments on the same chain
         cli_logger.info(
-            f"Deployments found, amending existing deployments is not currently supported."
+            "Deployments found, amending existing deployments is not currently supported."
         )
         return tuple()
 

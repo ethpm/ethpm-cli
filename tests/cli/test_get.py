@@ -7,7 +7,7 @@ from ethpm_cli.main import ENTRY_DESCRIPTION
 
 def test_get_simple_fetch():
     child = pexpect.spawn(
-        f"ethpm get ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW"
+        "ethpm get ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW"
     )
     child.expect(ENTRY_DESCRIPTION)
     child.expect("manifest_version")
@@ -21,7 +21,7 @@ def test_get_simple_fetch():
 
 def test_get_pretty_print():
     child = pexpect.spawn(
-        f"ethpm get ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW --pretty"
+        "ethpm get ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW --pretty"
     )
     child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
