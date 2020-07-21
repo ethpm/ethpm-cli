@@ -1,20 +1,20 @@
 {
     "owned": {
         "alias": "owned",
-        "install_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "install_uri": "ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR",
         "registry_address": null,
-        "resolved_content_hash": "QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "resolved_content_hash": "QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR",
         "resolved_package_name": "owned",
-        "resolved_uri": "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "resolved_uri": "ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR",
         "resolved_version": "1.0.0"
     },
     "wallet": {
         "alias": "wallet",
-        "install_uri": "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        "install_uri": "ipfs://QmRALeFkttSr6DLmPiNtAqLcMJYXu4BK3SjZGVgW8VASnm",
         "registry_address": null,
-        "resolved_content_hash": "QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        "resolved_content_hash": "QmRALeFkttSr6DLmPiNtAqLcMJYXu4BK3SjZGVgW8VASnm",
         "resolved_package_name": "wallet",
-        "resolved_uri": "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        "resolved_uri": "ipfs://QmRALeFkttSr6DLmPiNtAqLcMJYXu4BK3SjZGVgW8VASnm",
         "resolved_version": "1.0.0"
     }
 }

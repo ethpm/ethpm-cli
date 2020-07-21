@@ -132,7 +132,8 @@ def blocks_to_ranges(blocks_list: List[int]) -> Iterable[Dict[str, str]]:
 def get_scraped_blocks(chain_data_path: Path) -> List[int]:
     scraped_blocks = json.loads(chain_data_path.read_text())["scraped_blocks"]
     scraped_ranges = [
-        list(range(int(rnge["min"]), int(rnge["max"]) + 1)) for rnge in scraped_blocks
+        list(range(int(blocks["min"]), int(blocks["max"]) + 1))
+        for blocks in scraped_blocks
     ]
     return flatten(scraped_ranges)
 
@@ -192,17 +193,18 @@ def pluck_ipfs_uris_from_manifest(uri: URI) -> Iterable[List[Any]]:
     manifest_contents = json.loads(resolve_uri_contents(uri))
     yield pluck_ipfs_uris(manifest_contents)
 
-    if "build_dependencies" in manifest_contents:
-        for dependency_uri in manifest_contents["build_dependencies"].values():
+    if "buildDependencies" in manifest_contents:
+        for dependency_uri in manifest_contents["buildDependencies"].values():
             yield pluck_ipfs_uris_from_manifest(dependency_uri)
 
 
 @to_list
 def pluck_ipfs_uris(manifest: Dict[str, Any]) -> Iterable[List[str]]:
     if "sources" in manifest:
-        for source in manifest["sources"].values():
-            if is_ipfs_uri(source):
-                yield source
+        for source_object in manifest["sources"].values():
+            for url in source_object["urls"]:
+                if is_ipfs_uri(url):
+                    yield url
 
     if "meta" in manifest:
         if "links" in manifest["meta"]:
@@ -210,8 +212,8 @@ def pluck_ipfs_uris(manifest: Dict[str, Any]) -> Iterable[List[str]]:
                 if is_ipfs_uri(link):
                     yield link
 
-    if "build_dependencies" in manifest:
-        for source in manifest["build_dependencies"].values():
+    if "buildDependencies" in manifest:
+        for source in manifest["buildDependencies"].values():
             if is_ipfs_uri(source):
                 yield source
 

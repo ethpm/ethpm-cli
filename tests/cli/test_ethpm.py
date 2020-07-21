@@ -14,13 +14,13 @@ def test_ethpm_list(test_assets_dir):
     child.expect("\r\n")
     child.expect("owned")
     child.expect("1.0.0")
-    child.expect("ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW")
+    child.expect("ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR")
     child.expect("wallet")
     child.expect("1.0.0")
-    child.expect("ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1")
+    child.expect("ipfs://QmRALeFkttSr6DLmPiNtAqLcMJYXu4BK3SjZGVgW8VASnm")
     child.expect("safe-math-lib")
     child.expect("1.0.0")
-    child.expect("ipfs://QmWgvM8yXGyHoGWqLFXvareJsoCZVsdrpKNCLMun3RaSJm")
+    child.expect("ipfs://QmWnPsiS3Xb8GvCDEBFnnKs8Yk4HaAX6rCqJAaQXGbCoPk")
 
 
 def test_ethpm_list_with_aliased_package(test_assets_dir):
@@ -31,7 +31,7 @@ def test_ethpm_list_with_aliased_package(test_assets_dir):
     child.expect("owned")
     child.expect("owned-alias")
     child.expect("1.0.0")
-    child.expect("ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW")
+    child.expect("ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR")
 
 
 def test_ethpm_uninstall(config, test_assets_dir):

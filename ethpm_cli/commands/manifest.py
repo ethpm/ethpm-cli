@@ -6,7 +6,7 @@ from eth_typing import HexStr, Manifest
 from eth_utils import is_checksum_address, to_hex, to_int, to_list, to_tuple
 from ethpm.constants import SUPPORTED_CHAIN_IDS
 from ethpm.tools import builder as b
-from ethpm.uri import create_latest_block_uri
+from ethpm.uri import create_latest_block_uri, is_ipfs_uri
 from ethpm.validation.manifest import validate_manifest_against_schema
 from ethpm.validation.package import validate_package_name
 from web3 import Web3
@@ -79,7 +79,7 @@ def amend_manifest(manifest_path: Path) -> None:
 
     manifest = json.loads(manifest_path.read_text())
     validate_manifest_against_schema(manifest)
-    pkg_repr = f"<Package {manifest['package_name']}=={manifest['version']}>"
+    pkg_repr = f"<Package {manifest['name']}=={manifest['version']}>"
     cli_logger.info(f"Valid manifest for {pkg_repr} found at {manifest_path}.")
     builder_fns = (
         amend_description(manifest),
@@ -206,7 +206,7 @@ def amend_single_deployment(manifest: Dict[str, Any]) -> Iterable[Dict[str, Any]
     w3 = setup_w3(chain_id)
     block_uri = create_latest_block_uri(w3)
     address = get_deployment_address()
-    available_contract_types = manifest["contract_types"].keys()
+    available_contract_types = manifest["contractTypes"].keys()
     contract_type = get_deployment_contract_type(available_contract_types)
     contract_instance = get_deployment_alias(contract_type)
     tx_hash, block_hash = get_deployment_chain_data(w3)
@@ -347,7 +347,7 @@ def get_deployment_alias(contract_type: str) -> str:
 
 
 def get_deployment_chain_data(w3: Web3) -> Tuple[Optional[str], Optional[Any]]:
-    # todo: deployment_bytecode, runtime_bytecode, compiler
+    # todo: runtimeBytecode, compiler
     flag = parse_bool_flag("Do you have a tx hash for your deployment?")
     if flag:
         tx_hash = HexStr(input("Please enter your tx hash. "))
@@ -398,7 +398,7 @@ def gen_version() -> Callable[..., Manifest]:
 
 
 def gen_manifest_version() -> Callable[..., Manifest]:
-    return b.manifest_version("2")
+    return b.manifest_version("ethpm/3")
 
 
 def gen_description() -> Optional[Callable[..., Manifest]]:
@@ -502,7 +502,7 @@ class ManifestDisplay:
 
     @property
     def package_name(self) -> str:
-        return self.manifest["package_name"]
+        return self.manifest["name"]
 
     @property
     def package_version(self) -> str:
@@ -510,7 +510,7 @@ class ManifestDisplay:
 
     @property
     def manifest_version(self) -> str:
-        return self.manifest["manifest_version"]
+        return self.manifest["manifest"]
 
     @to_list
     def meta(self) -> Iterable[str]:
@@ -534,20 +534,29 @@ class ManifestDisplay:
         if "sources" not in self.manifest:
             yield "None.\n"
         else:
-            for src, data in self.manifest["sources"].items():
-                if len(data) < 50:
-                    truncated = data
+            for source_id, source_object in self.manifest["sources"].items():
+                # truncate data if inlined source
+                if "content" in source_object:
+                    truncated = (
+                        source_object["content"][:50]
+                        .replace("\n", " ")
+                        .replace("\r", " ")
+                    )
+                    yield f"{source_id}: {truncated}\n"
                 else:
-                    # truncate data if inlined source
-                    truncated = data[:50].replace("\n", " ").replace("\r", " ")
-                yield f"{src}: {truncated}\n"
+                    all_urls = source_object["urls"]
+                    ipfs_url = next((url for url in all_urls if is_ipfs_uri(url)), None)
+                    if not ipfs_url:
+                        yield f"{source_id}: {source_object['urls'][0]}\n"
+                    else:
+                        yield f"{source_id}: {ipfs_url}\n"
 
     @to_list
     def contract_types(self) -> Iterable[str]:
-        if "contract_types" not in self.manifest:
+        if "contractTypes" not in self.manifest:
             yield "None.\n"
         else:
-            for ct, data in self.manifest["contract_types"].items():
+            for ct, data in self.manifest["contractTypes"].items():
                 yield f"{ct}:  {list(data.keys())}\n"
 
     @to_list
@@ -558,7 +567,7 @@ class ManifestDisplay:
             for chain_uri, chain_deps in self.manifest["deployments"].items():
                 yield f"{chain_uri}\n"
                 for alias, data in chain_deps.items():
-                    yield f"- {alias} @ {data['address']} :: {data['contract_type']}\n"
+                    yield f"- {alias} @ {data['address']} :: {data['contractType']}\n"
                     if "transaction" in data:
                         yield f"  - tx: {data['transaction']}\n"
                     if "block" in data:
@@ -566,8 +575,8 @@ class ManifestDisplay:
 
     @to_list
     def build_dependencies(self) -> Iterable[str]:
-        if "build_dependencies" not in self.manifest:
+        if "buildDependencies" not in self.manifest:
             yield "None.\n"
         else:
-            for pkg_name, uri in self.manifest["build_dependencies"].items():
+            for pkg_name, uri in self.manifest["buildDependencies"].items():
                 yield f"{pkg_name}: {uri}\n"

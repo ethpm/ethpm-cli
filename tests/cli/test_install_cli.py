@@ -9,13 +9,13 @@ from ethpm_cli.main import ENTRY_DESCRIPTION
 def test_ethpm_install(tmp_path, test_assets_dir):
     ethpm_dir = tmp_path / ETHPM_PACKAGES_DIR
     child = pexpect.spawn(
-        "ethpm install ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "
+        "ethpm install ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR "
         f"--ethpm-dir {ethpm_dir}"
     )
     child.expect(ENTRY_DESCRIPTION)
     child.expect("\r\n")
     child.expect(
-        "owned package sourced from ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW "
+        "owned package sourced from ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR "
         f"installed to {ethpm_dir}.\r\n"
     )
     assert check_dir_trees_equal(

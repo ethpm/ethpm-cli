@@ -30,9 +30,9 @@ def test_create_basic_manifest_from_solc_output(tmp_path):
         "ethpm-registry", "2.0.0a1", project_dir
     )
     expected_manifest = json.loads(
-        (ASSETS_DIR / "simple-registry" / "2.0.0a1.json").read_text()
+        (ASSETS_DIR / "simple-registry" / "v3.json").read_text()
     )
-    assert actual_manifest["package_name"] == "ethpm-registry"
+    assert actual_manifest["name"] == "ethpm-registry"
     assert actual_manifest["version"] == "2.0.0a1"
-    assert actual_manifest["manifest_version"] == "2"
-    assert actual_manifest["contract_types"] == expected_manifest["contract_types"]
+    assert actual_manifest["manifest"] == "ethpm/3"
+    assert actual_manifest["contractTypes"] == expected_manifest["contractTypes"]

@@ -17,9 +17,9 @@ def test_custom_manifest_builder(tmp_project_dir, test_assets_dir):
     child.expect("Create ethPM manifests for local projects.")
     child.expect("\r\n")
     child.expect("Enter your package's name: ")
-    child.sendline("ethpm-registry")
+    child.sendline("simple-registry")
     child.expect("Enter your package's version: ")
-    child.sendline("2.0.0a1")
+    child.sendline("1.0.0")
     child.expect("Would you like to add a description to your package?")
     child.sendline("y")
     child.expect("Enter your description: ")
@@ -70,12 +70,12 @@ def test_custom_manifest_builder(tmp_project_dir, test_assets_dir):
         "Building your manifest. This could take a minute if you're pinning assets to IPFS."
     )
     child.expect("Please enter a filename for your manifest.")
-    child.sendline("2.0.0a1")
+    child.sendline("v3")
     child.expect(
-        f"Manifest successfully created and written to {tmp_project_dir}/2.0.0a1.json"
+        f"Manifest successfully created and written to {tmp_project_dir}/v3.json"
     )
     assert filecmp.cmp(
-        test_assets_dir / "registry" / "2.0.0a1.json", tmp_project_dir / "2.0.0a1.json"
+        test_assets_dir / "registry" / "v3.json", tmp_project_dir / "v3.json"
     )
 
 
@@ -132,7 +132,7 @@ def test_manifest_builder_amend(tmp_project_dir, test_assets_dir):
     child.sendline("owned-amended-test")
     child.expect("Manifest successfully created and written to ")
     assert filecmp.cmp(
-        test_assets_dir / "owned" / "1.0.0-amended.json",
+        test_assets_dir / "owned" / "v3-amended.json",
         tmp_project_dir / "owned-amended-test.json",
     )
 

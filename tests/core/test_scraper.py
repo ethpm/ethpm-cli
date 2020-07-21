@@ -20,7 +20,7 @@ def w3():
 
 @pytest.fixture
 def log_deployer(w3):
-    pkg = Package(json.loads((CLI_ASSETS_DIR / "1.0.1.json").read_text()), w3)
+    pkg = Package(json.loads((CLI_ASSETS_DIR / "v3.json").read_text()), w3)
     return Deployer(pkg)
 
 
@@ -98,7 +98,7 @@ def test_scraper_writes_to_disk(log, log_2, test_assets_dir, w3):
         w3,
         "owned",
         "1.0.0",
-        "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR",
     )
 
     w3.testing.mine(3)
@@ -107,7 +107,7 @@ def test_scraper_writes_to_disk(log, log_2, test_assets_dir, w3):
         w3,
         "owned-dupe",
         "1.0.0",
-        "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR",
     )
 
     w3.testing.mine(3)
@@ -116,12 +116,13 @@ def test_scraper_writes_to_disk(log, log_2, test_assets_dir, w3):
         w3,
         "wallet",
         "1.0.0",
-        "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        "ipfs://QmRALeFkttSr6DLmPiNtAqLcMJYXu4BK3SjZGVgW8VASnm",
     )
 
     w3.testing.mine(3)
     ethpmcli_dir = get_xdg_ethpmcli_root()
     scrape(w3, ethpmcli_dir, 1)
+
     assert check_dir_trees_equal(ethpmcli_dir, (test_assets_dir.parent / "ipfs"))
 
 
@@ -131,7 +132,7 @@ def test_scraper_imports_existing_ethpmcli_dir(log, log_2, test_assets_dir, w3):
         w3,
         "owned",
         "1.0.0",
-        "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR",
     )
 
     w3.testing.mine(3)
@@ -140,7 +141,7 @@ def test_scraper_imports_existing_ethpmcli_dir(log, log_2, test_assets_dir, w3):
         w3,
         "owned-dupe",
         "1.0.0",
-        "ipfs://QmbeVyFLSuEUxiXKwSsEjef6icpdTdA4kGG9BcrJXKNKUW",
+        "ipfs://QmcxvhkJJVpbxEAa6cgW3B6XwPJb79w9GpNUv2P2THUzZR",
     )
 
     ethpmcli_dir = get_xdg_ethpmcli_root()
@@ -152,7 +153,7 @@ def test_scraper_imports_existing_ethpmcli_dir(log, log_2, test_assets_dir, w3):
         w3,
         "wallet",
         "1.0.0",
-        "ipfs://QmRMSm4k37mr2T3A2MGxAj2eAHGR5veibVt1t9Leh5waV1",
+        "ipfs://QmRALeFkttSr6DLmPiNtAqLcMJYXu4BK3SjZGVgW8VASnm",
     )
     w3.testing.mine(3)
     # Second scrape

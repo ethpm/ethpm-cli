@@ -27,6 +27,7 @@ BASE_SOLC_INPUT = {
                     "evm.deployedBytecode",
                     "metadata",
                     "devdoc",
+                    "userdoc",
                 ]
             }
         }
@@ -154,7 +155,7 @@ def create_basic_manifest_from_solc_output(
     return b.build(
         {},
         b.package_name(package_name),
-        b.manifest_version("2"),
+        b.manifest_version("ethpm/3"),
         b.version(version),
         *built_sources,
         *built_types,
