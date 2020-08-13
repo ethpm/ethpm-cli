@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, NamedTuple, Optional, Tuple
 
 from eth_typing import URI
-from eth_utils import to_tuple
+from eth_utils import to_int, to_tuple
 from eth_utils.toolz import assoc, assoc_in, dissoc
 from ethpm.backends.registry import is_valid_registry_uri, parse_registry_uri
 from ethpm.constants import SUPPORTED_CHAIN_IDS
@@ -12,7 +12,7 @@ from web3 import Web3
 from ethpm_cli._utils.filesystem import atomic_replace
 from ethpm_cli._utils.logger import cli_logger
 from ethpm_cli._utils.shellart import bold_blue, bold_green, bold_white
-from ethpm_cli.config import Config
+from ethpm_cli.config import Config, setup_w3
 from ethpm_cli.constants import REGISTRY_STORE
 from ethpm_cli.exceptions import AmbigiousFileSystem, AuthorizationError, InstallError
 
@@ -111,14 +111,22 @@ def activate_registry(uri_or_alias: str, config: Config) -> None:
 def explore_registry(uri_or_alias: str, config: Config) -> None:
     if is_valid_registry_uri(uri_or_alias):
         parsed_registry_uri = parse_registry_uri(uri_or_alias)
-        config.w3.pm.set_registry(parsed_registry_uri.address)
     else:
         store_path = config.xdg_ethpmcli_root / REGISTRY_STORE
         registry = resolve_uri_and_alias(None, uri_or_alias, store_path)
         parsed_registry_uri = parse_registry_uri(registry.uri)
-        config.w3.pm.set_registry(parsed_registry_uri.address)
-    package_names = config.w3.pm.get_all_package_names()
-    display_packages(package_names, config.w3)
+
+    if parsed_registry_uri.chain_id != config.w3.eth.chainId:
+        registry_w3 = setup_w3(to_int(text=parsed_registry_uri.chain_id))
+    else:
+        registry_w3 = config.w3
+
+    registry_w3.pm.set_registry(parsed_registry_uri.address)
+    cli_logger.info(
+        f"Registry controlled by: {registry_w3.pm.registry.registry.caller.owner()}\n"
+    )
+    package_names = registry_w3.pm.get_all_package_names()
+    display_packages(package_names, registry_w3)
 
 
 def resolve_uri_or_alias(uri_or_alias: str, store_path: Path) -> StoredRegistry:
